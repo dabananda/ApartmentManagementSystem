@@ -10,5 +10,9 @@ namespace ApartmentManagementSystem.Data
             : base(options)
         {
         }
+
+        // DbSets for the application entities
+        public DbSet<Building> Buildings { get; set; }
+        public DbSet<Flat> Flats { get; set; }
     }
 }
