@@ -37,8 +37,34 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
+
+// Seed the database with initial data
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var superAdminPassword = configuration["SuperAdminPassword"];
+
+        if (string.IsNullOrEmpty(superAdminPassword))
+        {
+            throw new InvalidOperationException("SuperAdminPassword not found in configuration.");
+        }
+
+        DbInitializer.Initialize(context, userManager, roleManager, superAdminPassword).Wait();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
+    }
+}
 
 app.MapControllerRoute(
     name: "default",
