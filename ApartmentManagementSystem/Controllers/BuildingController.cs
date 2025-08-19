@@ -1,19 +1,22 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin, President")]
     public class BuildingController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public BuildingController(ApplicationDbContext context)
+        public BuildingController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Buildings
@@ -32,6 +35,16 @@ namespace ApartmentManagementSystem.Controllers
             if (building == null)
             {
                 return NotFound();
+            }
+
+            // President authorization check: Make sure a President can only see their assigned building
+            if (User.IsInRole("President"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user.BuildingId != building.Id)
+                {
+                    return Forbid();
+                }
             }
             return View(building);
         }
