@@ -139,5 +139,27 @@ namespace ApartmentManagementSystem.Controllers
             viewModel.Owners = new SelectList(owners, "Id", "Fullname");
             return View(viewModel);
         }
+
+        // GET: Flat/MyFlats
+        [Authorize(Roles = "Owner")]
+        public async Task<IActionResult> MyFlats()
+        {
+            // Get the current user
+            var user = await _userManager.GetUserAsync(User);
+
+            // Check if the user is null, which shouldn't happen with [Authorize] but is a good practice
+            if (user == null)
+            {
+                return Forbid();
+            }
+
+            // Retrieve only the flats owned by the current user
+            var myFlats = await _context.Flats
+                .Include(f => f.Building)
+                .Where(f => f.OwnerId == user.Id)
+                .ToListAsync();
+
+            return View("Index", myFlats);
+        }
     }
 }

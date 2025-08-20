@@ -18,6 +18,6 @@ namespace ApartmentManagementSystem.Models
         public bool IsActive { get; set; } = true;
         public Guid FlatId { get; set; }
         [ForeignKey("FlatId")]
-        public virtual Flat Flat { get; set; }
+        public virtual Flat? Flat { get; set; }
     }
 }
