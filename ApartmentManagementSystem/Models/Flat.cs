@@ -10,7 +10,7 @@ namespace ApartmentManagementSystem.Models
         [StringLength(50)]
         public string FlatNumber { get; set; }
         public Guid BuildingId { get; set; }
-        public virtual Building Building { get; set; }
+        public virtual Building? Building { get; set; }
         public string? OwnerId { get; set; }
         [ForeignKey("OwnerId")]
         public virtual ApplicationUser? Owner { get; set; }
