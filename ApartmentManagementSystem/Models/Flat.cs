@@ -15,5 +15,6 @@ namespace ApartmentManagementSystem.Models
         [ForeignKey("OwnerId")]
         public virtual ApplicationUser? Owner { get; set; }
         public bool IsOccupied { get; set; } = false;
+        public ICollection<Tenant> Tenants { get; set; } = new List<Tenant>();
     }
 }

@@ -48,6 +48,9 @@
                 <td>
                     <a asp-action="AssignOwner" asp-route-flatId="@item.Id">Assign Owner</a>
                 </td>
+                <td>
+                    <a asp-action="Index" asp-controller="Tenant" asp-route-flatId="@item.Id">Manage Tenants</a>
+                </td>
             </tr>
         }
     </tbody>

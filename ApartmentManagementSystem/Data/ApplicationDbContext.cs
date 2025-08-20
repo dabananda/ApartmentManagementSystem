@@ -14,6 +14,7 @@ namespace ApartmentManagementSystem.Data
         // DbSets for the application entities
         public DbSet<Building> Buildings { get; set; }
         public DbSet<Flat> Flats { get; set; }
+        public DbSet<Tenant> Tenants { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
