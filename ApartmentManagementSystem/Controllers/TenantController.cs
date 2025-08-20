@@ -78,5 +78,159 @@ namespace ApartmentManagementSystem.Controllers
             ViewData["FlatId"] = tenant.FlatId;
             return View(tenant);
         }
+
+        // GET: Tenant/Details/{id}
+        public async Task<IActionResult> Details(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            var tenant = await _context.Tenants
+                .Include(t => t.Flat) // Eager load the related Flat
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            // Security check: only the flat's owner can see tenant details
+            if (tenant.Flat.OwnerId != user.Id)
+            {
+                return Forbid();
+            }
+
+            return View(tenant);
+        }
+
+        // GET: Tenant/Edit/{id}
+        public async Task<IActionResult> Edit(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(t => t.Id == id);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            // Security check: only the flat's owner can edit a tenant
+            if (tenant.Flat.OwnerId != user.Id)
+            {
+                return Forbid();
+            }
+
+            // Pass the FlatId to the view for form submission
+            ViewData["FlatId"] = tenant.FlatId;
+
+            return View(tenant);
+        }
+
+        // POST: Tenant/Edit/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Fullname,Email,PhoneNumber,IsActive,FlatId")] Tenant tenant)
+        {
+            if (id != tenant.Id)
+            {
+                return NotFound();
+            }
+
+            // Get the current user
+            var user = await _userManager.GetUserAsync(User);
+            var existingFlat = await _context.Flats.FindAsync(tenant.FlatId);
+
+            // Security check: ensure the owner hasn't tampered with the flatId
+            if (existingFlat.OwnerId != user.Id)
+            {
+                return Forbid();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(tenant);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Tenants.Any(e => e.Id == tenant.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
+            }
+
+            // On validation failure, re-populate the FlatId
+            ViewData["FlatId"] = tenant.FlatId;
+            return View(tenant);
+        }
+
+        // GET: Tenant/Delete/{id}
+        public async Task<IActionResult> Delete(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            var tenant = await _context.Tenants
+                .Include(t => t.Flat) // Eager load the related Flat
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            // Security check: only the flat's owner can delete a tenant
+            if (tenant.Flat.OwnerId != user.Id)
+            {
+                return Forbid();
+            }
+
+            return View(tenant);
+        }
+
+        // POST: Tenant/Delete/{id}
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(t => t.Id == id);
+
+            if (tenant == null)
+            {
+                return NotFound();
+            }
+
+            // Security check before deleting
+            if (tenant.Flat.OwnerId != user.Id)
+            {
+                return Forbid();
+            }
+
+            _context.Tenants.Remove(tenant);
+            await _context.SaveChangesAsync();
+
+            // Redirect to the tenant list for the same flat
+            return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
+        }
     }
 }
