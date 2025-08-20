@@ -28,10 +28,10 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> AssignPresident()
         {
             var buildings = await _context.Buildings.ToListAsync();
-            var owners = await _userManager.GetUsersInRoleAsync("Owner");
+            var presidents = await _userManager.GetUsersInRoleAsync("President");
 
             ViewData["Buildings"] = new SelectList(buildings, "Id", "Name");
-            ViewData["Owners"] = new SelectList(owners, "Id", "UserName");
+            ViewData["Presidents"] = new SelectList(presidents, "Id", "UserName");
 
             return View();
         }
