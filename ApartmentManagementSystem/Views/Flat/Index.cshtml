@@ -45,6 +45,9 @@
                     <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
                     <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
                 </td>
+                <td>
+                    <a asp-action="AssignOwner" asp-route-flatId="@item.Id">Assign Owner</a>
+                </td>
             </tr>
         }
     </tbody>

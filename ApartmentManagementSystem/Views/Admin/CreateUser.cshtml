@@ -1,15 +1,15 @@
 ﻿@model ApartmentManagementSystem.ViewModels.RegisterUserViewModel
 
 @{
-    ViewData["Title"] = "Register New User";
+    ViewData["Title"] = "Create New User";
 }
 
-<h1>Register New User</h1>
+<h1>Create New User</h1>
 
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="RegisterUser">
+        <form asp-action="CreateUser">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="Fullname" class="control-label"></label>
@@ -37,7 +37,7 @@
                 <span asp-validation-for="SelectedRole" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Register" class="btn btn-primary" />
+                <input type="submit" value="Create User" class="btn btn-primary" />
             </div>
         </form>
     </div>

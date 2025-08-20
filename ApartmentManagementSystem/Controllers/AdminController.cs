@@ -64,18 +64,18 @@ namespace ApartmentManagementSystem.Controllers
             return View();
         }
 
-        // GET: Register a new user
-        public async Task<IActionResult> RegisterUser()
+        // GET: Admin/CreateUser
+        public async Task<IActionResult> CreateUser()
         {
             var roles = await _roleManager.Roles.Where(r => r.Name != "SuperAdmin").ToListAsync();
             ViewData["Roles"] = new SelectList(roles, "Name", "Name");
             return View();
         }
 
-        // POST: Admin/RegisterUser
+        // POST: Admin/CreateUser
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RegisterUser(RegisterUserViewModel model)
+        public async Task<IActionResult> CreateUser(RegisterUserViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -92,6 +92,13 @@ namespace ApartmentManagementSystem.Controllers
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, model.SelectedRole);
+
+                    // Add the 'Owner' role if the user is a President
+                    if (model.SelectedRole == "President")
+                    {
+                        await _userManager.AddToRoleAsync(user, "Owner");
+                    }
+
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -101,12 +108,48 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            // THIS IS THE FIX: Re-populate the roles dropdown on validation failure
+            // Re-populate the roles dropdown on validation failure
             var roles = _roleManager.Roles.Where(r => r.Name != "SuperAdmin").ToList();
             ViewData["Roles"] = new SelectList(roles, "Name", "Name");
-
-            // Return the view with the model to display any errors
             return View(model);
+        }
+
+        // GET: Admin/ApproveOwners
+        [Authorize(Roles = "SuperAdmin,President")]
+        public async Task<IActionResult> ApproveOwners()
+        {
+            // Find all users who are not assigned a role yet
+            var users = await _userManager.GetUsersInRoleAsync("User");
+            // Find users who are not in any of the specific roles
+            //var users = _context.Users.Where(u => !u.Roles.Any()).ToListAsync();
+            return View(users);
+        }
+
+        // POST: Admin/ApproveOwner/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "SuperAdmin,President")]
+        public async Task<IActionResult> ApproveOwner(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            // Add the "Owner" role to the user
+            var result = await _userManager.AddToRoleAsync(user, "Owner");
+
+            // Remove the default "User" role if needed
+            // await _userManager.RemoveFromRoleAsync(user, "User");
+
+            if (!result.Succeeded)
+            {
+                // Handle errors if role assignment fails
+                TempData["Error"] = "Failed to approve owner.";
+            }
+
+            return RedirectToAction(nameof(ApproveOwners));
         }
     }
 }
