@@ -19,5 +19,6 @@ namespace ApartmentManagementSystem.Models
         public Guid FlatId { get; set; }
         [ForeignKey("FlatId")]
         public virtual Flat? Flat { get; set; }
+        public ICollection<Rent> Rents { get; set; } = new List<Rent>();
     }
 }
