@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner")]
+    //[Authorize(Roles = "Owner")]
     public class TenantController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -79,7 +79,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(tenant);
         }
 
-        // GET: Tenant/Details/{id}
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -89,7 +88,8 @@ namespace ApartmentManagementSystem.Controllers
 
             var user = await _userManager.GetUserAsync(User);
             var tenant = await _context.Tenants
-                .Include(t => t.Flat) // Eager load the related Flat
+                .Include(t => t.Flat)
+                .Include(t => t.Rents) // Add this line to eagerly load rents
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (tenant == null)
@@ -98,7 +98,7 @@ namespace ApartmentManagementSystem.Controllers
             }
 
             // Security check: only the flat's owner can see tenant details
-            if (tenant.Flat.OwnerId != user.Id)
+            if (tenant.Flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin"))
             {
                 return Forbid();
             }

@@ -1,48 +1,49 @@
 ﻿@model ApartmentManagementSystem.Models.Tenant
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Tenant Details";
 }
 
-<h1>Details</h1>
+<h1>Tenant Details</h1>
 
 <div>
-    <h4>Tenant</h4>
     <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Fullname)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Fullname)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Email)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Email)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PhoneNumber)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PhoneNumber)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.IsActive)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.IsActive)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Flat)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Flat.FlatNumber)
-        </dd>
-    </dl>
+    <h4>Rent Payment History</h4>
+    @if (Model.Rents != null && Model.Rents.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Payment Date</th>
+                    <th>Amount</th>
+                    <th>Notes</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var rent in Model.Rents.OrderByDescending(r => r.PaymentDate))
+                {
+                    <tr>
+                        <td>@rent.PaymentDate.ToShortDateString()</td>
+                        <td>@rent.Amount.ToString("C")</td>
+                        <td>@rent.Notes</td>
+                        <td>
+                            <a asp-controller="Rent" asp-action="Edit" asp-route-id="@rent.Id">Edit</a> |
+                            <a asp-controller="Rent" asp-action="Delete" asp-route-id="@rent.Id">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>No rent payments have been recorded for this tenant.</p>
+    }
 </div>
+
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    <a asp-controller="Rent" asp-action="Create" asp-route-tenantId="@Model.Id" class="btn btn-primary">Record New Payment</a>
+
+    <a asp-action="Index" asp-route-flatId="@Model.FlatId">Back to List</a>
 </div>

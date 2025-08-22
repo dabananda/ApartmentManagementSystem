@@ -17,6 +17,6 @@ namespace ApartmentManagementSystem.Models
         public string? Notes { get; set; }
         public Guid TenantId { get; set; }
         [ForeignKey("TenantId")]
-        public virtual Tenant Tenant { get; set; }
+        public virtual Tenant? Tenant { get; set; }
     }
 }

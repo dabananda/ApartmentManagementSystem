@@ -115,29 +115,33 @@ namespace ApartmentManagementSystem.Controllers
         // POST: Flat/AssignOwner
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "SuperAdmin,President")]
-        public async Task<IActionResult> AssignOwner(AssignOwnerViewModel viewModel)
+        public async Task<IActionResult> AssignOwner(AssignOwnerViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var flat = await _context.Flats.FindAsync(viewModel.FlatId);
+                var flat = await _context.Flats.FindAsync(model.FlatId);
                 if (flat == null)
                 {
                     return NotFound();
                 }
 
-                // Assign the owner to the flat
-                flat.OwnerId = viewModel.OwnerId;
+                flat.OwnerId = model.OwnerId;
+                flat.IsOccupied = !string.IsNullOrEmpty(model.OwnerId);
+
+                _context.Update(flat);
                 await _context.SaveChangesAsync();
 
-                // Redirect back to the flats list for the same building
+                TempData["SuccessMessage"] = "Owner assigned successfully.";
+
                 return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
             }
 
-            // If the model state is not valid, re-populate the ViewModel and return the view
+            // If model state is invalid, re-populate the view model
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
-            viewModel.Owners = new SelectList(owners, "Id", "Fullname");
-            return View(viewModel);
+            model.Owners = new SelectList(owners, "Id", "Fullname");
+            model.Flats = new SelectList(_context.Flats.ToList(), "Id", "FlatNumber");
+
+            return View(model);
         }
 
         // GET: Flat/MyFlats
