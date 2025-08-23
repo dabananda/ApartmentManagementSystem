@@ -28,10 +28,17 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> AssignPresident()
         {
             var buildings = await _context.Buildings.ToListAsync();
-            var presidents = await _userManager.GetUsersInRoleAsync("President");
+            var owners = await _userManager.GetUsersInRoleAsync("Owner");
+
+            // Display both Fullname and Email in the dropdown
+            var ownersSelectList = owners.Select(o => new SelectListItem
+            {
+                Value = o.Id,
+                Text = $"{o.Fullname} ({o.Email})"
+            }).ToList();
 
             ViewData["Buildings"] = new SelectList(buildings, "Id", "Name");
-            ViewData["Presidents"] = new SelectList(presidents, "Id", "UserName");
+            ViewData["Owners"] = ownersSelectList;
 
             return View();
         }
@@ -50,41 +57,48 @@ namespace ApartmentManagementSystem.Controllers
                     return View(model);
                 }
 
-                // Unassign existing president from the building
-                var oldPresident = await _context.Users.FirstOrDefaultAsync(u => u.BuildingId == model.BuildingId);
-                if (oldPresident != null)
+                var isPresident = await _userManager.IsInRoleAsync(user, "President");
+                if (isPresident)
                 {
-                    oldPresident.BuildingId = null;
-                    await _userManager.UpdateAsync(oldPresident);
-                    // Optionally remove the "President" role from the old president
-                    // await _userManager.RemoveFromRoleAsync(oldPresident, "President");
+                    ModelState.AddModelError(string.Empty, "User is already a president.");
+                    return View(model);
                 }
 
-                // Assign the new president to the building
+                var result = await _userManager.AddToRoleAsync(user, "President");
+                if (!result.Succeeded)
+                {
+                    ModelState.AddModelError(string.Empty, "Failed to assign president role.");
+                    return View(model);
+                }
+
                 user.BuildingId = model.BuildingId;
                 var updateResult = await _userManager.UpdateAsync(user);
 
                 if (updateResult.Succeeded)
                 {
-                    // Add the "President" role to the user
-                    await _userManager.AddToRoleAsync(user, "President");
-
-                    TempData["SuccessMessage"] = "President assigned successfully.";
-                    return RedirectToAction("Index", "Home");
+                    TempData["Success"] = "President assigned successfully.";
+                    return RedirectToAction(nameof(AssignPresident));
                 }
-
-                foreach (var error in updateResult.Errors)
+                else
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
+                    TempData["Error"] = "Failed to update user's building.";
+                    await _userManager.RemoveFromRoleAsync(user, "President");
+                    return View(model);
                 }
             }
 
-            // If model state is invalid, re-populate the view model
             var buildings = await _context.Buildings.ToListAsync();
-            var users = await _userManager.GetUsersInRoleAsync("Owner");
+            var owners = await _userManager.GetUsersInRoleAsync("Owner");
 
-            model.Buildings = new SelectList(buildings, "Id", "Name");
-            model.Users = new SelectList(users, "Id", "Fullname");
+            // Repopulate the dropdown with both Fullname and Email on validation failure
+            var ownersSelectListOnFail = owners.Select(o => new SelectListItem
+            {
+                Value = o.Id,
+                Text = $"{o.Fullname} ({o.Email})"
+            }).ToList();
+
+            ViewData["Buildings"] = new SelectList(buildings, "Id", "Name", model.BuildingId);
+            ViewData["Owners"] = ownersSelectListOnFail;
 
             return View(model);
         }
