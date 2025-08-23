@@ -1,0 +1,120 @@
+﻿@model ApartmentManagementSystem.ViewModels.OwnerDashboardViewModel
+
+@{
+    ViewData["Title"] = "Owner Dashboard";
+}
+
+<h1>Owner Dashboard</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-light mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Welcome, @Model.OwnerName!</h5>
+                <p class="card-text">
+                    <strong>Building:</strong> @Model.BuildingName<br />
+                    <strong>Address:</strong> @Model.BuildingAddress<br />
+                    <strong>Flats Owned:</strong> @Model.TotalFlatsOwned
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-info text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalBillsDue)</h5>
+                <h2 class="card-text">@Model.TotalBillsDue.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalBillsPaid)</h5>
+                <h2 class="card-text">@Model.TotalBillsPaid.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalRentCollected)</h5>
+                <h2 class="card-text">@Model.TotalRentCollected.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card @(Model.FinancialBalance >= 0 ? "bg-success" : "bg-danger") text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.FinancialBalance)</h5>
+                <h2 class="card-text">@Model.FinancialBalance.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h4>My Common Bill Allocations</h4>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Bill Name</th>
+                    <th>Amount Due</th>
+                    <th>Status</th>
+                    <th>Payment Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var allocation in Model.ExpenseAllocations.OrderByDescending(a => a.CommonBill.BillDate))
+                {
+                    <tr>
+                        <td>@allocation.CommonBill.Name</td>
+                        <td>@allocation.AmountDue.ToString("C")</td>
+                        <td>
+                            @if (allocation.IsPaid)
+                            {
+                                <span class="badge bg-success">Paid</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Due</span>
+                            }
+                        </td>
+                        <td>@allocation.PaymentDate?.ToString("d")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-6">
+        <h4>My Rent Collections</h4>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>Amount</th>
+                    <th>Payment Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var rent in Model.RentCollections.OrderByDescending(r => r.PaymentDate))
+                {
+                    <tr>
+                        <td>@rent.Tenant.Fullname</td>
+                        <td>@rent.Amount.ToString("C")</td>
+                        <td>@rent.PaymentDate.ToString("d")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
