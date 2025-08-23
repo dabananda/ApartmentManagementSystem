@@ -44,13 +44,33 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            // Populate a dropdown list of unpaid bills for the President to select
-            var unpaidBills = await _context.CommonBills
-                                            .Where(b => b.BuildingId == buildingId)
-                                            .Where(b => !_context.ExpensePayments.Any(p => p.CommonBillId == b.Id))
+            // Get a list of all payments for the building, grouped by CommonBillId
+            var paidAmounts = await _context.ExpensePayments
+                                            .Where(p => p.BuildingId == buildingId)
+                                            .GroupBy(p => p.CommonBillId)
+                                            .Select(g => new { CommonBillId = g.Key, PaidAmount = g.Sum(p => p.Amount) })
                                             .ToListAsync();
 
-            ViewData["CommonBillId"] = new SelectList(unpaidBills, "Id", "Name");
+            // Get all common bills for the building and calculate the outstanding amount
+            var bills = await _context.CommonBills
+                                      .Where(b => b.BuildingId == buildingId)
+                                      .ToListAsync();
+
+            var unpaidBills = bills.Select(b => new
+            {
+                b.Id,
+                b.Name,
+                Outstanding = b.TotalAmount - (paidAmounts.FirstOrDefault(p => p.CommonBillId == b.Id)?.PaidAmount ?? 0)
+            })
+            .Where(b => b.Outstanding > 0)
+            .Select(b => new SelectListItem
+            {
+                Value = b.Id.ToString(),
+                Text = $"{b.Name} (Outstanding: {b.Outstanding:C})"
+            })
+            .ToList();
+
+            ViewData["CommonBillId"] = unpaidBills;
             ViewData["BuildingId"] = buildingId;
             return View();
         }
@@ -65,17 +85,54 @@ namespace ApartmentManagementSystem.Controllers
 
             if (ModelState.IsValid)
             {
-                await _context.AddAsync(payment);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index), new { buildingId = payment.BuildingId });
+                // Calculate the remaining balance of the bill
+                var paidSoFar = await _context.ExpensePayments
+                                              .Where(p => p.CommonBillId == payment.CommonBillId)
+                                              .SumAsync(p => p.Amount);
+
+                var bill = await _context.CommonBills.FindAsync(payment.CommonBillId);
+                var remainingAmount = bill.TotalAmount - paidSoFar;
+
+                if (payment.Amount > remainingAmount)
+                {
+                    ModelState.AddModelError("Amount", $"Payment amount cannot exceed the remaining balance of {remainingAmount:C}.");
+                }
+
+                if (ModelState.IsValid)
+                {
+                    _context.Add(payment);
+                    await _context.SaveChangesAsync();
+                    TempData["Success"] = "Payment recorded successfully.";
+                    return RedirectToAction(nameof(Index), new { buildingId = payment.BuildingId });
+                }
             }
 
             // Repopulate the dropdown if model state is invalid
-            var unpaidBills = await _context.CommonBills
+            var paidAmountsOnFail = await _context.ExpensePayments
+                                                  .Where(p => p.BuildingId == payment.BuildingId)
+                                                  .GroupBy(p => p.CommonBillId)
+                                                  .Select(g => new { CommonBillId = g.Key, PaidAmount = g.Sum(p => p.Amount) })
+                                                  .ToListAsync();
+
+            var billsOnFail = await _context.CommonBills
                                             .Where(b => b.BuildingId == payment.BuildingId)
-                                            .Where(b => !_context.ExpensePayments.Any(p => p.CommonBillId == b.Id))
                                             .ToListAsync();
-            ViewData["CommonBillId"] = new SelectList(unpaidBills, "Id", "Name", payment.CommonBillId);
+
+            var unpaidBillsOnFail = billsOnFail.Select(b => new
+            {
+                b.Id,
+                b.Name,
+                Outstanding = b.TotalAmount - (paidAmountsOnFail.FirstOrDefault(p => p.CommonBillId == b.Id)?.PaidAmount ?? 0)
+            })
+            .Where(b => b.Outstanding > 0)
+            .Select(b => new SelectListItem
+            {
+                Value = b.Id.ToString(),
+                Text = $"{b.Name} (Outstanding: {b.Outstanding:C})"
+            })
+            .ToList();
+
+            ViewData["CommonBillId"] = unpaidBillsOnFail;
             ViewData["BuildingId"] = payment.BuildingId;
             return View(payment);
         }
