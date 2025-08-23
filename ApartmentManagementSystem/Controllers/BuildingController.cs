@@ -22,7 +22,20 @@ namespace ApartmentManagementSystem.Controllers
         // GET: Buildings
         public async Task<IActionResult> Index()
         {
-            var buildings = await _context.Buildings.ToListAsync();
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Forbid();
+
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+
+            IQueryable<Building> buildingsQuery = _context.Buildings;
+
+            // If the user is a President, filter the buildings by their assigned BuildingId
+            if (!isSuperAdmin)
+            {
+                buildingsQuery = buildingsQuery.Where(b => b.Id == user.BuildingId);
+            }
+
+            var buildings = await buildingsQuery.ToListAsync();
             return View(buildings);
         }
 
@@ -32,19 +45,13 @@ namespace ApartmentManagementSystem.Controllers
             var building = await _context.Buildings
                 .Include(b => b.Flats)
                 .FirstOrDefaultAsync(b => b.Id == id);
-            if (building == null)
-            {
-                return NotFound();
-            }
+            if (building == null) return NotFound();
 
             // Check for President can only see their assigned building
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
-                if (user.BuildingId != building.Id)
-                {
-                    return Forbid();
-                }
+                if (user.BuildingId != building.Id) return Forbid();
             }
             return View(building);
         }
@@ -70,7 +77,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Buildings Edit View
-        public async Task<IActionResult> Edit(Guid id) 
+        public async Task<IActionResult> Edit(Guid id)
         {
             var building = await _context.Buildings.FindAsync(id);
             if (building == null) return NotFound();
