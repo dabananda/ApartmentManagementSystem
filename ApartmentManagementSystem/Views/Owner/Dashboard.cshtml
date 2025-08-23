@@ -4,117 +4,150 @@
     ViewData["Title"] = "Owner Dashboard";
 }
 
-<h1>Owner Dashboard</h1>
+<h1 class="mb-4">Owner Dashboard</h1>
 <hr />
 
-<div class="row">
+<div class="row mb-4">
     <div class="col-md-12">
-        <div class="card bg-light mb-4">
+        <div class="card bg-light">
             <div class="card-body">
-                <h5 class="card-title">Welcome, @Model.OwnerName!</h5>
-                <p class="card-text">
-                    <strong>Building:</strong> @Model.BuildingName<br />
-                    <strong>Address:</strong> @Model.BuildingAddress<br />
-                    <strong>Flats Owned:</strong> @Model.TotalFlatsOwned
+                <h5 class="card-title">Welcome, @Model.OwnerName! 👋</h5>
+                <p class="card-text text-muted">
+                    This dashboard provides a quick overview of your flats and finances in **@Model.BuildingName**.
                 </p>
+                <a asp-action="MyFlats" class="btn btn-outline-primary">View My Flats</a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card bg-info text-white mb-4">
+<div class="row text-center mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-success text-white h-100">
             <div class="card-body">
-                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalBillsDue)</h5>
-                <h2 class="card-text">@Model.TotalBillsDue.ToString("C")</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white mb-4">
-            <div class="card-body">
-                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalBillsPaid)</h5>
-                <h2 class="card-text">@Model.TotalBillsPaid.ToString("C")</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-primary text-white mb-4">
-            <div class="card-body">
-                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalRentCollected)</h5>
+                <h5 class="card-title">Total Rent Collected</h5>
                 <h2 class="card-text">@Model.TotalRentCollected.ToString("C")</h2>
             </div>
         </div>
     </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Total Bills Paid</h5>
+                <h2 class="card-text">@Model.TotalBillsPaid.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Total Bills Due</h5>
+                <h2 class="card-text">@Model.TotalBillsDue.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card @(Model.FinancialBalance >= 0 ? "bg-success" : "bg-danger") text-white mb-4">
+<div class="row text-center mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white h-100">
             <div class="card-body">
-                <h5 class="card-title">@Html.DisplayNameFor(model => model.FinancialBalance)</h5>
+                <h5 class="card-title">Flats Owned</h5>
+                <h2 class="card-text">@Model.TotalFlatsOwned</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Occupied Flats</h5>
+                <h2 class="card-text">@Model.OccupiedFlats</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Vacant Flats</h5>
+                <h2 class="card-text">@Model.VacantFlats</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-secondary text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Financial Balance</h5>
                 <h2 class="card-text">@Model.FinancialBalance.ToString("C")</h2>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <h4>My Common Bill Allocations</h4>
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>Bill Name</th>
-                    <th>Amount Due</th>
-                    <th>Status</th>
-                    <th>Payment Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var allocation in Model.ExpenseAllocations.OrderByDescending(a => a.CommonBill.BillDate))
-                {
-                    <tr>
-                        <td>@allocation.CommonBill.Name</td>
-                        <td>@allocation.AmountDue.ToString("C")</td>
-                        <td>
-                            @if (allocation.IsPaid)
-                            {
-                                <span class="badge bg-success">Paid</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">Due</span>
-                            }
-                        </td>
-                        <td>@allocation.PaymentDate?.ToString("d")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <h4><i class="fas fa-file-invoice"></i> Common Bills</h4>
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Bill Name</th>
+                            <th>Amount Due</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var allocation in Model.ExpenseAllocations.OrderByDescending(a => a.CommonBill?.BillDate).Take(5))
+                        {
+                            <tr>
+                                <td>@allocation.CommonBill?.Name</td>
+                                <td>@allocation.AmountDue.ToString("C")</td>
+                                <td>
+                                    @if (allocation.IsPaid)
+                                    {
+                                        <span class="badge bg-success">Paid</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Due</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <div class="col-md-6">
-        <h4>My Rent Collections</h4>
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>Tenant</th>
-                    <th>Amount</th>
-                    <th>Payment Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var rent in Model.RentCollections.OrderByDescending(r => r.PaymentDate))
-                {
-                    <tr>
-                        <td>@rent.Tenant.Fullname</td>
-                        <td>@rent.Amount.ToString("C")</td>
-                        <td>@rent.PaymentDate.ToString("d")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="col-md-6 mb-4">
+        <h4><i class="fas fa-dollar-sign"></i> Rent Collections</h4>
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Flat</th>
+                            <th>Tenant</th>
+                            <th>Amount</th>
+                            <th>Payment Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rent in Model.RentCollections.OrderByDescending(r => r.PaymentDate).Take(5))
+                        {
+                            <tr>
+                                <td>@rent.Tenant?.Flat?.FlatNumber</td>
+                                <td>@rent.Tenant?.Fullname</td>
+                                <td>@rent.Amount.ToString("C")</td>
+                                <td>@rent.PaymentDate.ToString("d")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>

@@ -1,0 +1,93 @@
+﻿@model IEnumerable<ApartmentManagementSystem.ViewModels.OwnerFlatsViewModel>
+
+@{
+    ViewData["Title"] = "My Flats";
+}
+
+<h1>My Flats</h1>
+<hr />
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Flats Owned</h5>
+                <p class="card-text h2">@Model.Count()</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Occupied Flats</h5>
+                <p class="card-text h2">@Model.Count(f => f.IsOccupied)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Vacant Flats</h5>
+                <p class="card-text h2">@Model.Count(f => !f.IsOccupied)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Flat Number</th>
+            <th>Building</th>
+            <th>Status</th>
+            <th>Tenants</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var flat in Model)
+        {
+            <tr>
+                <td>@flat.FlatNumber</td>
+                <td>@flat.BuildingName</td>
+                <td>
+                    @if (flat.IsOccupied)
+                    {
+                        <span class="badge bg-success">Occupied</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Vacant</span>
+                    }
+                </td>
+                <td>
+                    @if (flat.Tenants != null && flat.Tenants.Any(t => t.IsActive))
+                    {
+                        @foreach (var tenant in flat.Tenants.Where(t => t.IsActive))
+                        {
+                            <div class="mb-2">
+                                <strong>Name:</strong> @tenant.Fullname <br />
+                                @* <strong>Email:</strong> @tenant.Email <br /> *@
+                                <strong>Phone:</strong> @tenant.PhoneNumber
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <span>No active tenants assigned.</span>
+                    }
+                </td>
+                <td>
+                    <a asp-controller="Tenant" asp-action="Create" asp-route-flatId="@flat.Id" class="btn btn-sm btn-primary mb-1">Add Tenant</a>
+                    <a asp-controller="Tenant" asp-action="ViewTenants" asp-route-flatId="@flat.Id" class="btn btn-sm btn-secondary mb-1">View Tenants</a>
+                    <form asp-controller="Owner" asp-action="ToggleFlatOccupancy" asp-route-id="@flat.Id" method="post" style="display:inline;">
+                        <input type="hidden" name="IsOccupied" value="@flat.IsOccupied" />
+                        <button type="submit" class="btn btn-sm @(flat.IsOccupied ? "btn-warning" : "btn-success") mb-1">
+                            @(flat.IsOccupied ? "Mark Vacant" : "Mark Occupied")
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

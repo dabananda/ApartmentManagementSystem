@@ -28,10 +28,10 @@
         @if (User.IsInRole("Owner"))
         {
             <li class="nav-item">
-                <a class="nav-link text-dark" asp-area="" asp-controller="Flat" asp-action="MyFlats">My Flats</a>
+                <a class="nav-link text-dark" asp-area="" asp-controller="Owner" asp-action="Dashboard">Dashboard</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-dark" asp-area="" asp-controller="Owner" asp-action="Dashboard">My Dashboard</a>
+                <a class="nav-link text-dark" asp-area="" asp-controller="Owner" asp-action="MyFlats">Flats</a>
             </li>
         }
 

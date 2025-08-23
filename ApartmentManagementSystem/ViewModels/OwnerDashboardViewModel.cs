@@ -5,10 +5,13 @@ namespace ApartmentManagementSystem.ViewModels
 {
     public class OwnerDashboardViewModel
     {
-        public string OwnerName { get; set; }
-        public string BuildingName { get; set; }
-        public string BuildingAddress { get; set; }
+        public string? OwnerName { get; set; }
+        public string? BuildingName { get; set; }
+        public string? BuildingAddress { get; set; }
+
         public int TotalFlatsOwned { get; set; }
+        public int OccupiedFlats { get; set; }
+        public int VacantFlats { get; set; }
 
         [Display(Name = "Total Bills Due")]
         public decimal TotalBillsDue { get; set; }
@@ -22,7 +25,7 @@ namespace ApartmentManagementSystem.ViewModels
         [Display(Name = "Financial Balance")]
         public decimal FinancialBalance { get; set; }
 
-        public ICollection<ExpenseAllocation> ExpenseAllocations { get; set; }
-        public ICollection<Rent> RentCollections { get; set; }
+        public IEnumerable<ExpenseAllocation>? ExpenseAllocations { get; set; }
+        public IEnumerable<Rent>? RentCollections { get; set; }
     }
 }

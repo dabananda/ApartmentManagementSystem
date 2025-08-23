@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace ApartmentManagementSystem.Controllers
 {
@@ -37,7 +38,7 @@ namespace ApartmentManagementSystem.Controllers
             var buildingName = ownedFlats.FirstOrDefault()?.Building.Name ?? "N/A";
             var buildingAddress = ownedFlats.FirstOrDefault()?.Building.Address ?? "N/A";
 
-            // Get all allocations for the current user
+            // Get all expense allocations for flats owned by the user
             var allAllocations = await _context.ExpenseAllocations
                                                .Include(a => a.CommonBill)
                                                .Where(a => a.OwnerId == user.Id)
@@ -49,6 +50,7 @@ namespace ApartmentManagementSystem.Controllers
             // Get all rent collections for flats owned by the user
             var rentCollections = await _context.Rents
                                                 .Include(r => r.Tenant)
+                                                .Include(r => r.Tenant.Flat) // Eagerly load flat to display flat number
                                                 .Where(r => r.Tenant.Flat.OwnerId == user.Id)
                                                 .ToListAsync();
 
@@ -60,6 +62,8 @@ namespace ApartmentManagementSystem.Controllers
                 BuildingName = buildingName,
                 BuildingAddress = buildingAddress,
                 TotalFlatsOwned = ownedFlats.Count,
+                OccupiedFlats = ownedFlats.Count(f => f.IsOccupied),
+                VacantFlats = ownedFlats.Count(f => !f.IsOccupied),
                 TotalBillsDue = totalBillsDue,
                 TotalBillsPaid = totalBillsPaid,
                 TotalRentCollected = totalRentCollected,
@@ -69,6 +73,54 @@ namespace ApartmentManagementSystem.Controllers
             };
 
             return View(viewModel);
+        }
+
+        // GET: Owner/MyFlats
+        public async Task<IActionResult> MyFlats()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Forbid();
+            }
+
+            // Get all flats owned by the current user and eagerly load the Building and Tenants
+            var ownedFlats = await _context.Flats
+                                           .Include(f => f.Building)
+                                           .Include(f => f.Tenants)
+                                           .Where(f => f.OwnerId == user.Id)
+                                           .ToListAsync();
+
+            var viewModel = ownedFlats.Select(f => new OwnerFlatsViewModel
+            {
+                Id = f.Id,
+                FlatNumber = f.FlatNumber,
+                BuildingName = f.Building.Name,
+                IsOccupied = f.IsOccupied,
+                Tenants = f.Tenants
+            }).ToList();
+
+            return View(viewModel);
+        }
+
+        // POST: Owner/ToggleFlatOccupancy/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleFlatOccupancy(Guid id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var flat = await _context.Flats.FirstOrDefaultAsync(f => f.Id == id);
+
+            if (flat == null || (flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
+
+            flat.IsOccupied = !flat.IsOccupied; // Toggle the status
+            _context.Update(flat);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(MyFlats));
         }
     }
 }

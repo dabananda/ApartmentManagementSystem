@@ -138,20 +138,5 @@ namespace ApartmentManagementSystem.Controllers
 
             return View(model);
         }
-
-        // GET: Flat/MyFlats
-        [Authorize(Roles = "Owner")]
-        public async Task<IActionResult> MyFlats()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
-
-            var myFlats = await _context.Flats
-                .Include(f => f.Building)
-                .Where(f => f.OwnerId == user.Id)
-                .ToListAsync();
-
-            return View("Index", myFlats);
-        }
     }
 }

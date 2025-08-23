@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,SuperAdmin")]
     public class TenantController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -19,17 +20,24 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: Tenant
-        public async Task<IActionResult> Index(Guid? flatId)
+        // GET: Tenant/ViewTenants/{flatId}
+        public async Task<IActionResult> ViewTenants(Guid? flatId)
         {
             if (flatId == null) return NotFound();
+
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
-            var flat = await _context.Flats.Include(f => f.Tenants).FirstOrDefaultAsync(x => x.Id == flatId);
-            if (flat == null) return NotFound();
-            if (flat.OwnerId != user.Id) return Forbid();
-            ViewData["FlatId"] = flatId;
+            if (user == null) return Forbid();
+
+            var flat = await _context.Flats.Include(f => f.Tenants).FirstOrDefaultAsync(f => f.Id == flatId);
+
+            if (flat == null || (flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
+
             ViewData["FlatNumber"] = flat.FlatNumber;
+            ViewData["FlatId"] = flat.Id;
+
             return View(flat.Tenants);
         }
 
@@ -38,60 +46,46 @@ namespace ApartmentManagementSystem.Controllers
         {
             if (flatId == null) return NotFound();
 
-            // Get the current logged-in user and the flat
             var user = await _userManager.GetUserAsync(User);
-            var flat = await _context.Flats.FindAsync(flatId);
+            var flat = await _context.Flats.FirstOrDefaultAsync(x => x.Id == flatId);
 
-            if (flat == null) return NotFound();
+            if (flat == null || (flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
 
-            // Security check: an Owner can only create tenants for their flats
-            if (flat.OwnerId != user.Id) return Forbid();
-
-            // Pass the FlatId to the view for the form submission
-            ViewData["FlatId"] = flat.Id;
+            ViewData["FlatId"] = flatId;
             return View();
         }
 
         // POST: Tenant/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Fullname,Email,PhoneNumber,FlatId")] Tenant tenant)
+        public async Task<IActionResult> Create([Bind("Fullname,Email,PhoneNumber,IsActive,FlatId")] Tenant tenant)
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
+            var flat = await _context.Flats.FirstOrDefaultAsync(f => f.Id == tenant.FlatId);
 
-            var flat = await _context.Flats.FindAsync(tenant.FlatId);
-            if (flat == null || flat.OwnerId != user.Id) return Forbid();
-
-            if (ModelState.IsValid)
-            {
-                await _context.Tenants.AddAsync(tenant);
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
-            }
-
-            ViewData["FlatId"] = tenant.FlatId;
-            return View(tenant);
-        }
-
-        public async Task<IActionResult> Details(Guid? id)
-        {
-            if (id == null) return NotFound();
-
-            var user = await _userManager.GetUserAsync(User);
-            var tenant = await _context.Tenants
-                .Include(t => t.Flat)
-                .Include(t => t.Rents)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (tenant == null) return NotFound();
-
-            if (tenant.Flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin"))
+            if (flat == null || (flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
             {
                 return Forbid();
             }
 
+            if (ModelState.IsValid)
+            {
+                tenant.Id = Guid.NewGuid();
+                _context.Add(tenant);
+                // Mark the flat as occupied if it's not already
+                if (!flat.IsOccupied)
+                {
+                    flat.IsOccupied = true;
+                    _context.Update(flat);
+                }
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(ViewTenants), new { flatId = tenant.FlatId });
+            }
+
+            ViewData["FlatId"] = tenant.FlatId;
             return View(tenant);
         }
 
@@ -103,9 +97,12 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(t => t.Id == id);
 
-            if (tenant == null) return NotFound();
-            if (tenant.Flat.OwnerId != user.Id) return Forbid();
+            if (tenant == null || (tenant.Flat?.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
 
+            ViewData["FlatId"] = tenant.FlatId;
             return View(tenant);
         }
 
@@ -117,28 +114,57 @@ namespace ApartmentManagementSystem.Controllers
             if (id != tenant.Id) return NotFound();
 
             var user = await _userManager.GetUserAsync(User);
-            var existingFlat = await _context.Flats.FindAsync(tenant.FlatId);
-
-            if (existingFlat.OwnerId != user.Id) return Forbid();
+            var existingTenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(t => t.Id == id);
+            if (existingTenant == null || (existingTenant.Flat?.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(tenant);
+                    // Update the existing tenant with the new values from the form
+                    existingTenant.Fullname = tenant.Fullname;
+                    existingTenant.Email = tenant.Email;
+                    existingTenant.PhoneNumber = tenant.PhoneNumber;
+                    existingTenant.IsActive = tenant.IsActive;
+
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!_context.Tenants.Any(e => e.Id == tenant.Id)) return NotFound();
-                    else throw;
+                    if (!_context.Tenants.Any(e => e.Id == id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
                 }
-                return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
+                return RedirectToAction(nameof(ViewTenants), new { flatId = existingTenant.FlatId });
             }
 
             ViewData["FlatId"] = tenant.FlatId;
             return View(tenant);
         }
+
+        // GET: Tenant/Details/{id}
+        public async Task<IActionResult> Details(Guid? id)
+        {
+            if (id == null) return NotFound();
+
+            var user = await _userManager.GetUserAsync(User);
+            var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(m => m.Id == id);
+
+            if (tenant == null || (tenant.Flat?.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
+            return View(tenant);
+        }
+
 
         // GET: Tenant/Delete/{id}
         public async Task<IActionResult> Delete(Guid? id)
@@ -146,12 +172,12 @@ namespace ApartmentManagementSystem.Controllers
             if (id == null) return NotFound();
 
             var user = await _userManager.GetUserAsync(User);
-            var tenant = await _context.Tenants
-                .Include(t => t.Flat)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(m => m.Id == id);
 
-            if (tenant == null) return NotFound();
-            if (tenant.Flat.OwnerId != user.Id) return Forbid();
+            if (tenant == null || (tenant.Flat?.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
 
             return View(tenant);
         }
@@ -164,14 +190,28 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(t => t.Id == id);
 
-            if (tenant == null) return NotFound();
-
-            if (tenant.Flat.OwnerId != user.Id) return Forbid();
+            if (tenant == null || (tenant.Flat?.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
 
             _context.Tenants.Remove(tenant);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
+            // Check if any other tenants exist for this flat. If not, mark it as vacant.
+            var remainingTenants = await _context.Tenants.AnyAsync(t => t.FlatId == tenant.FlatId);
+            if (!remainingTenants)
+            {
+                var flat = await _context.Flats.FirstOrDefaultAsync(f => f.Id == tenant.FlatId);
+                if (flat != null)
+                {
+                    flat.IsOccupied = false;
+                    _context.Update(flat);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            return RedirectToAction(nameof(ViewTenants), new { flatId = tenant.FlatId });
         }
     }
 }

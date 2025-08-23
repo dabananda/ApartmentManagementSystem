@@ -1,0 +1,54 @@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.Tenant>
+
+@{
+    ViewData["Title"] = "Tenants for Flat " + ViewData["FlatNumber"];
+}
+
+<h1>Tenants for Flat @ViewData["FlatNumber"]</h1>
+<hr />
+
+<p>
+    <a asp-action="Create" asp-route-flatId="@ViewData["FlatId"]" class="btn btn-primary">Add New Tenant</a>
+</p>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone Number</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Fullname)</td>
+                <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                <td>@Html.DisplayFor(modelItem => item.PhoneNumber)</td>
+                <td>
+                    @if (item.IsActive)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Inactive</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                    <a asp-controller="Rent" asp-action="Index" asp-route-tenantId="@item.Id" class="btn btn-sm btn-secondary">View Rents</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div>
+    <a asp-controller="Owner" asp-action="MyFlats" class="btn btn-secondary">Back to My Flats</a>
+</div>

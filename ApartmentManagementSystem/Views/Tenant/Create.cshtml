@@ -1,19 +1,17 @@
 ﻿@model ApartmentManagementSystem.Models.Tenant
 
 @{
-    ViewData["Title"] = "Create Tenant";
+    ViewData["Title"] = "Add New Tenant";
 }
 
-<h1>Create Tenant</h1>
-
-<h4>Flat: @ViewData["FlatNumber"]</h4>
+<h1>Add New Tenant</h1>
 <hr />
+
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <input type="hidden" asp-for="FlatId" value="@ViewData["FlatId"]" />
+            <input type="hidden" name="FlatId" value="@ViewData["FlatId"]" />
 
             <div class="form-group">
                 <label asp-for="Fullname" class="control-label"></label>
@@ -35,19 +33,10 @@
                     <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
                 </label>
             </div>
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-action="ViewTenants" asp-route-flatId="@ViewData["FlatId"]" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>
 </div>
-
-<div>
-    <a asp-action="Index" asp-route-flatId="@ViewData["FlatId"]">Back to List</a>
-</div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
