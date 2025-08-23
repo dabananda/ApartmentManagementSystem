@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = "Financial Report";
+}
+
+<h1>Financial Report for @ViewBag.BuildingName</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-danger text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Total Expenses</h5>
+                <h2 class="card-text">@ViewBag.TotalExpenses.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Total Collected</h5>
+                <h2 class="card-text">@ViewBag.TotalCollected.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card @(ViewBag.Balance >= 0 ? "bg-primary" : "bg-warning") text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Balance</h5>
+                <h2 class="card-text">@ViewBag.Balance.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <a asp-controller="Building" asp-action="MyBuildings" class="btn btn-secondary">Back to My Buildings</a>
+</div>

@@ -17,6 +17,7 @@ namespace ApartmentManagementSystem.Data
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Rent> Rents { get; set; }
         public DbSet<CommonExpense> CommonExpenses { get; set; }
+        public DbSet<ExpenseAllocation> ExpenseAllocations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

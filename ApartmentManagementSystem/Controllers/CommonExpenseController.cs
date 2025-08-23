@@ -64,17 +64,56 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> Create([Bind("Name,ExpenseDate,Amount,Notes,BuildingId")] CommonExpense expense)
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return NotFound();
-
-            if (user.BuildingId != expense.BuildingId && !User.IsInRole("SuperAdmin"))
+            if (user?.BuildingId != expense.BuildingId && !User.IsInRole("SuperAdmin"))
             {
                 return Forbid();
             }
 
             if (ModelState.IsValid)
             {
+                // Add the expense to the database
                 await _context.AddAsync(expense);
                 await _context.SaveChangesAsync();
+
+                // Get all owners of flats in this building
+                var owners = await _context.Flats
+                    .Where(f => f.BuildingId == expense.BuildingId && f.OwnerId != null)
+                    .Select(f => f.Owner)
+                    .Distinct()
+                    .ToListAsync();
+
+                // Count the total number of flats owned by these owners
+                var totalFlats = await _context.Flats
+                    .Where(f => f.BuildingId == expense.BuildingId && f.OwnerId != null)
+                    .CountAsync();
+
+                if (totalFlats > 0)
+                {
+                    // Calculate the amount due per flat
+                    var amountPerFlat = expense.Amount / totalFlats;
+
+                    // Create an ExpenseAllocation for each owner
+                    foreach (var owner in owners)
+                    {
+                        // Count how many flats this specific owner has
+                        var ownerFlatCount = await _context.Flats
+                            .CountAsync(f => f.BuildingId == expense.BuildingId && f.OwnerId == owner.Id);
+
+                        var amountDue = amountPerFlat * ownerFlatCount;
+
+                        var allocation = new ExpenseAllocation
+                        {
+                            CommonExpenseId = expense.Id,
+                            OwnerId = owner.Id,
+                            AmountDue = amountDue,
+                            IsPaid = false
+                        };
+                        await _context.AddAsync(allocation);
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
                 return RedirectToAction(nameof(Index), new { buildingId = expense.BuildingId });
             }
 

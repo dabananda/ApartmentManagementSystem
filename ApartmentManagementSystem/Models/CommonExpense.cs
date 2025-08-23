@@ -26,5 +26,7 @@ namespace ApartmentManagementSystem.Models
         public Guid BuildingId { get; set; }
         [ForeignKey("BuildingId")]
         public virtual Building? Building { get; set; }
+
+        public ICollection<ExpenseAllocation>? Allocations { get; set; } = new List<ExpenseAllocation>();
     }
 }

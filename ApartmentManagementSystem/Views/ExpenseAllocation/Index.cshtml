@@ -1,0 +1,59 @@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.ExpenseAllocation>
+
+@{
+    ViewData["Title"] = "Expense Allocations";
+}
+
+<h1>Allocations for @ViewData["ExpenseName"]</h1>
+<hr />
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Owner
+            </th>
+            <th>
+                Amount Due
+            </th>
+            <th>
+                Status
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Owner.Fullname)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.AmountDue)
+                </td>
+                <td>
+                    @if (item.IsPaid)
+                    {
+                        <span class="badge bg-success">Paid</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Unpaid</span>
+                    }
+                </td>
+                <td>
+                    @if (!item.IsPaid)
+                    {
+                        <form asp-action="MarkAsPaid" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Are you sure this has been paid?');">
+                            <button type="submit" class="btn btn-sm btn-success">Mark as Paid</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<div>
+    <a asp-controller="CommonExpense" asp-action="Index" asp-route-buildingId="@ViewData["BuildingId"]">Back to Expenses</a>
+</div>
