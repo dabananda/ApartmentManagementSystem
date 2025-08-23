@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    //[Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner")]
     public class TenantController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -57,11 +57,9 @@ namespace ApartmentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Fullname,Email,PhoneNumber,FlatId")] Tenant tenant)
         {
-            // Get the current logged-in user
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            // Get the flat from the database to perform the security check
             var flat = await _context.Flats.FindAsync(tenant.FlatId);
             if (flat == null || flat.OwnerId != user.Id) return Forbid();
 
@@ -70,34 +68,25 @@ namespace ApartmentManagementSystem.Controllers
                 await _context.Tenants.AddAsync(tenant);
                 await _context.SaveChangesAsync();
 
-                // Redirect back to the list of tenants for the same flat
                 return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
             }
 
-            // On validation failure, re-populate the FlatId
             ViewData["FlatId"] = tenant.FlatId;
             return View(tenant);
         }
 
         public async Task<IActionResult> Details(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var user = await _userManager.GetUserAsync(User);
             var tenant = await _context.Tenants
                 .Include(t => t.Flat)
-                .Include(t => t.Rents) // Add this line to eagerly load rents
+                .Include(t => t.Rents)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (tenant == null)
-            {
-                return NotFound();
-            }
+            if (tenant == null) return NotFound();
 
-            // Security check: only the flat's owner can see tenant details
             if (tenant.Flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin"))
             {
                 return Forbid();
@@ -109,27 +98,13 @@ namespace ApartmentManagementSystem.Controllers
         // GET: Tenant/Edit/{id}
         public async Task<IActionResult> Edit(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var user = await _userManager.GetUserAsync(User);
             var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(t => t.Id == id);
 
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-
-            // Security check: only the flat's owner can edit a tenant
-            if (tenant.Flat.OwnerId != user.Id)
-            {
-                return Forbid();
-            }
-
-            // Pass the FlatId to the view for form submission
-            ViewData["FlatId"] = tenant.FlatId;
+            if (tenant == null) return NotFound();
+            if (tenant.Flat.OwnerId != user.Id) return Forbid();
 
             return View(tenant);
         }
@@ -139,20 +114,12 @@ namespace ApartmentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Fullname,Email,PhoneNumber,IsActive,FlatId")] Tenant tenant)
         {
-            if (id != tenant.Id)
-            {
-                return NotFound();
-            }
+            if (id != tenant.Id) return NotFound();
 
-            // Get the current user
             var user = await _userManager.GetUserAsync(User);
             var existingFlat = await _context.Flats.FindAsync(tenant.FlatId);
 
-            // Security check: ensure the owner hasn't tampered with the flatId
-            if (existingFlat.OwnerId != user.Id)
-            {
-                return Forbid();
-            }
+            if (existingFlat.OwnerId != user.Id) return Forbid();
 
             if (ModelState.IsValid)
             {
@@ -163,19 +130,12 @@ namespace ApartmentManagementSystem.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!_context.Tenants.Any(e => e.Id == tenant.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!_context.Tenants.Any(e => e.Id == tenant.Id)) return NotFound();
+                    else throw;
                 }
                 return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
             }
 
-            // On validation failure, re-populate the FlatId
             ViewData["FlatId"] = tenant.FlatId;
             return View(tenant);
         }
@@ -183,26 +143,15 @@ namespace ApartmentManagementSystem.Controllers
         // GET: Tenant/Delete/{id}
         public async Task<IActionResult> Delete(Guid? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var user = await _userManager.GetUserAsync(User);
             var tenant = await _context.Tenants
-                .Include(t => t.Flat) // Eager load the related Flat
+                .Include(t => t.Flat)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (tenant == null)
-            {
-                return NotFound();
-            }
-
-            // Security check: only the flat's owner can delete a tenant
-            if (tenant.Flat.OwnerId != user.Id)
-            {
-                return Forbid();
-            }
+            if (tenant == null) return NotFound();
+            if (tenant.Flat.OwnerId != user.Id) return Forbid();
 
             return View(tenant);
         }
@@ -215,21 +164,13 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             var tenant = await _context.Tenants.Include(t => t.Flat).FirstOrDefaultAsync(t => t.Id == id);
 
-            if (tenant == null)
-            {
-                return NotFound();
-            }
+            if (tenant == null) return NotFound();
 
-            // Security check before deleting
-            if (tenant.Flat.OwnerId != user.Id)
-            {
-                return Forbid();
-            }
+            if (tenant.Flat.OwnerId != user.Id) return Forbid();
 
             _context.Tenants.Remove(tenant);
             await _context.SaveChangesAsync();
 
-            // Redirect to the tenant list for the same flat
             return RedirectToAction(nameof(Index), new { flatId = tenant.FlatId });
         }
     }

@@ -47,6 +47,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Flat/Create
+        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -60,18 +61,16 @@ namespace ApartmentManagementSystem.Controllers
         // POST: Flat/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Create([Bind("FlatNumber,BuildingId")] Flat flat)
         {
             if (ModelState.IsValid)
             {
                 await _context.Flats.AddAsync(flat);
                 await _context.SaveChangesAsync();
-
-                // Redirects to the Flat/Index for the specific building
                 return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
             }
 
-            // On validation failure, re-populate the ViewData with the correct values
             var building = await _context.Buildings.FindAsync(flat.BuildingId);
             if (building != null)
             {
@@ -115,15 +114,13 @@ namespace ApartmentManagementSystem.Controllers
         // POST: Flat/AssignOwner
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> AssignOwner(AssignOwnerViewModel model)
         {
             if (ModelState.IsValid)
             {
                 var flat = await _context.Flats.FindAsync(model.FlatId);
-                if (flat == null)
-                {
-                    return NotFound();
-                }
+                if (flat == null) return NotFound();
 
                 flat.OwnerId = model.OwnerId;
                 flat.IsOccupied = !string.IsNullOrEmpty(model.OwnerId);
@@ -132,11 +129,9 @@ namespace ApartmentManagementSystem.Controllers
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "Owner assigned successfully.";
-
                 return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
             }
 
-            // If model state is invalid, re-populate the view model
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
             model.Owners = new SelectList(owners, "Id", "Fullname");
             model.Flats = new SelectList(_context.Flats.ToList(), "Id", "FlatNumber");
@@ -148,16 +143,9 @@ namespace ApartmentManagementSystem.Controllers
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> MyFlats()
         {
-            // Get the current user
             var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Forbid();
 
-            // Check if the user is null, which shouldn't happen with [Authorize] but is a good practice
-            if (user == null)
-            {
-                return Forbid();
-            }
-
-            // Retrieve only the flats owned by the current user
             var myFlats = await _context.Flats
                 .Include(f => f.Building)
                 .Where(f => f.OwnerId == user.Id)

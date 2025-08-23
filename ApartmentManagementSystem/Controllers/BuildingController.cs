@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    //[Authorize(Roles = "SuperAdmin, President")]
+    [Authorize(Roles = "SuperAdmin, President")]
     public class BuildingController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -37,7 +37,7 @@ namespace ApartmentManagementSystem.Controllers
                 return NotFound();
             }
 
-            // President authorization check: Make sure a President can only see their assigned building
+            // Check for President can only see their assigned building
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
@@ -70,13 +70,10 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Buildings Edit View
-        public async Task<IActionResult> Edit(Guid id)
+        public async Task<IActionResult> Edit(Guid id) 
         {
             var building = await _context.Buildings.FindAsync(id);
-            if (building == null)
-            {
-                return NotFound();
-            }
+            if (building == null) return NotFound();
             return View(building);
         }
 
