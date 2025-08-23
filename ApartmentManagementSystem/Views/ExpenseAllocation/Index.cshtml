@@ -4,20 +4,22 @@
     ViewData["Title"] = "Expense Allocations";
 }
 
-<h1>Allocations for @ViewData["CommonBillName"]</h1>
-<hr />
+<h1>Expense Allocations for: @ViewData["CommonBillName"]</h1>
 
 <table class="table">
     <thead>
         <tr>
             <th>
-                Owner
+                @Html.DisplayNameFor(model => model.Owner)
             </th>
             <th>
-                Amount Due
+                @Html.DisplayNameFor(model => model.AmountDue)
             </th>
             <th>
-                Status
+                @Html.DisplayNameFor(model => model.IsPaid)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PaymentDate)
             </th>
             <th></th>
         </tr>
@@ -32,6 +34,9 @@
                 <td>
                     @Html.DisplayFor(modelItem => item.AmountDue)
                 </td>
+                @* <td>
+                    @Html.DisplayFor(modelItem => item.IsPaid)
+                </td> *@
                 <td>
                     @if (item.IsPaid)
                     {
@@ -43,10 +48,20 @@
                     }
                 </td>
                 <td>
+                    @if (item.IsPaid)
+                    {
+                        @Html.DisplayFor(modelItem => item.PaymentDate)
+                    }
+                    else
+                    {
+                        <span>N/A</span>
+                    }
+                </td>
+                <td>
                     @if (!item.IsPaid)
                     {
-                        <form asp-action="MarkAsPaid" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Are you sure this has been paid?');">
-                            <button type="submit" class="btn btn-sm btn-success">Mark as Paid</button>
+                        <form asp-action="MarkAsPaid" asp-route-id="@item.Id" method="post">
+                            <button type="submit" class="btn btn-primary">Mark as Paid</button>
                         </form>
                     }
                 </td>

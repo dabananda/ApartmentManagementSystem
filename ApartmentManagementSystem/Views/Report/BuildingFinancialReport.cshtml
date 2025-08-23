@@ -52,6 +52,7 @@
                     <th>Owner Name</th>
                     <th>Amount Due</th>
                     <th>Status</th>
+                    <th>Payment Date</th>
                 </tr>
             </thead>
             <tbody>
@@ -71,6 +72,16 @@
                                 <span class="badge bg-danger">Due</span>
                             }
                         </td>
+                        <td>
+                            @if (item.IsPaid)
+                            {
+                                @item.PaymentDate?.ToString("d")
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -81,3 +92,9 @@
 <div>
     <a asp-controller="Building" asp-action="MyBuildings" class="btn btn-secondary">Back to My Buildings</a>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

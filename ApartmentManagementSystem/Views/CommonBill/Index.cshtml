@@ -5,7 +5,6 @@
 }
 
 <h1>Common Bills</h1>
-<hr />
 <p>
     <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]">Create New Bill</a>
 </p>
@@ -16,10 +15,13 @@
                 @Html.DisplayNameFor(model => model.Name)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.BillDate)
+                @Html.DisplayNameFor(model => model.TotalAmount)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.TotalAmount)
+                @Html.DisplayNameFor(model => model.Notes)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.BillDate)
             </th>
             <th></th>
         </tr>
@@ -32,14 +34,19 @@
                     @Html.DisplayFor(modelItem => item.Name)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.BillDate)
-                </td>
-                <td>
                     @Html.DisplayFor(modelItem => item.TotalAmount)
                 </td>
                 <td>
-                    <a asp-controller="ExpenseAllocation" asp-action="Index" asp-route-commonBillId="@item.Id">View Allocations</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    @Html.DisplayFor(modelItem => item.Notes)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.BillDate)
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> |
+                    <a asp-controller="ExpenseAllocation" asp-action="Index" asp-route-commonBillId="@item.Id">View Allocations</a>
                 </td>
             </tr>
         }
