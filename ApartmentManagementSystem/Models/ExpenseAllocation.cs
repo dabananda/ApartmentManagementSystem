@@ -7,9 +7,9 @@ namespace ApartmentManagementSystem.Models
     {
         public Guid Id { get; set; }
 
-        public Guid CommonExpenseId { get; set; }
-        [ForeignKey("CommonExpenseId")]
-        public virtual CommonExpense? CommonExpense { get; set; }
+        public Guid CommonBillId { get; set; }
+        [ForeignKey("CommonBillId")]
+        public virtual CommonBill? CommonBill { get; set; }
 
         public string OwnerId { get; set; }
         [ForeignKey("OwnerId")]

@@ -19,31 +19,31 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: ExpenseAllocation/Index/{expenseId}
-        public async Task<IActionResult> Index(Guid? expenseId)
+        // GET: ExpenseAllocation/Index/{commonBillId}
+        public async Task<IActionResult> Index(Guid? commonBillId)
         {
-            if (expenseId == null) return NotFound();
+            if (commonBillId == null) return NotFound();
 
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Forbid();
 
-            var expense = await _context.CommonExpenses
-                                        .Include(e => e.Building)
-                                        .FirstOrDefaultAsync(e => e.Id == expenseId);
+            var commonBill = await _context.CommonBills
+                                            .Include(b => b.Building)
+                                            .FirstOrDefaultAsync(b => b.Id == commonBillId);
 
-            // Security check: The user's BuildingId must match the expense's BuildingId
-            if (expense == null || (expense.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin")))
+            // Security check: The user's BuildingId must match the bill's BuildingId
+            if (commonBill == null || (commonBill.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin")))
             {
                 return Forbid();
             }
 
             var allocations = await _context.ExpenseAllocations
                                             .Include(a => a.Owner)
-                                            .Where(a => a.CommonExpenseId == expenseId)
+                                            .Where(a => a.CommonBillId == commonBillId)
                                             .ToListAsync();
 
-            ViewData["ExpenseName"] = expense.Name;
-            ViewData["BuildingId"] = expense.BuildingId;
+            ViewData["CommonBillName"] = commonBill.Name;
+            ViewData["BuildingId"] = commonBill.BuildingId;
             return View(allocations);
         }
 
@@ -53,8 +53,7 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> MarkAsPaid(Guid id)
         {
             var allocation = await _context.ExpenseAllocations
-                                           .Include(a => a.CommonExpense)
-                                           .ThenInclude(e => e.Building)
+                                           .Include(a => a.CommonBill)
                                            .FirstOrDefaultAsync(a => a.Id == id);
 
             if (allocation == null) return NotFound();
@@ -62,8 +61,8 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Forbid();
 
-            // Security check: The user's BuildingId must match the allocation's BuildingId
-            if (allocation.CommonExpense?.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin"))
+            // Security check: The user's BuildingId must match the allocation's bill's BuildingId
+            if (allocation.CommonBill?.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin"))
             {
                 return Forbid();
             }
@@ -73,7 +72,7 @@ namespace ApartmentManagementSystem.Controllers
             _context.Update(allocation);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Index), new { expenseId = allocation.CommonExpenseId });
+            return RedirectToAction(nameof(Index), new { commonBillId = allocation.CommonBillId });
         }
     }
 }

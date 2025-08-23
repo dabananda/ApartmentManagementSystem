@@ -1,34 +1,80 @@
-﻿@{
+﻿@model ApartmentManagementSystem.ViewModels.ReportDashboardViewModel
+
+@{
     ViewData["Title"] = "Financial Report";
 }
 
-<h1>Financial Report for @ViewBag.BuildingName</h1>
+<h1>Financial Report for @Model.BuildingName</h1>
 <hr />
 
 <div class="row">
-    <div class="col-md-4">
-        <div class="card bg-danger text-white mb-4">
+    <div class="col-md-3">
+        <div class="card bg-info text-white mb-4">
             <div class="card-body">
-                <h5 class="card-title">Total Expenses</h5>
-                <h2 class="card-text">@ViewBag.TotalExpenses.ToString("C")</h2>
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalBills)</h5>
+                <h2 class="card-text">@Model.TotalBills.ToString("C")</h2>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-success text-white mb-4">
             <div class="card-body">
-                <h5 class="card-title">Total Collected</h5>
-                <h2 class="card-text">@ViewBag.TotalCollected.ToString("C")</h2>
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalCollected)</h5>
+                <h2 class="card-text">@Model.TotalCollected.ToString("C")</h2>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card @(ViewBag.Balance >= 0 ? "bg-primary" : "bg-warning") text-white mb-4">
+    <div class="col-md-3">
+        <div class="card bg-danger text-white mb-4">
             <div class="card-body">
-                <h5 class="card-title">Balance</h5>
-                <h2 class="card-text">@ViewBag.Balance.ToString("C")</h2>
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.TotalPayments)</h5>
+                <h2 class="card-text">@Model.TotalPayments.ToString("C")</h2>
             </div>
         </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card @(Model.Balance >= 0 ? "bg-primary" : "bg-warning") text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">@Html.DisplayNameFor(model => model.Balance)</h5>
+                <h2 class="card-text">@Model.Balance.ToString("C")</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h4>Owner Payment Status</h4>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Bill Name</th>
+                    <th>Owner Name</th>
+                    <th>Amount Due</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Allocations.OrderByDescending(a => a.CommonBill.BillDate))
+                {
+                    <tr>
+                        <td>@item.CommonBill.Name</td>
+                        <td>@item.Owner.Fullname</td>
+                        <td>@item.AmountDue.ToString("C")</td>
+                        <td>
+                            @if (item.IsPaid)
+                            {
+                                <span class="badge bg-success">Paid</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Due</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
 </div>
 

@@ -4,7 +4,7 @@
     ViewData["Title"] = "Expense Allocations";
 }
 
-<h1>Allocations for @ViewData["ExpenseName"]</h1>
+<h1>Allocations for @ViewData["CommonBillName"]</h1>
 <hr />
 
 <table class="table">
@@ -55,5 +55,5 @@
     </tbody>
 </table>
 <div>
-    <a asp-controller="CommonExpense" asp-action="Index" asp-route-buildingId="@ViewData["BuildingId"]">Back to Expenses</a>
+    <a asp-controller="CommonBill" asp-action="Index" asp-route-buildingId="@ViewData["BuildingId"]">Back to Bills</a>
 </div>

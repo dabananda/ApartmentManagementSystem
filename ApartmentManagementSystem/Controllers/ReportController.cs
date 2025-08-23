@@ -1,5 +1,6 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -30,25 +31,40 @@ namespace ApartmentManagementSystem.Controllers
 
             var buildingId = user.BuildingId.Value;
 
-            // Calculate total expenses for the building
-            var totalExpenses = await _context.CommonExpenses
-                                              .Where(e => e.BuildingId == buildingId)
-                                              .SumAsync(e => e.Amount);
+            var building = await _context.Buildings
+                                         .Include(b => b.CommonBills)
+                                         .Include(b => b.ExpensePayments)
+                                         .FirstOrDefaultAsync(b => b.Id == buildingId);
 
-            // Calculate total collected amount from expense allocations
+            if (building == null) return NotFound();
+
+            // Calculate totals
+            var totalBills = building.CommonBills.Sum(b => b.TotalAmount);
+            var totalPayments = building.ExpensePayments.Sum(p => p.Amount);
+
+            // Calculate total collected by summing paid allocations
             var totalCollected = await _context.ExpenseAllocations
-                                               .Include(a => a.CommonExpense)
-                                               .Where(a => a.CommonExpense.BuildingId == buildingId && a.IsPaid)
+                                               .Where(a => a.CommonBill.BuildingId == buildingId && a.IsPaid)
                                                .SumAsync(a => a.AmountDue);
 
-            var building = await _context.Buildings.FindAsync(buildingId);
+            // Get all allocations to list on the dashboard
+            var allocations = await _context.ExpenseAllocations
+                                            .Include(a => a.Owner)
+                                            .Include(a => a.CommonBill)
+                                            .Where(a => a.CommonBill.BuildingId == buildingId)
+                                            .ToListAsync();
 
-            ViewBag.BuildingName = building?.Name ?? "Building";
-            ViewBag.TotalExpenses = totalExpenses;
-            ViewBag.TotalCollected = totalCollected;
-            ViewBag.Balance = totalCollected - totalExpenses;
+            var viewModel = new ReportDashboardViewModel
+            {
+                BuildingName = building.Name,
+                TotalBills = totalBills,
+                TotalCollected = totalCollected,
+                TotalPayments = totalPayments,
+                Balance = totalCollected - totalPayments,
+                Allocations = allocations
+            };
 
-            return View();
+            return View(viewModel);
         }
     }
 }

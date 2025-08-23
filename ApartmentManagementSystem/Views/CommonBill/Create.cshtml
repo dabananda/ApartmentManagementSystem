@@ -1,17 +1,15 @@
-﻿@model ApartmentManagementSystem.Models.CommonExpense
+﻿@model ApartmentManagementSystem.Models.CommonBill
 
 @{
-    ViewData["Title"] = "Record New Expense";
+    ViewData["Title"] = "Create Bill";
 }
 
-<h1>Record New Expense</h1>
-
+<h1>Create Bill</h1>
 <hr />
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
             <input type="hidden" asp-for="BuildingId" value="@ViewData["BuildingId"]" />
 
             <div class="form-group">
@@ -20,14 +18,14 @@
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="ExpenseDate" class="control-label"></label>
-                <input asp-for="ExpenseDate" class="form-control" />
-                <span asp-validation-for="ExpenseDate" class="text-danger"></span>
+                <label asp-for="BillDate" class="control-label"></label>
+                <input asp-for="BillDate" class="form-control" />
+                <span asp-validation-for="BillDate" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Amount" class="control-label"></label>
-                <input asp-for="Amount" class="form-control" />
-                <span asp-validation-for="Amount" class="text-danger"></span>
+                <label asp-for="TotalAmount" class="control-label"></label>
+                <input asp-for="TotalAmount" class="form-control" />
+                <span asp-validation-for="TotalAmount" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="Notes" class="control-label"></label>
@@ -35,14 +33,14 @@
                 <span asp-validation-for="Notes" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Record Expense" class="btn btn-primary" />
+                <input type="submit" value="Create" class="btn btn-primary" />
             </div>
         </form>
     </div>
 </div>
 
 <div>
-    <a asp-action="Index" asp-route-buildingId="@ViewData["BuildingId"]">Back to Expenses</a>
+    <a asp-action="Index" asp-route-buildingId="@ViewData["BuildingId"]">Back to Bills</a>
 </div>
 
 @section Scripts {

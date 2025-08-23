@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ApartmentManagementSystem.Data.Migrations
+namespace ApartmentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250823033725_AddCommonExpenseModule")]
-    partial class AddCommonExpenseModule
+    [Migration("20250823083712_FixFinalMigration")]
+    partial class FixFinalMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -124,7 +124,73 @@ namespace ApartmentManagementSystem.Data.Migrations
                     b.ToTable("Buildings");
                 });
 
-            modelBuilder.Entity("ApartmentManagementSystem.Models.CommonExpense", b =>
+            modelBuilder.Entity("ApartmentManagementSystem.Models.CommonBill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("BillDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("BuildingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId");
+
+                    b.ToTable("CommonBills");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AmountDue")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<Guid>("CommonBillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommonBillId1")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommonBillId");
+
+                    b.HasIndex("CommonBillId1");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("ExpenseAllocations");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.ExpensePayment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -136,8 +202,8 @@ namespace ApartmentManagementSystem.Data.Migrations
                     b.Property<Guid>("BuildingId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("ExpenseDate")
-                        .HasColumnType("datetime2");
+                    b.Property<Guid>("CommonBillId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -147,11 +213,16 @@ namespace ApartmentManagementSystem.Data.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BuildingId");
 
-                    b.ToTable("CommonExpenses");
+                    b.HasIndex("CommonBillId");
+
+                    b.ToTable("ExpensePayments");
                 });
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.Flat", b =>
@@ -388,15 +459,57 @@ namespace ApartmentManagementSystem.Data.Migrations
                     b.Navigation("Building");
                 });
 
-            modelBuilder.Entity("ApartmentManagementSystem.Models.CommonExpense", b =>
+            modelBuilder.Entity("ApartmentManagementSystem.Models.CommonBill", b =>
                 {
                     b.HasOne("ApartmentManagementSystem.Models.Building", "Building")
-                        .WithMany("CommonExpenses")
+                        .WithMany("CommonBills")
                         .HasForeignKey("BuildingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Building");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocation", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.CommonBill", "CommonBill")
+                        .WithMany()
+                        .HasForeignKey("CommonBillId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("ApartmentManagementSystem.Models.CommonBill", null)
+                        .WithMany("Allocations")
+                        .HasForeignKey("CommonBillId1");
+
+                    b.HasOne("ApartmentManagementSystem.Models.ApplicationUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CommonBill");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.ExpensePayment", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.Building", "Building")
+                        .WithMany("ExpensePayments")
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApartmentManagementSystem.Models.CommonBill", "CommonBill")
+                        .WithMany()
+                        .HasForeignKey("CommonBillId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Building");
+
+                    b.Navigation("CommonBill");
                 });
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.Flat", b =>
@@ -497,9 +610,16 @@ namespace ApartmentManagementSystem.Data.Migrations
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.Building", b =>
                 {
-                    b.Navigation("CommonExpenses");
+                    b.Navigation("CommonBills");
+
+                    b.Navigation("ExpensePayments");
 
                     b.Navigation("Flats");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.CommonBill", b =>
+                {
+                    b.Navigation("Allocations");
                 });
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.Flat", b =>
