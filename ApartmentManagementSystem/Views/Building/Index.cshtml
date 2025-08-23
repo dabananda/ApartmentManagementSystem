@@ -37,6 +37,10 @@
                     <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> |
                     <a asp-controller="Flat" asp-action="Create" asp-route-buildingId="@item.Id">Add Flats</a>
                 </td>
+                <td>
+                    <a asp-controller="Flat" asp-action="Index" asp-route-buildingId="@item.Id">View Flats</a> |
+                    <a asp-controller="CommonExpense" asp-action="Index" asp-route-buildingId="@item.Id">Manage Expenses</a>
+                </td>
             </tr>
         }
     </tbody>

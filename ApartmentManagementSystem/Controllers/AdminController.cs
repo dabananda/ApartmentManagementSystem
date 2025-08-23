@@ -36,32 +36,57 @@ namespace ApartmentManagementSystem.Controllers
             return View();
         }
 
-        // POST: Assign President to Building
+        // POST: Admin/AssignPresident
         [HttpPost]
-        public async Task<IActionResult> AssignPresident(Guid buildingId, string userId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignPresident(AssignPresidentViewModel model)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return NotFound("User not found.");
-
-            var building = await _context.Buildings.FindAsync(buildingId);
-            if (building == null) return NotFound("Building not found.");
-
-            user.BuildingId = buildingId;
-            var result = await _userManager.UpdateAsync(user);
-
-            if (result.Succeeded)
+            if (ModelState.IsValid)
             {
-                return RedirectToAction("Index", "Building");
+                var user = await _userManager.FindByIdAsync(model.UserId);
+                if (user == null)
+                {
+                    ModelState.AddModelError(string.Empty, "User not found.");
+                    return View(model);
+                }
+
+                // Unassign existing president from the building
+                var oldPresident = await _context.Users.FirstOrDefaultAsync(u => u.BuildingId == model.BuildingId);
+                if (oldPresident != null)
+                {
+                    oldPresident.BuildingId = null;
+                    await _userManager.UpdateAsync(oldPresident);
+                    // Optionally remove the "President" role from the old president
+                    // await _userManager.RemoveFromRoleAsync(oldPresident, "President");
+                }
+
+                // Assign the new president to the building
+                user.BuildingId = model.BuildingId;
+                var updateResult = await _userManager.UpdateAsync(user);
+
+                if (updateResult.Succeeded)
+                {
+                    // Add the "President" role to the user
+                    await _userManager.AddToRoleAsync(user, "President");
+
+                    TempData["SuccessMessage"] = "President assigned successfully.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                foreach (var error in updateResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
             }
 
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
+            // If model state is invalid, re-populate the view model
+            var buildings = await _context.Buildings.ToListAsync();
+            var users = await _userManager.GetUsersInRoleAsync("Owner");
 
-            ViewData["Buildings"] = new SelectList(await _context.Buildings.ToListAsync(), "Id", "Name");
-            ViewData["Presidents"] = new SelectList(await _userManager.GetUsersInRoleAsync("President"), "Id", "Fullname");
-            return View();
+            model.Buildings = new SelectList(buildings, "Id", "Name");
+            model.Users = new SelectList(users, "Id", "Fullname");
+
+            return View(model);
         }
 
         // GET: Admin/CreateUser

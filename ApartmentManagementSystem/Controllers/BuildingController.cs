@@ -131,5 +131,19 @@ namespace ApartmentManagementSystem.Controllers
         {
             return _context.Buildings.Any(e => e.Id == id);
         }
+
+        // GET: Building/MyBuildings
+        [Authorize(Roles = "President")]
+        public async Task<IActionResult> MyBuildings()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var buildings = await _context.Buildings
+                                          .Where(b => b.Id == user.BuildingId)
+                                          .ToListAsync();
+
+            return View("Index", buildings);
+        }
     }
 }
