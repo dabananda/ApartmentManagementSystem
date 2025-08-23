@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace ApartmentManagementSystem.Models
 {
@@ -12,5 +11,6 @@ namespace ApartmentManagementSystem.Models
         [StringLength(255)]
         public string Address { get; set; }
         public ICollection<Flat>? Flats { get; set; }
+        public ICollection<CommonExpense>? CommonExpenses { get; set; } = new List<CommonExpense>();
     }
 }

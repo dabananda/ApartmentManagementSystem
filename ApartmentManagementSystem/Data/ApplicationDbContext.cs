@@ -16,6 +16,7 @@ namespace ApartmentManagementSystem.Data
         public DbSet<Flat> Flats { get; set; }
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Rent> Rents { get; set; }
+        public DbSet<CommonExpense> CommonExpenses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
