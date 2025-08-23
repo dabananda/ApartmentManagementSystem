@@ -104,11 +104,11 @@ namespace ApartmentManagementSystem.Controllers
         // GET: Buildings Delete View
         public async Task<IActionResult> Delete(Guid id)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+            if (!User.IsInRole("SuperAdmin")) return Forbid();
             var building = await _context.Buildings.FindAsync(id);
-            if (building == null)
-            {
-                return NotFound();
-            }
+            if (building == null) return NotFound();
             return View(building);
         }
 
@@ -117,6 +117,9 @@ namespace ApartmentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+            if (!User.IsInRole("SuperAdmin")) return Forbid();
             var building = await _context.Buildings.FindAsync(id);
             if (building != null)
             {
