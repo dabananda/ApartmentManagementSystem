@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ApartmentManagementSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class FixFinalMigration : Migration
+    public partial class DbFixed : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -235,8 +235,7 @@ namespace ApartmentManagementSystem.Migrations
                     OwnerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     AmountDue = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     IsPaid = table.Column<bool>(type: "bit", nullable: false),
-                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CommonBillId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -251,12 +250,8 @@ namespace ApartmentManagementSystem.Migrations
                         name: "FK_ExpenseAllocations_CommonBills_CommonBillId",
                         column: x => x.CommonBillId,
                         principalTable: "CommonBills",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ExpenseAllocations_CommonBills_CommonBillId1",
-                        column: x => x.CommonBillId1,
-                        principalTable: "CommonBills",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -389,11 +384,6 @@ namespace ApartmentManagementSystem.Migrations
                 name: "IX_ExpenseAllocations_CommonBillId",
                 table: "ExpenseAllocations",
                 column: "CommonBillId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ExpenseAllocations_CommonBillId1",
-                table: "ExpenseAllocations",
-                column: "CommonBillId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExpenseAllocations_OwnerId",

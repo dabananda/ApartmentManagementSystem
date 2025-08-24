@@ -163,9 +163,6 @@ namespace ApartmentManagementSystem.Migrations
                     b.Property<Guid>("CommonBillId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CommonBillId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsPaid")
                         .HasColumnType("bit");
 
@@ -179,8 +176,6 @@ namespace ApartmentManagementSystem.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CommonBillId");
-
-                    b.HasIndex("CommonBillId1");
 
                     b.HasIndex("OwnerId");
 
@@ -470,14 +465,10 @@ namespace ApartmentManagementSystem.Migrations
             modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocation", b =>
                 {
                     b.HasOne("ApartmentManagementSystem.Models.CommonBill", "CommonBill")
-                        .WithMany()
-                        .HasForeignKey("CommonBillId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("ApartmentManagementSystem.Models.CommonBill", null)
                         .WithMany("Allocations")
-                        .HasForeignKey("CommonBillId1");
+                        .HasForeignKey("CommonBillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("ApartmentManagementSystem.Models.ApplicationUser", "Owner")
                         .WithMany()
