@@ -53,11 +53,11 @@ namespace ApartmentManagementSystem.Data
                 .OnDelete(DeleteBehavior.NoAction);
 
             // Configure CommonBill → ExpenseAllocation relationship to prevent cascade loop
-            modelBuilder.Entity<ExpenseAllocation>()
-                .HasOne(ea => ea.CommonBill)
-                .WithMany()
-                .HasForeignKey(ea => ea.CommonBillId)
-                .OnDelete(DeleteBehavior.NoAction);
+            //modelBuilder.Entity<ExpenseAllocation>()
+            //    .HasOne(ea => ea.CommonBill)
+            //    .WithMany()
+            //    .HasForeignKey(ea => ea.CommonBillId)
+            //    .OnDelete(DeleteBehavior.NoAction);
 
             // Add unique constraints and indexes for performance
             modelBuilder.Entity<Building>()
