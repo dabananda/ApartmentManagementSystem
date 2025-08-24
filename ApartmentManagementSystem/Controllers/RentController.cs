@@ -98,5 +98,15 @@ namespace ApartmentManagementSystem.Controllers
             ViewData["TenantId"] = rent.TenantId;
             return View(rent);
         }
+
+        // GET: rent/details/{Guid}
+        public async Task<IActionResult> Details(Guid id)
+        {
+            var rent = await _context.Rents.FindAsync(id);
+            if (rent == null) return NotFound();
+            var tenant = _context.Tenants.FirstOrDefault(t => t.Id == rent.TenantId);
+            ViewData["TenantName"] = tenant.Fullname;
+            return View(rent);
+        }
     }
 }
