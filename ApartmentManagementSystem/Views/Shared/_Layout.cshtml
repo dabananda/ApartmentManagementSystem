@@ -44,6 +44,12 @@
                         @if (User.IsInRole("SuperAdmin"))
                         {
                             <li class="nav-item">
+                                <a class="nav-link" asp-controller="SuperAdmin" asp-action="Dashboard">
+                                    <i class="bi bi-speedometer me-1"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="CreateUser">
                                     <i class="bi bi-people me-1"></i>
                                     Users
@@ -67,7 +73,7 @@
             </nav>
 
             @* main content area *@
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 my-md-3">
                 @* <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"> *@
                 <div class="">
                     @RenderBody()
