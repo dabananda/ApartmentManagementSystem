@@ -1,47 +1,205 @@
 ﻿@model ApartmentManagementSystem.ViewModels.RegisterUserViewModel
-
 @{
     ViewData["Title"] = "Create New User";
 }
 
-<h1>Create New User</h1>
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Create New User</h2>
+            <p class="text-muted mb-0">Add a new user to the system</p>
+        </div>
+        <a asp-action="Users" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i>Back to Users
+        </a>
+    </div>
 
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="CreateUser">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Fullname" class="control-label"></label>
-                <input asp-for="Fullname" class="form-control" />
-                <span asp-validation-for="Fullname" class="text-danger"></span>
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- Form Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form asp-action="CreateUser" class="modern-form">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Please correct the errors below.
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="form-floating mb-3">
+                            <input asp-for="Fullname" class="form-control" id="fullname" placeholder="Enter full name" />
+                            <label asp-for="Fullname">Full Name</label>
+                            <span asp-validation-for="Fullname" class="invalid-feedback"></span>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="form-floating mb-3">
+                            <input asp-for="Email" class="form-control" id="email" placeholder="Enter email address" type="email" />
+                            <label asp-for="Email">Email Address</label>
+                            <span asp-validation-for="Email" class="invalid-feedback"></span>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="form-floating mb-3 position-relative">
+                            <input asp-for="Password" class="form-control" id="password" placeholder="Enter password" type="password" />
+                            <label asp-for="Password">Password</label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-3 password-toggle" style="z-index: 10;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <span asp-validation-for="Password" class="invalid-feedback"></span>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="form-floating mb-3 position-relative">
+                            <input asp-for="ConfirmPassword" class="form-control" id="confirmPassword" placeholder="Confirm password" type="password" />
+                            <label asp-for="ConfirmPassword">Confirm Password</label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-3 password-toggle" style="z-index: 10;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <span asp-validation-for="ConfirmPassword" class="invalid-feedback"></span>
+                        </div>
+
+                        <!-- Role Selection -->
+                        <div class="form-floating mb-4">
+                            <select asp-for="SelectedRole" class="form-select" id="selectedRole" asp-items="@ViewData["Roles"] as SelectList">
+                                <option value="">Select a role...</option>
+                            </select>
+                            <label asp-for="SelectedRole">User Role</label>
+                            <span asp-validation-for="SelectedRole" class="invalid-feedback"></span>
+                        </div>
+
+                        <!-- Role Info -->
+                        <div class="role-info mb-4" style="display: none;">
+                            <div class="alert alert-info border-0 bg-light rounded-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-info-circle text-info me-2 mt-1"></i>
+                                    <div>
+                                        <div class="fw-semibold mb-1">Role Information</div>
+                                        <small class="role-description text-muted"></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill">
+                                <i class="fas fa-user-plus me-2"></i>Create User
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="Email" class="control-label"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
+
+            <!-- Help Card -->
+            <div class="card border-0 bg-light mt-4">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>Quick Tips
+                    </h6>
+                    <ul class="list-unstyled mb-0 small text-muted">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Passwords must be at least 8 characters long
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Email addresses must be unique in the system
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Presidents automatically get Owner role as well
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check text-success me-2"></i>
+                            New users will need to confirm their email address
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="Password" class="control-label"></label>
-                <input asp-for="Password" class="form-control" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ConfirmPassword" class="control-label"></label>
-                <input asp-for="ConfirmPassword" class="form-control" />
-                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SelectedRole" class="control-label"></label>
-                <select asp-for="SelectedRole" class="form-control" asp-items="@ViewData["Roles"] as SelectList"></select>
-                <span asp-validation-for="SelectedRole" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create User" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
     </div>
 </div>
+
+<link href="~/css/create-user.css" rel="stylesheet" />
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password toggle functionality
+        const passwordToggles = document.querySelectorAll('.password-toggle');
+        passwordToggles.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const input = this.parentElement.querySelector('input');
+                const icon = this.querySelector('i');
+
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+
+        // Role information display
+        const roleSelect = document.getElementById('selectedRole');
+        const roleInfo = document.querySelector('.role-info');
+        const roleDescription = document.querySelector('.role-description');
+
+        const roleDescriptions = {
+            'Owner': 'Can manage their own flats, tenants, and view financial information for their properties.',
+            'President': 'Has administrative privileges for their assigned building. Can manage bills, payments, and approve owners. Automatically gets Owner role.',
+            'User': 'Basic role for new registrations. Requires approval to become an Owner.'
+        };
+
+        roleSelect.addEventListener('change', function() {
+            const selectedRole = this.value;
+            if (selectedRole && roleDescriptions[selectedRole]) {
+                roleDescription.textContent = roleDescriptions[selectedRole];
+                roleInfo.style.display = 'block';
+            } else {
+                roleInfo.style.display = 'none';
+            }
+        });
+
+        // Form validation enhancement
+        const form = document.querySelector('.modern-form');
+        const inputs = form.querySelectorAll('input, select');
+
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                validateField(this);
+            });
+
+            input.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    validateField(this);
+                }
+            });
+        });
+
+        function validateField(field) {
+            const value = field.value.trim();
+            const isValid = field.checkValidity() && value !== '';
+
+            field.classList.remove('is-valid', 'is-invalid');
+
+            if (value !== '') {
+                field.classList.add(isValid ? 'is-valid' : 'is-invalid');
+            }
+        }
+
+        // Password strength indicator (optional enhancement)
+        const passwordInput = document.getElementById('password');
+        passwordInput.addEventListener('input', function() {
+            // You can add password strength validation here
+        });
+    });
+</script>
 
 @section Scripts {
     @{
