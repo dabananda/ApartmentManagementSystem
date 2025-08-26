@@ -103,6 +103,66 @@ namespace ApartmentManagementSystem.Controllers
             return View(model);
         }
 
+        // GET: Admin/Users
+        public async Task<IActionResult> Users()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var users = await _userManager.Users
+                .Where(x => x.UserName != currentUser.UserName)
+                .Include(u => u.Building)
+                .Include(u => u.OwnedFlats)
+                .ToListAsync();
+
+            var userViewModels = new List<UserDetailsViewModel>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                var flatCount = user.OwnedFlats?.Count ?? 0;
+
+                // Get tenant count for owned flats
+                var tenantCount = 0;
+                if (user.OwnedFlats != null && user.OwnedFlats.Any())
+                {
+                    var flatIds = user.OwnedFlats.Select(f => f.Id).ToList();
+                    tenantCount = await _context.Tenants
+                        .CountAsync(t => flatIds.Contains(t.FlatId) && t.IsActive);
+                }
+
+                // Get outstanding bills count
+                var outstandingBills = await _context.ExpenseAllocations
+                    .CountAsync(ea => ea.OwnerId == user.Id && !ea.IsPaid);
+
+                // Get total outstanding amount
+                var outstandingAmount = await _context.ExpenseAllocations
+                    .Where(ea => ea.OwnerId == user.Id && !ea.IsPaid)
+                    .SumAsync(ea => ea.AmountDue);
+
+                userViewModels.Add(new UserDetailsViewModel
+                {
+                    Id = user.Id,
+                    Fullname = user.Fullname,
+                    Email = user.Email,
+                    PhoneNumber = user.PhoneNumber,
+                    EmailConfirmed = user.EmailConfirmed,
+                    LockoutEnd = user.LockoutEnd,
+                    AccessFailedCount = user.AccessFailedCount,
+                    Roles = roles.ToList(),
+                    BuildingName = user.Building?.Name,
+                    BuildingAddress = user.Building?.Address,
+                    FlatCount = flatCount,
+                    TenantCount = tenantCount,
+                    OutstandingBillsCount = outstandingBills,
+                    OutstandingAmount = outstandingAmount,
+                    LastLoginDate = user.LockoutEnd != null && user.LockoutEnd > DateTime.Now ? null : DateTime.Now.AddDays(-30), // Placeholder for last login
+                    AccountStatus = user.LockoutEnd != null && user.LockoutEnd > DateTime.Now ? "Locked" :
+                                   user.EmailConfirmed ? "Active" : "Pending Verification"
+                });
+            }
+
+            return View(userViewModels);
+        }
+
         // GET: Admin/CreateUser
         public async Task<IActionResult> CreateUser()
         {

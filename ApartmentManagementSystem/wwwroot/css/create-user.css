@@ -1,0 +1,114 @@
+﻿.modern-form .form-floating > .form-control,
+.modern-form .form-floating > .form-select {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1rem;
+    height: 58px;
+    transition: all 0.2s ease;
+}
+
+    .modern-form .form-floating > .form-control:focus,
+    .modern-form .form-floating > .form-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.1);
+    }
+
+.modern-form .form-floating > label {
+    color: #6b7280;
+    font-weight: 500;
+    padding: 1rem 0.75rem;
+}
+
+.modern-form .form-control.is-invalid,
+.modern-form .form-select.is-invalid {
+    border-color: #ef4444;
+}
+
+.modern-form .form-control.is-valid,
+.modern-form .form-select.is-valid {
+    border-color: #10b981;
+}
+
+.modern-form .invalid-feedback {
+    display: block;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.password-toggle {
+    border: none !important;
+    background: none !important;
+    color: #6b7280;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    height: 32px;
+    width: 32px;
+}
+
+    .password-toggle:hover {
+        background-color: #f3f4f6 !important;
+        color: #374151;
+    }
+
+.card {
+    border-radius: 16px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border: none;
+    font-weight: 600;
+    height: 48px;
+    transition: all 0.2s ease;
+}
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+.btn-outline-secondary {
+    border: 2px solid #e5e7eb;
+    color: #6b7280;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+    .btn-outline-secondary:hover {
+        background-color: #f9fafb;
+        border-color: #d1d5db;
+        color: #374151;
+    }
+
+.alert {
+    border: none;
+    font-size: 0.875rem;
+}
+
+.role-info {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .col-lg-6 {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}

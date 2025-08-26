@@ -13,9 +13,9 @@
             <a asp-controller="Building" asp-action="Create" class="btn btn-success">
                 <i class="fas fa-building"></i> Add Building
             </a>
-            <a asp-controller="Admin" asp-action="ApproveOwners" class="btn btn-warning">
+            @* <a asp-controller="Admin" asp-action="ApproveOwners" class="btn btn-warning">
                 <i class="fas fa-user-check"></i> Approve Users (@Model.PendingApprovals)
-            </a>
+            </a> *@
         </div>
     </div>
 
@@ -147,11 +147,11 @@
                                         <td>
                                             <a asp-controller="Building" asp-action="Details" asp-route-id="@building.Id"
                                                class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i>
+                                                <i class="bi bi-eye"></i>
                                             </a>
                                             <a asp-controller="Flat" asp-action="Index" asp-route-buildingId="@building.Id"
                                                class="btn btn-sm btn-secondary">
-                                                <i class="fas fa-home"></i>
+                                                <i class="bi bi-houses"></i>
                                             </a>
                                         </td>
                                     </tr>

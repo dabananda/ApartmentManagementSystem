@@ -1,0 +1,201 @@
+﻿@model IEnumerable<ApartmentManagementSystem.ViewModels.UserDetailsViewModel>
+@{
+    ViewData["Title"] = "System Users";
+}
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">System Users</h2>
+            <p class="text-muted mb-0">Manage all users across the platform</p>
+        </div>
+        <a asp-action="CreateUser" class="btn btn-primary rounded-pill px-4">
+            <i class="fas fa-plus me-2"></i>Add New User
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card stats-card-blue">
+                <div class="stats-card-body">
+                    <div class="stats-label">TOTAL USERS</div>
+                    <div class="stats-value">@Model.Count()</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-card-green">
+                <div class="stats-card-body">
+                    <div class="stats-label">ACTIVE USERS</div>
+                    <div class="stats-value">@Model.Count(u => u.AccountStatus == "Active")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-card-orange">
+                <div class="stats-card-body">
+                    <div class="stats-label">PRESIDENTS</div>
+                    <div class="stats-value">@Model.Count(u => u.IsPresident)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-card-purple">
+                <div class="stats-card-body">
+                    <div class="stats-label">PROPERTY OWNERS</div>
+                    <div class="stats-value">@Model.Count(u => u.IsOwner)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Grid -->
+    <div class="row">
+        @foreach (var user in Model)
+        {
+            <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="card border-0 shadow-sm h-100 user-card">
+                    <div class="card-body p-4">
+                        <!-- Header -->
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar-circle me-3">
+                                @user.Fullname.Substring(0, 1).ToUpper()
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="fw-bold mb-1">@user.Fullname</h5>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var role in user.Roles)
+                                    {
+                                        <span class="badge rounded-pill role-badge role-@role.ToLower()">
+                                            @role
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-lock me-2"></i>Details</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Contact Info -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-envelope text-muted me-2" style="width: 16px;"></i>
+                                <small class="text-muted">@user.Email</small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                            {
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-phone text-muted me-2" style="width: 16px;"></i>
+                                    <small class="text-muted">@user.PhoneNumber</small>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(user.BuildingName))
+                            {
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-building text-muted me-2" style="width: 16px;"></i>
+                                    <small class="text-muted">@user.BuildingName</small>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Status -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-@user.StatusClass bg-opacity-10 text-@user.StatusClass border border-@user.StatusClass border-opacity-25 px-3 py-2">
+                                @user.AccountStatus
+                            </span>
+                            @if (user.EmailConfirmed)
+                            {
+                                <i class="fas fa-check-circle text-success" title="Email Verified"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-exclamation-circle text-warning" title="Email Not Verified"></i>
+                            }
+                        </div>
+
+                        <!-- Stats Row -->
+                        @if (user.IsOwner)
+                        {
+                            <div class="row text-center border-top pt-3">
+                                <div class="col-4">
+                                    <div class="fw-bold text-primary">@user.FlatCount</div>
+                                    <small class="text-muted">Flats</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="fw-bold text-info">@user.TenantCount</div>
+                                    <small class="text-muted">Tenants</small>
+                                </div>
+                                <div class="col-4">
+                                    @if (user.HasOutstandingBills)
+                                    {
+                                        <div class="fw-bold text-danger">$@user.OutstandingAmount.ToString("N0")</div>
+                                        <small class="text-muted">Outstanding</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="fw-bold text-success">$0</div>
+                                        <small class="text-muted">Outstanding</small>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center border-top pt-3">
+                                @if (user.LastLoginDate.HasValue)
+                                {
+                                    <small class="text-muted">Last seen @user.LastLoginDate.Value.ToString("MMM dd, yyyy")</small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">Never logged in</small>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No Users Found</h4>
+            <p class="text-muted">Start by creating your first user account.</p>
+            <a asp-action="CreateUser" class="btn btn-primary rounded-pill px-4">
+                <i class="fas fa-plus me-2"></i>Create User
+            </a>
+        </div>
+    }
+</div>
+
+
+<link href="~/css/users.css" rel="stylesheet" />
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add smooth animations and interactions
+        const cards = document.querySelectorAll('.user-card');
+
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-4px)';
+            });
+
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
