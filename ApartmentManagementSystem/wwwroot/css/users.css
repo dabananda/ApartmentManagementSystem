@@ -1,0 +1,191 @@
+﻿.stats-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    height: 100px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+/* Blue Card */
+.stats-card-blue::before {
+    background: #3b82f6;
+}
+
+.stats-card-blue .stats-label {
+    color: #3b82f6;
+}
+
+/* Green Card */
+.stats-card-green::before {
+    background: #10b981;
+}
+
+.stats-card-green .stats-label {
+    color: #10b981;
+}
+
+/* Orange Card */
+.stats-card-orange::before {
+    background: #f59e0b;
+}
+
+.stats-card-orange .stats-label {
+    color: #f59e0b;
+}
+
+/* Purple Card */
+.stats-card-purple::before {
+    background: #8b5cf6;
+}
+
+.stats-card-purple .stats-label {
+    color: #8b5cf6;
+}
+
+.stats-card-body {
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stats-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.stats-value {
+    color: #1f2937;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.user-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+    .user-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+.avatar-circle {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.role-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.role-superadmin {
+    background-color: #dc3545 !important;
+}
+
+.role-president {
+    background-color: #fd7e14 !important;
+}
+
+.role-owner {
+    background-color: #0d6efd !important;
+}
+
+.role-user {
+    background-color: #6c757d !important;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.btn {
+    border-radius: 8px;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+.dropdown-menu {
+    z-index: 1050;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    min-width: 160px;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .dropdown-item i {
+        width: 16px;
+        text-align: center;
+    }
+
+.user-card {
+    position: relative;
+    z-index: 1;
+}
+
+    .user-card:hover {
+        z-index: 2;
+    }
+
+@media (max-width: 768px) {
+    .col-lg-6 {
+        margin-bottom: 1rem;
+    }
+
+    .stats-row .col-4 {
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-card {
+        height: 80px;
+    }
+
+    .stats-value {
+        font-size: 24px;
+    }
+}
