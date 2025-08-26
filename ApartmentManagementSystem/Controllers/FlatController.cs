@@ -20,6 +20,17 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
+        // GET: Flat/AllFlats
+        public async Task<IActionResult> AllFlats()
+        {
+            var flats = await _context.Flats
+                            .Include(f => f.Owner)
+                            .Include(f => f.Building)
+                            .Include(f => f.Tenants)
+                            .ToListAsync();
+            return View(flats);
+        }
+
         [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Index(Guid? buildingId)
         {
@@ -36,9 +47,10 @@ namespace ApartmentManagementSystem.Controllers
 
             // Retrieve the flats for the specific building, including the owner information
             var flats = await _context.Flats
-                .Include(f => f.Owner)
-                .Where(f => f.BuildingId == buildingId)
-                .ToListAsync();
+                            .Include(f => f.Owner)
+                            .Include(f => f.Tenants)
+                            .Where(f => f.BuildingId == buildingId)
+                            .ToListAsync();
 
             ViewData["BuildingId"] = building.Id;
             ViewData["BuildingName"] = building.Name;
@@ -137,6 +149,53 @@ namespace ApartmentManagementSystem.Controllers
             model.Flats = new SelectList(_context.Flats.ToList(), "Id", "FlatNumber");
 
             return View(model);
+        }
+
+        // GET: Flat/Delete/{id}
+        [Authorize(Roles = "SuperAdmin,President")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var flat = await _context.Flats
+                .Include(f => f.Building)
+                .Include(f => f.Owner)
+                .FirstOrDefaultAsync(f => f.Id == id);
+
+            if (flat == null) return NotFound();
+
+            // Authorization check for President role
+            if (User.IsInRole("President"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user.BuildingId != flat.BuildingId) return Forbid();
+            }
+
+            return View(flat);
+        }
+
+        // POST: Flat/Delete/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "SuperAdmin,President")]
+        public async Task<IActionResult> Delete(Guid id, bool confirmed = false)
+        {
+            var flat = await _context.Flats
+                .Include(f => f.Building)
+                .FirstOrDefaultAsync(f => f.Id == id);
+
+            if (flat == null) return NotFound();
+
+            // Authorization check for President role
+            if (User.IsInRole("President"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user.BuildingId != flat.BuildingId) return Forbid();
+            }
+
+            _context.Flats.Remove(flat);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Flat deleted successfully.";
+            return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
         }
     }
 }

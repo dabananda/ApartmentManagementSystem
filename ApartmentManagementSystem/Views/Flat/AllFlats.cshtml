@@ -1,20 +1,17 @@
 ﻿@model IEnumerable<ApartmentManagementSystem.Models.Flat>
 
 @{
-    ViewData["Title"] = "Flats";
+    ViewData["Title"] = "All Flats";
 }
 
 <div class="d-flex justify-content-between align-content-center mb-4">
-    <h2 class="mb-0"><strong>Flats in @ViewData["BuildingName"]</strong></h2>
-    <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]" class="btn btn-dark">
-        <i class="fa-solid fa-plus"></i>
-        Add New Flat
-    </a>
+    <h2 class="mb-0"><strong>All Flats</strong></h2>
 </div>
 
-<table class="table" id="flatsTable">
+<table class="table" id="allFlatsTable">
     <thead>
         <tr>
+            <th>Building</th>
             <th>Flat No.</th>
             <th>Owner</th>
             <th>Status</th>
@@ -26,6 +23,7 @@
         @foreach (var item in Model)
         {
             <tr>
+                <td>@(item.Building?.Name ?? "N/A")</td>
                 <td>@Html.DisplayFor(modelItem => item.FlatNumber)</td>
                 <td>
                     @if (item.Owner != null)
@@ -73,8 +71,8 @@
                     {
                         <a asp-controller="Tenant" asp-action="ViewTenants" asp-route-flatId="@item.Id" class="btn btn-sm btn-info">View Tenants</a>
                         <a asp-controller="Tenant" asp-action="Create" asp-route-flatId="@item.Id" class="btn btn-sm btn-primary">Add Tenant</a>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@item.Id', '@item.FlatNumber', '@(item.Building?.Name)')">Delete</button>
                     }
-                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@item.Id', '@item.FlatNumber')">Delete</button>
                 </td>
             </tr>
         }
@@ -90,8 +88,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <h4>Are you sure you want to delete <strong id="flatNumberText"></strong>?</h4>
-                <p class="text-danger"><small><strong><em>This action cannot be undone.</em></strong></small></p>
+                <p>Are you sure you want to delete <strong id="flatInfoText"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -114,7 +112,7 @@
 
     <script>
         $(document).ready(function() {
-            $('#flatsTable').DataTable({
+            $('#allFlatsTable').DataTable({
                 "responsive": true,
                 "lengthChange": true,
                 "autoWidth": false,
@@ -126,12 +124,12 @@
                 "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 "columnDefs": [
                     {
-                        "targets": [4], // Actions column (updated index)
+                        "targets": [5], // Actions column
                         "orderable": false,
                         "searchable": false
                     }
                 ],
-                "order": [[0, "asc"]], // Sort by Flat Number
+                "order": [[0, "asc"], [1, "asc"]], // Sort by Building, then Flat Number
                 "language": {
                     "search": "Search:",
                     "lengthMenu": "Show _MENU_ entries",
@@ -147,13 +145,13 @@
         });
 
         // Delete confirmation function
-        function confirmDelete(flatId, flatNumber) {
-            // Set the flat number in the modal
-            document.getElementById('flatNumberText').textContent = 'Flat ' + flatNumber;
+        function confirmDelete(flatId, flatNumber, buildingName) {
+            // Set the flat information in the modal
+            document.getElementById('flatInfoText').textContent = 'Flat ' + flatNumber + ' in ' + buildingName;
 
-            // Set the form action with the flat ID and building ID
+            // Set the form action with the flat ID
             var deleteForm = document.getElementById('deleteForm');
-            deleteForm.action = '@Url.Action("Delete", "Flat")' + '/' + flatId + '?buildingId=@ViewData["BuildingId"]';
+            deleteForm.action = '@Url.Action("Delete", "Flat")' + '/' + flatId;
 
             // Show the modal
             var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
