@@ -20,6 +20,17 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
+        // GET: Flat/AllFlats
+        public async Task<IActionResult> AllFlats()
+        {
+            var flats = await _context.Flats
+                            .Include(f => f.Owner)
+                            .Include(f => f.Building)
+                            .Include(f => f.Tenants)
+                            .ToListAsync();
+            return View(flats);
+        }
+
         [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Index(Guid? buildingId)
         {
