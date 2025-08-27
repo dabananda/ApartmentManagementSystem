@@ -1,0 +1,368 @@
+﻿@model ApartmentManagementSystem.Models.EntryLog
+
+@{
+    ViewData["Title"] = "Create Entry Log";
+}
+
+<div class="container">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            @* <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Entry Logs</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create New Entry</li>
+                </ol>
+            </nav> *@
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="text-primary mb-1">
+                        <strong>
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Create Entry Log
+                        </strong>
+                    </h3>
+                    <p class="text-muted mb-0">Record a new visitor or service entry</p>
+                </div>
+                <div>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow border-0">
+                <div class="card-header py-3 bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Entry Information
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" id="entryLogForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Visitor Information Section -->
+                        @* <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-user me-2"></i>Visitor Information
+                                </h6>
+                            </div>
+                        </div> *@
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="Fullname" class="form-control" placeholder="Full Name" required />
+                                    <label asp-for="Fullname" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Full Name *
+                                    </label>
+                                    <span asp-validation-for="Fullname" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="PhoneNumber" class="form-control" placeholder="Phone Number" />
+                                    <label asp-for="PhoneNumber" class="form-label">
+                                        <i class="fas fa-phone me-1"></i>Phone Number
+                                    </label>
+                                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Information Section -->
+                        @* <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Location Information
+                                </h6>
+                            </div>
+                        </div> *@
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select asp-for="BuildingId" class="form-select" asp-items="ViewBag.BuildingId" required onchange="loadFlats()">
+                                        <option value="">Select Building</option>
+                                    </select>
+                                    <label asp-for="BuildingId" class="form-label">
+                                        <i class="fas fa-building me-1"></i>Building *
+                                    </label>
+                                    <span asp-validation-for="BuildingId" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select asp-for="FlatId" class="form-select" required>
+                                        <option value="">Select Flat</option>
+                                        @if (ViewBag.FlatId != null)
+                                        {
+                                            @foreach (SelectListItem item in ViewBag.FlatId)
+                                            {
+                                                <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                            }
+                                        }
+                                    </select>
+                                    <label asp-for="FlatId" class="form-label">
+                                        <i class="fas fa-door-closed me-1"></i>Flat *
+                                    </label>
+                                    <span asp-validation-for="FlatId" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visit Details Section -->
+                        @* <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clipboard-list me-2"></i>Visit Details
+                                </h6>
+                            </div>
+                        </div> *@
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select asp-for="EntryType" class="form-select" required>
+                                        <option value="">Select Entry Type</option>
+                                        <option value="0">Visitor</option>
+                                        <option value="1">Delivery</option>
+                                        <option value="2">Teacher</option>
+                                        <option value="3">Maintenance</option>
+                                        <option value="4">Other</option>
+                                    </select>
+                                    <label asp-for="EntryType" class="form-label">
+                                        <i class="fas fa-tag me-1"></i>Entry Type *
+                                    </label>
+                                    <span asp-validation-for="EntryType" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="NumberOfPerson" type="number" class="form-control" placeholder="Number of Persons" min="1" max="20" value="1" required />
+                                    <label asp-for="NumberOfPerson" class="form-label">
+                                        <i class="fas fa-users me-1"></i>Number of Persons *
+                                    </label>
+                                    <span asp-validation-for="NumberOfPerson" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea asp-for="Purpose" class="form-control" placeholder="Purpose of visit" rows="3" style="height: 100px" required></textarea>
+                                    <label asp-for="Purpose" class="form-label">
+                                        <i class="fas fa-clipboard me-1"></i>Purpose of Visit *
+                                    </label>
+                                    <span asp-validation-for="Purpose" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Information Section -->
+                        @* <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clock me-2"></i>Time Information
+                                </h6>
+                            </div>
+                        </div> *@
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="EntryTime" type="datetime-local" class="form-control" />
+                                    <label asp-for="EntryTime" class="form-label">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Entry Time
+                                    </label>
+                                    <span asp-validation-for="EntryTime" class="text-danger small"></span>
+                                </div>
+                                <small class="text-muted">Leave empty to use current time</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="ExitTime" type="datetime-local" class="form-control" />
+                                    <label asp-for="ExitTime" class="form-label">
+                                        <i class="fas fa-sign-out-alt me-1"></i>Exit Time (Optional)
+                                    </label>
+                                    <span asp-validation-for="ExitTime" class="text-danger small"></span>
+                                </div>
+                                <small class="text-muted">Leave empty if visitor is still inside</small>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <hr class="my-4">
+                                <div class="d-flex justify-content-between">
+                                    <a asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary px-4 btn-lg">
+                                        <i class="fas fa-save me-2"></i>Create Entry Log
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+
+    .form-floating > .form-control:focus,
+    .form-floating > .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* .btn-lg {
+        border-radius: 10px;
+        font-weight: 500;
+    } */
+
+    .border-bottom {
+        border-color: #dee2e6 !important;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+    }
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // Set current date-time as default for entry time
+        document.addEventListener('DOMContentLoaded', function() {
+            const entryTimeInput = document.querySelector('input[name="EntryTime"]');
+            if (entryTimeInput && !entryTimeInput.value) {
+                const now = new Date();
+                const localDateTime = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                entryTimeInput.value = localDateTime;
+            }
+        });
+
+        // Load flats based on selected building
+        function loadFlats() {
+            const buildingId = document.getElementById('BuildingId').value;
+            const flatSelect = document.getElementById('FlatId');
+
+            // Clear existing options
+            flatSelect.innerHTML = '<option value="">Loading flats...</option>';
+
+            if (!buildingId) {
+                flatSelect.innerHTML = '<option value="">Select Building First</option>';
+                return;
+            }
+
+            // Make AJAX call to get flats for the selected building
+            fetch(`/api/flats/bybuilding/${buildingId}`)
+                .then(response => response.json())
+                .then(data => {
+                    flatSelect.innerHTML = '<option value="">Select Flat</option>';
+                    data.forEach(flat => {
+                        const option = document.createElement('option');
+                        option.value = flat.id;
+                        option.textContent = flat.flatNumber;
+                        flatSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading flats:', error);
+                    flatSelect.innerHTML = '<option value="">Error loading flats</option>';
+                });
+        }
+
+        // Form validation and submission
+        document.getElementById('entryLogForm').addEventListener('submit', function(e) {
+            const requiredFields = this.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                    field.classList.add('is-valid');
+                }
+            });
+
+            // Validate entry time is not in the future
+            const entryTime = document.querySelector('input[name="EntryTime"]').value;
+            if (entryTime && new Date(entryTime) > new Date()) {
+                alert('Entry time cannot be in the future.');
+                e.preventDefault();
+                return;
+            }
+
+            // Validate exit time is after entry time
+            const exitTime = document.querySelector('input[name="ExitTime"]').value;
+            if (entryTime && exitTime && new Date(exitTime) <= new Date(entryTime)) {
+                alert('Exit time must be after entry time.');
+                e.preventDefault();
+                return;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+            }
+        });
+
+        // Real-time validation feedback
+        document.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
+            field.addEventListener('blur', function() {
+                if (this.value.trim()) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        });
+
+        // Phone number formatting
+        const phoneInput = document.querySelector('input[name="PhoneNumber"]');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                // Remove all non-digits
+                let value = this.value.replace(/\D/g, '');
+
+                // Format as needed (example: +880-XXXX-XXXXXX for Bangladesh)
+                if (value.length > 0) {
+                    if (value.length <= 11) {
+                        this.value = value;
+                    } else {
+                        this.value = value.substr(0, 11);
+                    }
+                }
+            });
+        }
+    </script>
+}
