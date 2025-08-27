@@ -4,6 +4,7 @@ using ApartmentManagementSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApartmentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250827054108_AddedEntryLogModel")]
+    partial class AddedEntryLogModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -149,50 +152,6 @@ namespace ApartmentManagementSystem.Migrations
                     b.HasIndex("BuildingId");
 
                     b.ToTable("CommonBills");
-                });
-
-            modelBuilder.Entity("ApartmentManagementSystem.Models.EntryLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("BuildingId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("EntryTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EntryType")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ExitTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("FlatId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Fullname")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("NumberOfPerson")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Purpose")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuildingId");
-
-                    b.HasIndex("FlatId");
-
-                    b.ToTable("EntryLogs");
                 });
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocation", b =>
@@ -506,25 +465,6 @@ namespace ApartmentManagementSystem.Migrations
                     b.Navigation("Building");
                 });
 
-            modelBuilder.Entity("ApartmentManagementSystem.Models.EntryLog", b =>
-                {
-                    b.HasOne("ApartmentManagementSystem.Models.Building", "Building")
-                        .WithMany("EntryLogs")
-                        .HasForeignKey("BuildingId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ApartmentManagementSystem.Models.Flat", "Flat")
-                        .WithMany()
-                        .HasForeignKey("FlatId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Building");
-
-                    b.Navigation("Flat");
-                });
-
             modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocation", b =>
                 {
                     b.HasOne("ApartmentManagementSystem.Models.CommonBill", "CommonBill")
@@ -662,8 +602,6 @@ namespace ApartmentManagementSystem.Migrations
             modelBuilder.Entity("ApartmentManagementSystem.Models.Building", b =>
                 {
                     b.Navigation("CommonBills");
-
-                    b.Navigation("EntryLogs");
 
                     b.Navigation("ExpensePayments");
 

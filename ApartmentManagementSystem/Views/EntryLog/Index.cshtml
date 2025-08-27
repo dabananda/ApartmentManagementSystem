@@ -1,0 +1,357 @@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.EntryLog>
+
+@{
+    ViewData["Title"] = "Entry Logs";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1 text-primary">
+                        <strong>
+                            <i class="fas fa-clipboard-list"></i>
+                            Entry Logs
+                        </strong>
+                    </h2>
+                    <p class="text-muted mb-0">Track and manage visitor entries</p>
+                </div>
+                <div>
+                    <a asp-action="Create" class="btn btn-primary btn shadow-sm py-2">
+                        <i class="fas fa-plus me-2"></i>Add New Entry
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Total Entries</h6>
+                            <h4 class="card-title mb-0">@Model.Count()</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Today's Entries</h6>
+                            <h4 class="card-title mb-0">@Model.Count(e => e.EntryTime.Date == DateTime.Today)</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-day fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Currently Inside</h6>
+                            <h4 class="card-title mb-0">@Model.Count(e => e.ExitTime == null)</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-door-open fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Visitors</h6>
+                            <h4 class="card-title mb-0">@Model.Count(e => e.EntryType == ApartmentManagementSystem.Models.EntryType.Visitor)</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-friends fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Filters
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <input type="text" class="form-control" id="searchName" placeholder="Search by name...">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <select class="form-select" id="filterEntryType">
+                        <option value="">All Entry Types</option>
+                        <option value="Visitor">Visitor</option>
+                        <option value="Delivery">Delivery</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <input type="date" class="form-control" id="filterDate" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="fas fa-times me-1"></i>Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Entry Log Records</h6>
+                <small class="text-muted">@Model.Count() total entries</small>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="entryLogTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0">Visitor Name</th>
+                                <th class="border-0">Phone</th>
+                                <th class="border-0">Building</th>
+                                <th class="border-0">Flat</th>
+                                <th class="border-0">Type</th>
+                                <th class="border-0">Persons</th>
+                                <th class="border-0">Purpose</th>
+                                <th class="border-0">Entry Time</th>
+                                <th class="border-0">Exit Time</th>
+                                <th class="border-0 text-center">Status</th>
+                                <th class="border-0 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderByDescending(e => e.EntryTime))
+                            {
+                                <tr>
+                                    <td class="align-middle">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                @item.Fullname.Substring(0, 1).ToUpper()
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">@item.Fullname</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">
+                                        @if (!string.IsNullOrEmpty(item.PhoneNumber))
+                                        {
+                                            <span class="text-muted">@item.PhoneNumber</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="badge bg-light text-dark">@item.Building.Name</span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="badge bg-secondary">@item.Flat.FlatNumber</span>
+                                    </td>
+                                    <td class="align-middle">
+                                        @{
+                                            var badgeClass = item.EntryType switch
+                                            {
+                                                ApartmentManagementSystem.Models.EntryType.Visitor => "bg-primary",
+                                                ApartmentManagementSystem.Models.EntryType.Delivery => "bg-success",
+                                                ApartmentManagementSystem.Models.EntryType.Teacher => "bg-info",
+                                                ApartmentManagementSystem.Models.EntryType.Maintenance => "bg-warning",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass">@item.EntryType</span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span>@item.NumberOfPerson</span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="text-muted" title="@item.Purpose">
+                                            @(item.Purpose.Length > 30 ? item.Purpose.Substring(0, 30) + "..." : item.Purpose)
+                                        </span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <small class="text-muted">
+                                            <div>@item.EntryTime.ToString("MMM dd, yyyy")</div>
+                                            <div>@item.EntryTime.ToString("hh:mm tt")</div>
+                                        </small>
+                                    </td>
+                                    <td class="align-middle">
+                                        @if (item.ExitTime.HasValue)
+                                        {
+                                            <small class="text-muted">
+                                                <div>@item.ExitTime.Value.ToString("MMM dd, yyyy")</div>
+                                                <div>@item.ExitTime.Value.ToString("hh:mm tt")</div>
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        @if (item.ExitTime.HasValue)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Exited
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Inside
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.Id"
+                                               class="btn btn-outline-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@item.Id"
+                                               class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id"
+                                               class="btn btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-clipboard-list fa-4x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">No Entry Logs Found</h5>
+                    <p class="text-muted">Start by creating your first entry log.</p>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create First Entry
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('searchName').addEventListener('input', filterTable);
+        document.getElementById('filterEntryType').addEventListener('change', filterTable);
+        document.getElementById('filterDate').addEventListener('change', filterTable);
+
+        function filterTable() {
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+            const filterEntryType = document.getElementById('filterEntryType').value;
+            const filterDate = document.getElementById('filterDate').value;
+            const table = document.getElementById('entryLogTable');
+            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const name = row.cells[0].textContent.toLowerCase();
+                const entryType = row.cells[4].textContent;
+                const entryTime = row.cells[7].textContent;
+
+                let showRow = true;
+
+                // Name filter
+                if (searchName && !name.includes(searchName)) {
+                    showRow = false;
+                }
+
+                // Entry type filter
+                if (filterEntryType && !entryType.includes(filterEntryType)) {
+                    showRow = false;
+                }
+
+                // Date filter
+                if (filterDate) {
+                    const filterDateObj = new Date(filterDate);
+                    const entryDateMatch = entryTime.match(/(\w{3} \d{1,2}, \d{4})/);
+                    if (entryDateMatch) {
+                        const entryDateObj = new Date(entryDateMatch[1]);
+                        if (entryDateObj.toDateString() !== filterDateObj.toDateString()) {
+                            showRow = false;
+                        }
+                    }
+                }
+
+                row.style.display = showRow ? '' : 'none';
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('searchName').value = '';
+            document.getElementById('filterEntryType').value = '';
+            document.getElementById('filterDate').value = '';
+            filterTable();
+        }
+    </script>
+}

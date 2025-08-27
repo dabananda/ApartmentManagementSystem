@@ -19,6 +19,7 @@ namespace ApartmentManagementSystem.Data
         public DbSet<CommonBill> CommonBills { get; set; }
         public DbSet<ExpensePayment> ExpensePayments { get; set; }
         public DbSet<ExpenseAllocation> ExpenseAllocations { get; set; }
+        public DbSet<EntryLog> EntryLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +52,19 @@ namespace ApartmentManagementSystem.Data
                 .WithMany()
                 .HasForeignKey(ep => ep.CommonBillId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            // Configure EntryLog relationships
+            modelBuilder.Entity<EntryLog>()
+                .HasOne(el => el.Building)
+                .WithMany(b => b.EntryLogs)   // You may need to add ICollection<EntryLog> in Building
+                .HasForeignKey(el => el.BuildingId)
+                .OnDelete(DeleteBehavior.Restrict); // prevent cascade loop
+
+            modelBuilder.Entity<EntryLog>()
+                .HasOne(el => el.Flat)
+                .WithMany() // if you don’t want navigation on Flat side
+                .HasForeignKey(el => el.FlatId)
+                .OnDelete(DeleteBehavior.Restrict); // prevent cascade loop
 
             // Configure CommonBill → ExpenseAllocation relationship to prevent cascade loop
             //modelBuilder.Entity<ExpenseAllocation>()
