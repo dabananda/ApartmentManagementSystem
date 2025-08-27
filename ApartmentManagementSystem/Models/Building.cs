@@ -13,5 +13,6 @@ namespace ApartmentManagementSystem.Models
         public ICollection<Flat>? Flats { get; set; }
         public ICollection<CommonBill>? CommonBills { get; set; } = new List<CommonBill>();
         public ICollection<ExpensePayment>? ExpensePayments { get; set; } = new List<ExpensePayment>();
+        public ICollection<EntryLog> EntryLogs { get; set; } = new List<EntryLog>();
     }
 }
