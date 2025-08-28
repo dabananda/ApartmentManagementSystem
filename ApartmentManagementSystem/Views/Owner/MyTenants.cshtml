@@ -1,0 +1,221 @@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.Tenant>
+
+@{
+    ViewData["Title"] = "My Tenants";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">My Tenants</h1>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        You don't have any tenants in your flats yet.
+    </div>
+}
+else
+{
+    <!-- Summary Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Tenants
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count()</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Tenants
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(t => t.IsActive)</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Inactive Tenants
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(t => !t.IsActive)</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-times fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Occupied Flats
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.GroupBy(t => t.FlatId).Count()</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-home fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tenants Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-users me-2"></i>
+                        All Tenants in My Flats (@Model.Count() Total)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="tenantsTable" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Flat</th>
+                                    <th>Building</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tenant in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@tenant.Fullname</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@tenant.Flat?.FlatNumber</span>
+                                        </td>
+                                        <td>@tenant.Flat?.Building?.Name</td>
+                                        <td>
+                                            <i class="fas fa-phone me-1"></i>
+                                            @tenant.PhoneNumber
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(tenant.Email))
+                                            {
+                                                <i class="fas fa-envelope me-1"></i>
+                                                <a href="mailto:@tenant.Email">@tenant.Email</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No email</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (tenant.IsActive)
+                                            {
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">Inactive</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a asp-controller="Tenant" asp-action="Details" asp-route-id="@tenant.Id"
+                                                   class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                                <a asp-controller="Tenant" asp-action="Edit" asp-route-id="@tenant.Id"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <a asp-controller="Rent" asp-action="Index" asp-route-tenantId="@tenant.Id"
+                                                   class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-dollar-sign"></i> Rent
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+
+    <!-- DataTables JavaScript -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#tenantsTable').DataTable({
+                "responsive": true,
+                "pageLength": 10,
+                "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                "order": [[0, "asc"]], // Order by Name (index 0) ascending by default
+                "columnDefs": [
+                    {
+                        "targets": [6], // Actions column
+                        "orderable": false,
+                        "searchable": false
+                    }
+                ],
+                "language": {
+                    "search": "Search Tenants:",
+                    "lengthMenu": "Show _MENU_ tenants per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ tenants",
+                    "infoEmpty": "No tenants available",
+                    "infoFiltered": "(filtered from _MAX_ total tenants)",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    },
+                    "emptyTable": "No tenants found"
+                }
+            });
+        });
+    </script>
+}

@@ -1,4 +1,4 @@
-﻿﻿@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Identity
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
@@ -121,9 +121,36 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" asp-controller="Tenant" asp-action="BuildingTenants">
+                                    <i class="fas fa-users"></i>
+                                    Tenants
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" asp-controller="EntryLog" asp-action="Index">
                                     <i class="bi bi-box-arrow-in-right me-1"></i>
                                     Entry Logs
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Owner"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Owner" asp-action="Dashboard">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Owner" asp-action="MyFlats">
+                                    <i class="fa-solid fa-home me-1"></i>
+                                    My Flats
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Owner" asp-action="MyTenants">
+                                    <i class="fas fa-users me-1"></i>
+                                    My Tenants
                                 </a>
                             </li>
                         }
