@@ -122,5 +122,28 @@ namespace ApartmentManagementSystem.Controllers
 
             return RedirectToAction(nameof(MyFlats));
         }
+
+        // GET: Owner/MyTenants
+        public async Task<IActionResult> MyTenants()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Forbid();
+            }
+
+            // Get all tenants from flats owned by the current user
+            var myTenants = await _context.Tenants
+                                          .Include(t => t.Flat)
+                                          .ThenInclude(f => f.Building)
+                                          .Where(t => t.Flat.OwnerId == user.Id)
+                                          .OrderBy(t => t.Flat.FlatNumber)
+                                          .ThenBy(t => t.Fullname)
+                                          .ToListAsync();
+
+            ViewData["OwnerName"] = user.Fullname;
+
+            return View(myTenants);
+        }
     }
 }
