@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner,SuperAdmin")]
+    [Authorize(Roles = "President, Owner,SuperAdmin")]
     public class TenantController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -212,6 +212,42 @@ namespace ApartmentManagementSystem.Controllers
             }
 
             return RedirectToAction(nameof(ViewTenants), new { flatId = tenant.FlatId });
+        }
+
+        // GET: Tenant/BuildingTenants
+        public async Task<IActionResult> BuildingTenants()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Forbid();
+
+            // For Presidents, get tenants from their assigned building
+            // For SuperAdmin, this would need a buildingId parameter, but focusing on President use case
+            if (User.IsInRole("President") && user.BuildingId == null)
+            {
+                return Forbid();
+            }
+
+            var buildingId = user.BuildingId.Value;
+
+            // Get the building information
+            var building = await _context.Buildings.FindAsync(buildingId);
+            if (building == null) return NotFound();
+
+            // Get all tenants in flats within the president's building
+            var tenants = await _context.Tenants
+                .Include(t => t.Flat)
+                .ThenInclude(f => f.Owner)
+                .Include(t => t.Flat)
+                .ThenInclude(f => f.Building)
+                .Where(t => t.Flat.BuildingId == buildingId)
+                .OrderBy(t => t.Flat.FlatNumber)
+                .ThenBy(t => t.Fullname)
+                .ToListAsync();
+
+            ViewData["BuildingName"] = building.Name;
+            ViewData["BuildingId"] = building.Id;
+
+            return View(tenants);
         }
     }
 }
