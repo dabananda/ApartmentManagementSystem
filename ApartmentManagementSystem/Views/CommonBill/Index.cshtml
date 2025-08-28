@@ -3,52 +3,96 @@
 @{
     ViewData["Title"] = "Common Bills";
 }
+<div class="d-flex justify-content-between align-content-center mb-4">
+    <div>
+        <h3>
+            <strong>
+                Common Bills
+            </strong>
+        </h3>
+        <p class="text-sm text-muted">All your common bills like security guard bill, electricity or others can manage from here.</p>
+    </div>
+    <div>
+        <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]" class="btn btn-primary py-2">Create New Bill</a>
+    </div>
+</div>
 
-<h1>Common Bills</h1>
-<p>
-    <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]">Create New Bill</a>
-</p>
-<table class="table">
+<table id="commonBillsTable" class="table table-striped table-bordered" style="width:100%">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.TotalAmount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Notes)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.BillDate)
-            </th>
-            <th></th>
+            <th>@Html.DisplayNameFor(model => model.Name)</th>
+            <th>@Html.DisplayNameFor(model => model.TotalAmount)</th>
+            <th>@Html.DisplayNameFor(model => model.BillDate)</th>
+            <th>@Html.DisplayNameFor(model => model.Notes)</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
             <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.TotalAmount)</td>
+                <td>@Html.DisplayFor(modelItem => item.BillDate)</td>
+                <td>@Html.DisplayFor(modelItem => item.Notes)</td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Name)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.TotalAmount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Notes)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.BillDate)
-                </td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> |
-                    <a asp-controller="ExpenseAllocation" asp-action="Index" asp-route-commonBillId="@item.Id">View Allocations</a>
+                    <div class="btn-group" role="group">
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Details</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Delete</a>
+                        <a asp-controller="ExpenseAllocation" asp-action="Index" asp-route-commonBillId="@item.Id" class="btn btn-secondary btn-sm">Allocations</a>
+                    </div>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
+@section Scripts {
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+
+    <!-- DataTables JavaScript -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#commonBillsTable').DataTable({
+                "responsive": true,
+                "pageLength": 10,
+                "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                "order": [[2, "desc"]], // Order by Bill Date (index 2) descending by default
+                "columnDefs": [
+                    {
+                        "targets": [1], // Total Amount column
+                        "type": "currency"
+                    },
+                    {
+                        "targets": [2], // Bill Date column
+                        "type": "date"
+                    },
+                    {
+                        "targets": [4], // Actions column
+                        "orderable": false,
+                        "searchable": false
+                    }
+                ],
+                "language": {
+                    "search": "Search Bills:",
+                    "lengthMenu": "Show _MENU_ bills per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ bills",
+                    "infoEmpty": "No bills available",
+                    "infoFiltered": "(filtered from _MAX_ total bills)",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    },
+                    "emptyTable": "No common bills found"
+                }
+            });
+        });
+    </script>
+}

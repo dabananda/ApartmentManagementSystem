@@ -1,57 +1,100 @@
 ﻿@model IEnumerable<ApartmentManagementSystem.Models.ExpensePayment>
 
 @{
-    ViewData["Title"] = "President Payments";
+    ViewData["Title"] = "Expense Payments";
 }
 
-<h1>President Payments</h1>
-<p>
-    <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]">Record New Payment</a>
-</p>
-<table class="table">
+<div class="d-flex justify-content-between align-content-center mb-4">
+    <div>
+        <h3>
+            <strong>
+                Pay Common Bills
+            </strong>
+        </h3>
+        <p class="text-sm text-muted">Pay your common bills like security guard bill, electricity or others from here</p>
+    </div>
+    <div>
+        <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]" class="btn btn-primary">Record New Payment</a>
+    </div>
+</div>
+
+<table id="expensePaymentsTable" class="table table-striped table-bordered" style="width:100%">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CommonBill)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Amount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Notes)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PaymentDate)
-            </th>
-            <th></th>
+            <th>@Html.DisplayNameFor(model => model.Name)</th>
+            <th>@Html.DisplayNameFor(model => model.PaymentDate)</th>
+            <th>@Html.DisplayNameFor(model => model.Amount)</th>
+            <th>Common Bill</th>
+            <th>@Html.DisplayNameFor(model => model.Notes)</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
             <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.PaymentDate)</td>
+                <td>@Html.DisplayFor(modelItem => item.Amount)</td>
+                <td>@Html.DisplayFor(modelItem => item.CommonBill.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.Notes)</td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Name)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.CommonBill.Name)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Amount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Notes)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.PaymentDate)
-                </td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    <div class="btn-group" role="group">
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Details</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Delete</a>
+                    </div>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
+@section Scripts {
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+
+    <!-- DataTables JavaScript -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#expensePaymentsTable').DataTable({
+                "responsive": true,
+                "pageLength": 10,
+                "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                "order": [[1, "desc"]], // Order by Payment Date (index 1) descending by default
+                "columnDefs": [
+                    {
+                        "targets": [1], // Payment Date column
+                        "type": "date"
+                    },
+                    {
+                        "targets": [2], // Amount column
+                        "type": "currency"
+                    },
+                    {
+                        "targets": [5], // Actions column
+                        "orderable": false,
+                        "searchable": false
+                    }
+                ],
+                "language": {
+                    "search": "Search Payments:",
+                    "lengthMenu": "Show _MENU_ payments per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ payments",
+                    "infoEmpty": "No payments available",
+                    "infoFiltered": "(filtered from _MAX_ total payments)",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    },
+                    "emptyTable": "No expense payments found"
+                }
+            });
+        });
+    </script>
+}
