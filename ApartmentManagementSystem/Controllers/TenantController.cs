@@ -13,11 +13,13 @@ namespace ApartmentManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IConfiguration _config;
 
-        public TenantController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public TenantController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IConfiguration config)
         {
             _context = context;
             _userManager = userManager;
+            _config = config;
         }
 
         // GET: Tenant/ViewTenants/{flatId}
@@ -71,17 +73,55 @@ namespace ApartmentManagementSystem.Controllers
                 return Forbid();
             }
 
+            // After ModelState.IsValid check inside Create action
             if (ModelState.IsValid)
             {
+                // 1) Ensure there is a user for this tenant email
+                ApplicationUser? tenantUser = null;
+                if (!string.IsNullOrWhiteSpace(tenant.Email))
+                {
+                    tenantUser = await _userManager.FindByEmailAsync(tenant.Email);
+                    if (tenantUser == null)
+                    {
+                        tenantUser = new ApplicationUser
+                        {
+                            Fullname = tenant.Fullname,
+                            UserName = tenant.Email,
+                            Email = tenant.Email,
+                            EmailConfirmed = true
+                        };
+                        var createResult = await _userManager.CreateAsync(tenantUser, _config["Password"]);
+                        if (createResult.Succeeded)
+                        {
+                            // 2) Add Tenant role (role already exists)
+                            await _userManager.AddToRoleAsync(tenantUser, "Tenant");
+                        }
+                        else
+                        {
+                            // Handle errors (surface error message to UI)
+                            ModelState.AddModelError("", string.Join("; ", createResult.Errors.Select(e => e.Description)));
+                            ViewData["FlatId"] = tenant.FlatId;
+                            return View(tenant);
+                        }
+                    }
+                }
+
+                // 3) Link the domain Tenant to the Identity user
                 tenant.Id = Guid.NewGuid();
+                tenant.UserId = tenantUser?.Id;
+
                 _context.Add(tenant);
-                // Mark the flat as occupied if it's not already
+
+                // Mark flat occupied (as you already do)
                 if (!flat.IsOccupied)
                 {
                     flat.IsOccupied = true;
                     _context.Update(flat);
                 }
+
                 await _context.SaveChangesAsync();
+
+                // TODO: send an email invite/reset link to the tenant user for first-time password setup
                 return RedirectToAction(nameof(ViewTenants), new { flatId = tenant.FlatId });
             }
 

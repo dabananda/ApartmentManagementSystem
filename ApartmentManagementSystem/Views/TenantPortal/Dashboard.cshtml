@@ -1,0 +1,60 @@
+﻿@model dynamic
+@{
+    ViewData["Title"] = "Tenant Dashboard";
+}
+<h1 class="mb-4">Tenant Dashboard</h1>
+<hr />
+
+@if (ViewData["Message"] != null)
+{
+    <div class="alert alert-warning">@ViewData["Message"]</div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Building</h6>
+                    <h3 class="mb-0">@Model.BuildingName</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Flat</h6>
+                    <h3 class="mb-0">@Model.FlatNumber</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Paid This Year</h6>
+                    <h3 class="mb-0">@Model.TotalPaidThisYear.ToString("C")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Last Payment</h6>
+                    @if (Model.LastPayment != null)
+                    {
+                        <div>@Model.LastPayment.PaymentDate.ToShortDateString()</div>
+                        <div>@Model.LastPayment.Amount.ToString("C")</div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">No payments yet</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a class="btn btn-outline-primary" asp-action="Payments" asp-controller="TenantPortal">
+        View Payment History
+    </a>
+}

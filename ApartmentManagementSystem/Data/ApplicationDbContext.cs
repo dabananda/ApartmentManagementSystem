@@ -66,6 +66,19 @@ namespace ApartmentManagementSystem.Data
                 .HasForeignKey(el => el.FlatId)
                 .OnDelete(DeleteBehavior.Restrict); // prevent cascade loop
 
+            // NEW: Tenant(User) one-to-(zero/one)
+            modelBuilder.Entity<Tenant>()
+                .HasOne(t => t.User)
+                .WithMany() // no back-collection on ApplicationUser
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Optional: unique constraint so a user maps to at most one Tenant
+            modelBuilder.Entity<Tenant>()
+                .HasIndex(t => t.UserId)
+                .IsUnique()
+                .HasFilter("[UserId] IS NOT NULL");
+
             // Configure CommonBill → ExpenseAllocation relationship to prevent cascade loop
             //modelBuilder.Entity<ExpenseAllocation>()
             //    .HasOne(ea => ea.CommonBill)
