@@ -61,13 +61,13 @@
                         </div>
 
                         <!-- Role Selection -->
-                        <div class="form-floating mb-4">
+                        @* <div class="form-floating mb-4">
                             <select asp-for="SelectedRole" class="form-select" id="selectedRole" asp-items="@ViewData["Roles"] as SelectList">
                                 <option value="">Select a role...</option>
                             </select>
                             <label asp-for="SelectedRole">User Role</label>
                             <span asp-validation-for="SelectedRole" class="invalid-feedback"></span>
-                        </div>
+                        </div> *@
 
                         <!-- Role Info -->
                         <div class="role-info mb-4" style="display: none;">
