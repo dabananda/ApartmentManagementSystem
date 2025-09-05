@@ -154,6 +154,21 @@
                                 </a>
                             </li>
                         }
+                        @if (User.IsInRole("Tenant"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="TenantPortal" asp-action="Dashboard">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    My Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="TenantPortal" asp-action="Payments">
+                                    <i class="fa-solid fa-file-invoice-dollar me-1"></i>
+                                    My Payments
+                                </a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </nav>
