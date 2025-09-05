@@ -166,8 +166,8 @@ namespace ApartmentManagementSystem.Controllers
         // GET: Admin/CreateUser
         public async Task<IActionResult> CreateUser()
         {
-            var roles = await _roleManager.Roles.Where(r => r.Name != "SuperAdmin").ToListAsync();
-            ViewData["Roles"] = new SelectList(roles, "Name", "Name");
+            //var roles = await _roleManager.Roles.Where(r => r.Name != "SuperAdmin").ToListAsync();
+            //ViewData["Roles"] = new SelectList(roles, "Name", "Name");
             return View();
         }
 
@@ -190,15 +190,16 @@ namespace ApartmentManagementSystem.Controllers
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, model.SelectedRole);
+                    //await _userManager.AddToRoleAsync(user, model.SelectedRole);
+                    await _userManager.AddToRoleAsync(user, "Owner");
 
                     // Add the 'Owner' role if the user is a President
-                    if (model.SelectedRole == "President")
-                    {
-                        await _userManager.AddToRoleAsync(user, "Owner");
-                    }
+                    //if (model.SelectedRole == "President")
+                    //{
+                    //    await _userManager.AddToRoleAsync(user, "Owner");
+                    //}
 
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Users", "Admin");
                 }
 
                 foreach (var error in result.Errors)
