@@ -63,16 +63,14 @@
                     }
                 </td>
                 <td>
-                    @if (item.Owner == null)
-                    {
-                        <a asp-action="AssignOwner" asp-route-flatId="@item.Id" class="btn btn-sm btn-success">Assign Owner</a>
-                    }
-                    else
-                    {
-                        <a asp-controller="Tenant" asp-action="ViewTenants" asp-route-flatId="@item.Id" class="btn btn-sm btn-info">View Tenants</a>
-                        <a asp-controller="Tenant" asp-action="Create" asp-route-flatId="@item.Id" class="btn btn-sm btn-primary">Add Tenant</a>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@item.Id', '@item.FlatNumber', '@(item.Building?.Name)')">Delete</button>
-                    }
+                    <a asp-action="AssignOwner" asp-route-flatId="@item.Id"
+                       class="btn btn-sm @(item.Owner == null ? "btn-success" : "btn-warning")">
+                        @(item.Owner == null ? "Assign Owner" : "Change Owner")
+                    </a>
+
+                    <a asp-controller="Tenant" asp-action="ViewTenants" asp-route-flatId="@item.Id" class="btn btn-sm btn-info">View Tenants</a>
+                    <a asp-controller="Tenant" asp-action="Create" asp-route-flatId="@item.Id" class="btn btn-sm btn-primary">Add Tenant</a>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@item.Id', '@item.FlatNumber', '@(item.Building?.Name)')">Delete</button>
                 </td>
             </tr>
         }
