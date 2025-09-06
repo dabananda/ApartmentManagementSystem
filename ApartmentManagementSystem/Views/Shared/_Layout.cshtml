@@ -92,7 +92,7 @@
                         {
                             <p class="ms-2"><strong>President Dasboard</strong></p>
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Report" asp-action="BuildingFinancialReport">
+                                <a class="nav-link" asp-controller="President" asp-action="Dashboard">
                                     <i class="bi bi-speedometer2 me-1"></i>
                                     Dashboard
                                 </a>
@@ -116,7 +116,7 @@
                                 @if (buildingId.HasValue)
                                 {
                                     <a class="nav-link" asp-controller="ExpensePayment" asp-action="Index" asp-route-buildingId="@buildingId">
-                                        <i class="fa-solid fa-money-check-dollar"></i>
+                                        <i class="fa-solid fa-money-check-dollar me-1"></i>
                                         Bill Pay
                                     </a>
                                 }
@@ -129,7 +129,7 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Tenant" asp-action="BuildingTenants">
-                                    <i class="fas fa-users"></i>
+                                    <i class="fas fa-users me-1"></i>
                                     Tenants
                                 </a>
                             </li>

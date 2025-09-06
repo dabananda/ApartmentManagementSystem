@@ -1,0 +1,149 @@
+﻿@model ApartmentManagementSystem.ViewModels.PresidentDashboardViewModel
+@{
+    ViewData["Title"] = "President Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">President Dashboard — @Model.BuildingName</h2>
+        <div class="btn-group">
+            <!-- Quick Actions -->
+            <a asp-controller="CommonBill" asp-action="Create" class="btn btn-primary">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Generate Bill
+            </a>
+            <a asp-controller="ExpensePayment" asp-action="Create" class="btn btn-success">
+                <i class="fa-solid fa-money-check-dollar"></i> Record Payment
+            </a>
+            <a asp-controller="Flat" asp-action="Create" class="btn btn-secondary">
+                <i class="fa-regular fa-house"></i> Add Flat
+            </a>
+            <a asp-controller="Flat" asp-action="AllFlats" class="btn btn-outline-secondary">
+                <i class="fas fa-user-plus"></i> Assign Owner
+            </a>
+            <a asp-controller="Announcement" asp-action="Create" class="btn btn-warning">
+                <i class="bi bi-megaphone"></i> New Announcement
+            </a>
+        </div>
+    </div>
+
+    <!-- Row 1: Financial + Occupancy -->
+    <div class="row mb-3">
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header"><strong>Financial Overview</strong></div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h6 text-muted">Bills Issued</div>
+                            <div class="h4">@Model.TotalBills.ToString("C")</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h6 text-muted">Collected</div>
+                            <div class="h4">@Model.TotalCollected.ToString("C")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h6 text-muted">Payments Made</div>
+                            <div class="h4">@Model.TotalPayments.ToString("C")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h6 text-muted">Balance</div>
+                            <div class="h4 @(Model.Balance >= 0 ? "text-success" : "text-danger")">
+                                @Model.Balance.ToString("C")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header"><strong>Occupancy & Flats</strong></div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div><span class="h5 mb-0">@Model.TotalFlats</span> total flats</div>
+                        <div>
+                            @{
+                                var pct = Math.Round((decimal)Model.OccupiedFlats / Math.Max(Model.TotalFlats, 1) * 100, 1);
+                            }
+                            @pct% occupied
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar" role="progressbar"
+                             style="width:@(Math.Round((decimal)Model.OccupiedFlats / Math.Max(Model.TotalFlats, 1) * 100, 1))%"></div>
+                    </div>
+                    <div class="mt-2 text-muted">
+                        <span class="me-3">Occupied: <strong>@Model.OccupiedFlats</strong></span>
+                        <span>Vacant: <strong>@Model.VacantFlats</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Entry Logs + Maintenance/Announcements -->
+    <div class="row mb-3">
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Entry Logs Summary</strong>
+                    <a asp-controller="EntryLog" asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-4 mb-3">
+                        <div>
+                            <div class="text-muted">Today</div>
+                            <div class="h5">@Model.TodayEntries</div>
+                        </div>
+                        <div>
+                            <div class="text-muted">Last 7 days</div>
+                            <div class="h5">@Model.Last7dEntries</div>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var kv in Model.EntryByCategory.OrderByDescending(x => x.Value).Take(5))
+                        {
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@kv.Key</span>
+                                <span class="badge bg-secondary">@kv.Value</span>
+                            </li>
+                        }
+                        @if (!Model.EntryByCategory.Any())
+                        {
+                            <li class="list-group-item"><small class="text-muted">No entries yet</small></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Maintenance & Announcements</strong>
+                    <div>
+                        <a asp-controller="Announcement" asp-action="Create" class="btn btn-sm btn-warning">New Announcement</a>
+                        <a asp-controller="Maintenance" asp-action="Create" class="btn btn-sm btn-secondary">New Ticket</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted">Recent Announcements</h6>
+                    <ul class="mb-3">
+                        @foreach (var a in Model.RecentAnnouncements.DefaultIfEmpty("—"))
+                        {
+                            <li>@a</li>
+                        }
+                    </ul>
+                    <h6 class="text-muted">Open Maintenance</h6>
+                    <ul>
+                        @foreach (var m in Model.OpenMaintenance.DefaultIfEmpty("—"))
+                        {
+                            <li>@m</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
