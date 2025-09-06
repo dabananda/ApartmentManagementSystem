@@ -1,0 +1,46 @@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.MaintenanceTicket>
+@{
+    ViewData["Title"] = "Maintenance";
+    var status = (string)ViewBag.SelectedStatus ?? "Open";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">Maintenance</h2>
+    <div class="btn-group">
+        <a asp-action="Index" asp-route-status="Open" class="btn btn-outline-secondary @(status == "Open" ? "active" : "")">Open</a>
+        <a asp-action="Index" asp-route-status="InProgress" class="btn btn-outline-secondary @(status == "InProgress" ? "active" : "")">In Progress</a>
+        <a asp-action="Index" asp-route-status="Closed" class="btn btn-outline-secondary @(status == "Closed" ? "active" : "")">Closed</a>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-tools"></i> New Ticket</a>
+    </div>
+</div>
+
+<div class="list-group">
+    @foreach (var t in Model)
+    {
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+                <strong>@t.Title</strong>
+                <small class="text-muted">
+                    @t.Status • @t.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                    @if (t.ClosedAt.HasValue)
+                    {
+                        <text> • Closed @t.ClosedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</text>
+                    }
+                </small>
+            </div>
+            <div class="mb-2 text-muted">@t.Description</div>
+            @if (t.Status != "Closed")
+            {
+                <form asp-action="Advance" method="post" class="d-inline">
+                    <input type="hidden" name="id" value="@t.Id" />
+                    <button type="submit" class="btn btn-sm btn-secondary">
+                        @(t.Status == "Open" ? "Start" : "Close")
+                    </button>
+                </form>
+            }
+        </div>
+    }
+    @if (!Model.Any())
+    {
+        <div class="text-muted">No tickets in this state.</div>
+    }
+</div>

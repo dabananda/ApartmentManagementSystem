@@ -98,27 +98,36 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> AssignOwner(Guid? flatId)
         {
             if (flatId == null) return NotFound();
-            var flat = await _context.Flats.Include(f => f.Building).FirstOrDefaultAsync(f => f.Id == flatId);
+            var flat = await _context.Flats
+                .Include(f => f.Building)
+                .FirstOrDefaultAsync(f => f.Id == flatId);
             if (flat == null) return NotFound();
 
-            // President authorization: can only assign flats in their building
+            // President authorization: can only assign within their building
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
                 if (user.BuildingId != flat.BuildingId) return Forbid();
             }
 
-            // Get a list of users with the "Owner" role
+            // Owners limited to the same building (and sorted nicely)
+            var ownersInRole = await _userManager.GetUsersInRoleAsync("Owner");
+            //var owners = ownersInRole
+            //    .Where(o => o.BuildingId == flat.BuildingId)
+            //    .OrderBy(o => o.Fullname)
+            //    .ToList();
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
 
             var viewModel = new AssignOwnerViewModel
             {
                 FlatId = flat.Id,
-                Owners = new SelectList(owners, "Id", "Fullname")
+                OwnerId = flat.OwnerId, // preselect current owner
+                Owners = new SelectList(owners, "Id", "Fullname", flat.OwnerId)
             };
 
             ViewData["FlatNumber"] = flat.FlatNumber;
             ViewData["BuildingName"] = flat.Building.Name;
+            ViewData["BuildingId"] = flat.BuildingId; // for back link
 
             return View(viewModel);
         }
