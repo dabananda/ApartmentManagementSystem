@@ -1,6 +1,11 @@
-﻿@model ApartmentManagementSystem.ViewModels.PresidentDashboardViewModel
+﻿@using Microsoft.AspNetCore.Identity
+@model ApartmentManagementSystem.ViewModels.PresidentDashboardViewModel
+@inject UserManager<ApplicationUser> UserManager
+
 @{
     ViewData["Title"] = "President Dashboard";
+    var currentUser = await UserManager.GetUserAsync(User);
+    var buildingId = currentUser?.BuildingId;
 }
 
 <div class="container-fluid">
@@ -8,20 +13,17 @@
         <h2 class="h4 mb-0">President Dashboard — @Model.BuildingName</h2>
         <div class="btn-group">
             <!-- Quick Actions -->
-            <a asp-controller="CommonBill" asp-action="Create" class="btn btn-primary">
+            <a asp-controller="CommonBill" asp-action="Create" asp-route-buildingId="@buildingId" class="btn btn-primary">
                 <i class="fa-solid fa-file-invoice-dollar"></i> Generate Bill
             </a>
-            <a asp-controller="ExpensePayment" asp-action="Create" class="btn btn-success">
+            <a asp-controller="ExpensePayment" asp-action="Create" asp-route-buildingId="@buildingId" class="btn btn-success">
                 <i class="fa-solid fa-money-check-dollar"></i> Record Payment
             </a>
-            <a asp-controller="Flat" asp-action="Create" class="btn btn-secondary">
+            <a asp-controller="Flat" asp-action="Create" asp-route-buildingId="@buildingId" class="btn btn-info">
                 <i class="fa-regular fa-house"></i> Add Flat
             </a>
-            <a asp-controller="Flat" asp-action="AllFlats" class="btn btn-outline-secondary">
+            <a asp-controller="Flat" asp-action="AllFlats" class="btn btn-warning">
                 <i class="fas fa-user-plus"></i> Assign Owner
-            </a>
-            <a asp-controller="Announcement" asp-action="Create" class="btn btn-warning">
-                <i class="bi bi-megaphone"></i> New Announcement
             </a>
         </div>
     </div>

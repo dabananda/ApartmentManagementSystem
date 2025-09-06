@@ -83,6 +83,24 @@ namespace ApartmentManagementSystem.Controllers
                 x => x.Count
             );
 
+            // ---------- Announcements & Maintenance ----------
+            var recentAnnouncements = await _context.Announcements
+                .AsNoTracking()
+                .Where(a => a.BuildingId == buildingId)
+                .OrderByDescending(a => a.CreatedAt)
+                .Select(a => a.Title)
+                .Take(5)
+                .ToListAsync();
+
+            var openTickets = await _context.MaintenanceTickets
+                .AsNoTracking()
+                .Where(t => t.BuildingId == buildingId && t.Status != "Closed")
+                .OrderBy(t => t.Status)
+                .ThenByDescending(t => t.CreatedAt)
+                .Select(t => $"{t.Title} ({t.Status})")
+                .Take(5)
+                .ToListAsync();
+
             // ---------- Building name ----------
             var buildingName = await _context.Buildings
                 .AsNoTracking()
@@ -102,9 +120,8 @@ namespace ApartmentManagementSystem.Controllers
                 Last7dEntries = last7dEntries,
                 EntryByCategory = entryByCategory,
 
-                // placeholders until real models exist
-                RecentAnnouncements = new List<string>(),
-                OpenMaintenance = new List<string>()
+                RecentAnnouncements = recentAnnouncements,
+                OpenMaintenance = openTickets
             };
 
             return View(vm);

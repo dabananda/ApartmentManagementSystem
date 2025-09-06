@@ -20,6 +20,8 @@ namespace ApartmentManagementSystem.Data
         public DbSet<ExpensePayment> ExpensePayments { get; set; }
         public DbSet<ExpenseAllocation> ExpenseAllocations { get; set; }
         public DbSet<EntryLog> EntryLogs { get; set; }
+        public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<MaintenanceTicket> MaintenanceTickets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,6 +80,23 @@ namespace ApartmentManagementSystem.Data
                 .HasIndex(t => t.UserId)
                 .IsUnique()
                 .HasFilter("[UserId] IS NOT NULL");
+
+            // Announcement
+            modelBuilder.Entity<Announcement>(e =>
+            {
+                e.HasIndex(x => new { x.BuildingId, x.CreatedAt });
+                e.Property(x => x.Title).HasMaxLength(120).IsRequired();
+                e.Property(x => x.Body).HasMaxLength(2000).IsRequired();
+            });
+
+            // MaintenanceTicket
+            modelBuilder.Entity<MaintenanceTicket>(e =>
+            {
+                e.HasIndex(x => new { x.BuildingId, x.Status, x.CreatedAt });
+                e.Property(x => x.Title).HasMaxLength(140).IsRequired();
+                e.Property(x => x.Description).HasMaxLength(2000).IsRequired();
+                e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            });
 
             // Configure CommonBill → ExpenseAllocation relationship to prevent cascade loop
             //modelBuilder.Entity<ExpenseAllocation>()
