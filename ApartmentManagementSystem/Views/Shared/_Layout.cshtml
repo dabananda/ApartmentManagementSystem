@@ -90,6 +90,13 @@
                         }
                         @if (User.IsInRole("President"))
                         {
+                            <p class="ms-2"><strong>President Dasboard</strong></p>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Report" asp-action="BuildingFinancialReport">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    Dashboard
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Building" asp-action="Index">
                                     <i class="bi bi-buildings me-1"></i>
@@ -126,12 +133,8 @@
                                     Tenants
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="EntryLog" asp-action="Index">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i>
-                                    Entry Logs
-                                </a>
-                            </li>
+                            <hr />
+                            <p class="ms-2"><strong>Owner Dasboard</strong></p>
                         }
                         @if (User.IsInRole("Owner"))
                         {
@@ -151,6 +154,13 @@
                                 <a class="nav-link" asp-controller="Owner" asp-action="MyTenants">
                                     <i class="fas fa-users me-1"></i>
                                     My Tenants
+                                </a>
+                            </li>
+                            <hr />
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="EntryLog" asp-action="Index">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                                    Entry Logs
                                 </a>
                             </li>
                         }
