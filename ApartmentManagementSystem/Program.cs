@@ -17,6 +17,8 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.AddHostedService<ApartmentManagementSystem.Services.MonthlyBillGenerator>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

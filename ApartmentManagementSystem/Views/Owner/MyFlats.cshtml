@@ -86,6 +86,15 @@
                             @(flat.IsOccupied ? "Mark Vacant" : "Mark Occupied")
                         </button>
                     </form>
+                    <a asp-controller="OwnerBilling" asp-action="Profile" asp-route-flatId="@flat.Id"
+                       class="btn btn-sm btn-outline-info mb-1">
+                        <i class="fa-solid fa-sliders"></i> Billing Profile
+                    </a>
+
+                    <a asp-controller="OwnerBilling" asp-action="Bills" asp-route-flatId="@flat.Id"
+                       class="btn btn-sm btn-outline-dark mb-1">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Bills
+                    </a>
                 </td>
             </tr>
         }

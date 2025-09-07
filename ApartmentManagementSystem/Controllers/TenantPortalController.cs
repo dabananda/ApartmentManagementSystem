@@ -198,5 +198,22 @@ namespace ApartmentManagementSystem.Controllers
             var items = await q.OrderByDescending(el => el.EntryTime).ToListAsync();
             return View(items);
         }
+
+        // GET: /TenantPortal/Bills
+        public async Task<IActionResult> Bills()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var tenant = await _context.Tenants.Include(t => t.Flat)
+                                               .FirstOrDefaultAsync(t => t.UserId == user.Id);
+            if (tenant?.Flat == null)
+                return View("TenantSetupRequired", "Your account isn’t linked to a flat yet.");
+
+            var items = await _context.TenantBills
+                .Where(b => b.TenantId == tenant.Id)
+                .OrderByDescending(b => b.Year).ThenByDescending(b => b.Month)
+                .ToListAsync();
+
+            return View(items);
+        }
     }
 }

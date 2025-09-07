@@ -1,0 +1,60 @@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.TenantBill>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Bills"; var flatId = (Guid)ViewData["FlatId"]; var flatNumber = ViewData["FlatNumber"] as string;
+}
+<h1>Bills — Flat @flatNumber</h1>
+@if (TempData["Ok"] is string ok)
+{
+    <div class="alert alert-success">@ok</div>
+}
+
+<div class="mb-3 d-flex gap-2">
+    <a class="btn btn-primary" asp-action="CreateBill" asp-route-flatId="@flatId">Create Bill for @DateTime.UtcNow.ToString("yyyy-MM")</a>
+    <a class="btn btn-outline-secondary" asp-action="Profile" asp-route-flatId="@flatId">Edit Billing Profile</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No bills yet.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Paid</th>
+                    <th>Status</th>
+                    @* <th>Breakdown</th> *@
+                    <th class="text-end">Apply Payment</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td>@b.Year-@b.Month.ToString("D2")</td>
+                        <td class="text-end">@b.TotalAmount.ToString("C", CultureInfo.CurrentCulture)</td>
+                        <td class="text-end">@b.PaidAmount.ToString("C", CultureInfo.CurrentCulture)</td>
+                        <td><span class="badge bg-@((b.Status == "Paid" ? "success" : (b.Status == "PartiallyPaid" ? "warning" : "secondary")))">@b.Status</span></td>
+                        @* <td>
+                            Rent @b.RentAmount.ToString("C"), Elec @b.ElectricityAmount, Gas @b.GasAmount, Water @b.WaterAmount, Common @b.CommonBillAmount, Service @b.ServiceChargeAmount, Other @b.OtherAmount
+                        </td> *@
+                        <td class="text-end">
+                            <form asp-action="ApplyPayment" method="post" class="d-inline-flex gap-2">
+                                <input type="hidden" name="billId" value="@b.Id" />
+                                <input type="date" name="paymentDate" class="form-control form-control-sm" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" required />
+                                <input type="number" step="0.01" min="0" name="amount" class="form-control form-control-sm" placeholder="Amount" required />
+                                <input type="text" name="notes" class="form-control form-control-sm" placeholder="Notes" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Add</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
