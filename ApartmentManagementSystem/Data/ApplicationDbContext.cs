@@ -22,6 +22,8 @@ namespace ApartmentManagementSystem.Data
         public DbSet<EntryLog> EntryLogs { get; set; }
         public DbSet<Announcement> Announcements { get; set; }
         public DbSet<MaintenanceTicket> MaintenanceTickets { get; set; }
+        public DbSet<OwnerBillingProfile> OwnerBillingProfiles { get; set; } = default!;
+        public DbSet<TenantBill> TenantBills { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -48,6 +50,26 @@ namespace ApartmentManagementSystem.Data
                 .HasForeignKey(u => u.BuildingId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Configure Flat → Tenants relationship to prevent cascade issues
+            modelBuilder.Entity<Tenant>()
+                .HasOne(t => t.Flat)
+                .WithMany(f => f.Tenants)
+                .HasForeignKey(t => t.FlatId)
+                .OnDelete(DeleteBehavior.Restrict); // Changed from default CASCADE to RESTRICT
+
+            // Configure TenantBill relationships to prevent cascade cycles
+            modelBuilder.Entity<TenantBill>()
+                .HasOne(tb => tb.Flat)
+                .WithMany()
+                .HasForeignKey(tb => tb.FlatId)
+                .OnDelete(DeleteBehavior.Restrict); // Changed from CASCADE to RESTRICT
+
+            modelBuilder.Entity<TenantBill>()
+                .HasOne(tb => tb.Tenant)
+                .WithMany()
+                .HasForeignKey(tb => tb.TenantId)
+                .OnDelete(DeleteBehavior.Restrict); // Changed from CASCADE to RESTRICT
+
             // Configure CommonBill → ExpensePayment relationship to prevent cascade loop
             modelBuilder.Entity<ExpensePayment>()
                 .HasOne(ep => ep.CommonBill)
@@ -58,20 +80,20 @@ namespace ApartmentManagementSystem.Data
             // Configure EntryLog relationships
             modelBuilder.Entity<EntryLog>()
                 .HasOne(el => el.Building)
-                .WithMany(b => b.EntryLogs)   // You may need to add ICollection<EntryLog> in Building
+                .WithMany(b => b.EntryLogs)
                 .HasForeignKey(el => el.BuildingId)
-                .OnDelete(DeleteBehavior.Restrict); // prevent cascade loop
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<EntryLog>()
                 .HasOne(el => el.Flat)
-                .WithMany() // if you don’t want navigation on Flat side
+                .WithMany()
                 .HasForeignKey(el => el.FlatId)
-                .OnDelete(DeleteBehavior.Restrict); // prevent cascade loop
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // NEW: Tenant(User) one-to-(zero/one)
+            // Configure Tenant → User relationship
             modelBuilder.Entity<Tenant>()
                 .HasOne(t => t.User)
-                .WithMany() // no back-collection on ApplicationUser
+                .WithMany()
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
@@ -98,13 +120,6 @@ namespace ApartmentManagementSystem.Data
                 e.Property(x => x.Status).HasMaxLength(20).IsRequired();
             });
 
-            // Configure CommonBill → ExpenseAllocation relationship to prevent cascade loop
-            //modelBuilder.Entity<ExpenseAllocation>()
-            //    .HasOne(ea => ea.CommonBill)
-            //    .WithMany()
-            //    .HasForeignKey(ea => ea.CommonBillId)
-            //    .OnDelete(DeleteBehavior.NoAction);
-
             // Add unique constraints and indexes for performance
             modelBuilder.Entity<Building>()
                 .HasIndex(b => b.Name)
@@ -114,12 +129,30 @@ namespace ApartmentManagementSystem.Data
                 .HasIndex(f => new { f.BuildingId, f.FlatNumber })
                 .IsUnique();
 
+            modelBuilder.Entity<OwnerBillingProfile>(e =>
+            {
+                e.HasIndex(x => x.FlatId).IsUnique(); // 1 profile per flat
+            });
+
+            modelBuilder.Entity<TenantBill>(e =>
+            {
+                e.HasIndex(x => new { x.FlatId, x.Year, x.Month }).IsUnique();
+                e.Property(x => x.Status).HasMaxLength(16).IsRequired();
+            });
+
+            modelBuilder.Entity<Rent>()
+                .HasOne(r => r.TenantBill)
+                .WithMany()
+                .HasForeignKey(r => r.TenantBillId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Add index on commonly queried fields
             modelBuilder.Entity<Flat>()
                 .HasIndex(f => f.OwnerId);
 
             modelBuilder.Entity<ApplicationUser>()
                 .HasIndex(u => u.BuildingId);
+
             modelBuilder.Entity<MaintenanceTicket>()
                 .HasIndex(t => new { t.BuildingId, t.CreatedByUserId });
 

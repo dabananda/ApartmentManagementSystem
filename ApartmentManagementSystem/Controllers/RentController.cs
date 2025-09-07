@@ -87,10 +87,29 @@ namespace ApartmentManagementSystem.Controllers
                 return Forbid();
             }
 
+            //if (ModelState.IsValid)
+            //{
+            //    _context.Add(rent);
+            //    await _context.SaveChangesAsync();
+            //    return RedirectToAction(nameof(Index), new { tenantId = rent.TenantId });
+            //}
+
             if (ModelState.IsValid)
             {
                 _context.Add(rent);
                 await _context.SaveChangesAsync();
+
+                if (rent.TenantBillId.HasValue)
+                {
+                    var bill = await _context.TenantBills.FindAsync(rent.TenantBillId.Value);
+                    if (bill != null)
+                    {
+                        bill.PaidAmount += rent.Amount;
+                        bill.Status = bill.PaidAmount <= 0 ? "Unpaid" :
+                                      bill.PaidAmount < bill.TotalAmount ? "PartiallyPaid" : "Paid";
+                        await _context.SaveChangesAsync();
+                    }
+                }
                 return RedirectToAction(nameof(Index), new { tenantId = rent.TenantId });
             }
 

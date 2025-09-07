@@ -75,32 +75,45 @@ namespace ApartmentManagementSystem.Controllers
             return View(viewModel);
         }
 
-        // GET: Owner/MyFlats
         public async Task<IActionResult> MyFlats()
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
+
+            // Start with query as IQueryable<Flat> to allow Where filtering
+            var query = _context.Flats
+                .Include(f => f.Building)
+                .Include(f => f.Tenants)
+                .AsQueryable();
+
+            // Fix CS8602: Check for null user before accessing user.Id
+            if (!User.IsInRole("SuperAdmin"))
             {
-                return Forbid();
+                if (user == null)
+                {
+                    return Forbid();
+                }
+                query = query.Where(f => f.OwnerId == user.Id);
             }
 
-            // Get all flats owned by the current user and eagerly load the Building and Tenants
-            var ownedFlats = await _context.Flats
-                                           .Include(f => f.Building)
-                                           .Include(f => f.Tenants)
-                                           .Where(f => f.OwnerId == user.Id)
-                                           .ToListAsync();
+            var model = await query
+                .OrderBy(f => f.FlatNumber)
+                .Select(f => new OwnerFlatsViewModel
+                {
+                    Id = f.Id,
+                    FlatNumber = f.FlatNumber,
+                    BuildingName = f.Building.Name,
+                    IsOccupied = f.Tenants.Any(t => t.IsActive),
+                    Tenants = f.Tenants.Select(t => new OwnerFlatsViewModel.TenantRow
+                    {
+                        Id = t.Id,
+                        Fullname = t.Fullname,
+                        PhoneNumber = t.PhoneNumber,
+                        IsActive = t.IsActive
+                    }).ToList()
+                })
+                .ToListAsync();
 
-            var viewModel = ownedFlats.Select(f => new OwnerFlatsViewModel
-            {
-                Id = f.Id,
-                FlatNumber = f.FlatNumber,
-                BuildingName = f.Building.Name,
-                IsOccupied = f.IsOccupied,
-                Tenants = f.Tenants
-            }).ToList();
-
-            return View(viewModel);
+            return View(model);
         }
 
         // POST: Owner/ToggleFlatOccupancy/{id}

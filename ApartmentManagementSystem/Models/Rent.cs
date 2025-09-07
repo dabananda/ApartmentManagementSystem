@@ -18,5 +18,8 @@ namespace ApartmentManagementSystem.Models
         public Guid TenantId { get; set; }
         [ForeignKey("TenantId")]
         public virtual Tenant? Tenant { get; set; }
+
+        public Guid? TenantBillId { get; set; }
+        [ForeignKey(nameof(TenantBillId))] public TenantBill? TenantBill { get; set; }
     }
 }
