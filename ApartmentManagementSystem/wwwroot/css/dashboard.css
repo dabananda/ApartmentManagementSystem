@@ -37,8 +37,33 @@
     top: 0;
     height: calc(100vh - 48px);
     padding-top: .5rem;
+    padding-bottom: 1rem; /* Add bottom padding for better spacing */
     overflow-x: hidden;
-    overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+    overflow-y: auto; /* Enable vertical scrolling */
+}
+
+    /* Custom scrollbar styling for webkit browsers */
+    .sidebar-sticky::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-sticky::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar-sticky::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+    }
+
+        .sidebar-sticky::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+/* For Firefox */
+.sidebar-sticky {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 .sidebar .nav-link {
