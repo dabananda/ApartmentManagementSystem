@@ -87,13 +87,6 @@ namespace ApartmentManagementSystem.Controllers
                 return Forbid();
             }
 
-            //if (ModelState.IsValid)
-            //{
-            //    _context.Add(rent);
-            //    await _context.SaveChangesAsync();
-            //    return RedirectToAction(nameof(Index), new { tenantId = rent.TenantId });
-            //}
-
             if (ModelState.IsValid)
             {
                 _context.Add(rent);

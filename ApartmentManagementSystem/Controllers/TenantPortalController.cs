@@ -130,7 +130,7 @@ namespace ApartmentManagementSystem.Controllers
                     t.BuildingId == buildingId
                     && (
                         t.CreatedByUserId == myUserId
-                        || (t.CreatedByUserId == null && t.FlatId == myFlatId) 
+                        || (t.CreatedByUserId == null && t.FlatId == myFlatId)
                     )
                 )
                 .OrderBy(t => t.Status)

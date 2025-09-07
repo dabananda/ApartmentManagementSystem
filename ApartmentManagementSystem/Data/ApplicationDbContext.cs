@@ -22,8 +22,8 @@ namespace ApartmentManagementSystem.Data
         public DbSet<EntryLog> EntryLogs { get; set; }
         public DbSet<Announcement> Announcements { get; set; }
         public DbSet<MaintenanceTicket> MaintenanceTickets { get; set; }
-        public DbSet<OwnerBillingProfile> OwnerBillingProfiles { get; set; } = default!;
-        public DbSet<TenantBill> TenantBills { get; set; } = default!;
+        public DbSet<TenantBill> TenantBills => Set<TenantBill>();
+        public DbSet<OwnerBillingProfile> OwnerBillingProfiles => Set<OwnerBillingProfile>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -138,6 +138,7 @@ namespace ApartmentManagementSystem.Data
             {
                 e.HasIndex(x => new { x.FlatId, x.Year, x.Month }).IsUnique();
                 e.Property(x => x.Status).HasMaxLength(16).IsRequired();
+                e.Property(x => x.RowVersion).IsRowVersion();
             });
 
             modelBuilder.Entity<Rent>()
