@@ -36,3 +36,15 @@ h1, h2, h3, h4, h5, h6 {
     .btn-light:hover {
         background-color: #e9ecef;
     }
+
+@media(width < 768px) {
+    #logout-section-1 {
+        display: none;
+    }
+}
+
+@media(width >= 768px) {
+    #logout-section-2 {
+        display: none;
+    }
+}

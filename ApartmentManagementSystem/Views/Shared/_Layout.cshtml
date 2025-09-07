@@ -35,7 +35,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="navbar-nav">
-            <div class="nav-item text-nowrap">
+            <div id="logout-section-1" class="nav-item text-nowrap">
                 <partial name="_LoginPartial" />
             </div>
         </div>
@@ -184,7 +184,7 @@
                             <hr />
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="EntryLog" asp-action="Index">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                                    <i class="fa-solid fa-person-walking-dashed-line-arrow-right me-1"></i>
                                     Entry Logs
                                 </a>
                             </li>
@@ -204,6 +204,15 @@
                                 </a>
                             </li>
                         }
+                        <hr />
+                        <li class="nav-item" id="logout-section-2">
+                            <form id="logoutForm" class="form-inline nav-link" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                                <button id="logout" type="submit" class="btn px-0">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                    Logout
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </nav>
