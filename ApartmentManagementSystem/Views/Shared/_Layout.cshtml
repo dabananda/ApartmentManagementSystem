@@ -47,7 +47,7 @@
             @* sidebar *@
             <nav id="sidebarMenu"
                  class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-                <div class="position-sticky pt-3">
+                <div class="position-sticky pt-3 sidebar-sticky">
                     <ul class="nav flex-column">
                         @if (User.IsInRole("SuperAdmin"))
                         {
@@ -144,6 +144,21 @@
                                 </a>
                             </li>
                             <hr />
+                            <p class="ms-2"><strong>Reports</strong></p>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Financial"><i class="bi bi-cash-coin me-1"></i> Financial Report</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Occupancy"><i class="bi bi-house-door me-1"></i> Occupancy Report</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Visitors"><i class="bi bi-people me-1"></i> Visitor Report</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Maintenance"><i class="bi bi-tools me-1"></i> Maintenance Report</a>
+                            </li>
+
+                            <hr />
                             <p class="ms-2"><strong>Owner Dasboard</strong></p>
                         }
                         @if (User.IsInRole("Owner"))
@@ -210,6 +225,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
