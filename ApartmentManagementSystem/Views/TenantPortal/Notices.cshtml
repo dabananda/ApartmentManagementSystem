@@ -1,5 +1,29 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.Announcement>
 @{
+    ViewData["Title"] = "Notices";
+}
+<h1 class="mb-3">Building Notices</h1>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-info">No notices yet.</div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var n in Model)
+        {
+            <article class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <strong>@n.Title</strong>
+                    <small class="text-muted">
+                        @n.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                    </small>
+                </div>
+                <div class="mt-1" style="white-space:pre-wrap;">
+                    @n.Body
+                </div>
+            </article>
+        }
+    </div>
 }
