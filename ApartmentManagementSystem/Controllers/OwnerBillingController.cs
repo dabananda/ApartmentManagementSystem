@@ -1,9 +1,12 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
+using System.Data;
 
 namespace ApartmentManagementSystem.Controllers
 {
@@ -12,10 +15,13 @@ namespace ApartmentManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _users;
+        private readonly IEmailSenderService _mail;
+        private readonly ILogger<OwnerBillingController> _logger;
 
-        public OwnerBillingController(ApplicationDbContext db, UserManager<ApplicationUser> users)
+        public OwnerBillingController(ApplicationDbContext db, UserManager<ApplicationUser> users, IEmailSenderService mail,
+            ILogger<OwnerBillingController> logger)
         {
-            _db = db; _users = users;
+            _db = db; _users = users; _mail = mail; _logger = logger;
         }
 
         // GET: /OwnerBilling/Profile/{flatId}
@@ -152,36 +158,98 @@ namespace ApartmentManagementSystem.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ApplyPayment(Guid billId, DateTime paymentDate, decimal amount, string? notes)
         {
+            if (amount <= 0)
+            {
+                TempData["Error"] = "Amount must be positive.";
+                return RedirectToAction(nameof(Bills));
+            }
+
             var bill = await _db.TenantBills.Include(b => b.Tenant).FirstOrDefaultAsync(b => b.Id == billId);
             if (bill == null) return NotFound();
 
+            // Owner check
             var flat = await _db.Flats.FirstOrDefaultAsync(f => f.Id == bill.FlatId);
-            if (flat == null) return NotFound();
-
             var me = await _users.GetUserAsync(User);
-            if (!User.IsInRole("SuperAdmin") && flat.OwnerId != me.Id) return Forbid();
+            if (flat == null || (!User.IsInRole("SuperAdmin") && flat.OwnerId != me.Id)) return Forbid();
 
-            // Use existing Rent as the "payment" record
-            var rent = new Rent
+            using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+            try
             {
-                Id = Guid.NewGuid(),
-                PaymentDate = paymentDate,
-                Amount = amount,
-                Notes = string.IsNullOrWhiteSpace(notes) ? $"Payment for {bill.Year}-{bill.Month:D2}" : notes,
-                TenantId = bill.TenantId,
-                TenantBillId = bill.Id
-            };
-            _db.Rents.Add(rent);
+                // Add rent record as the payment item (optional)
+                var rent = new Rent
+                {
+                    Id = Guid.NewGuid(),
+                    PaymentDate = paymentDate,
+                    Amount = amount,
+                    Notes = string.IsNullOrWhiteSpace(notes) ? $"Payment for {bill.Year}-{bill.Month:D2}" : notes,
+                    TenantId = bill.TenantId,
+                    TenantBillId = bill.Id
+                };
+                _db.Rents.Add(rent);
 
-            // Roll-up bill status
-            bill.PaidAmount += amount;
-            bill.Status = bill.PaidAmount <= 0 ? "Unpaid"
-                       : bill.PaidAmount < bill.TotalAmount ? "PartiallyPaid"
-                       : "Paid";
+                // Roll up totals — RowVersion protects against races
+                bill.PaidAmount += amount;
+                bill.Status = bill.PaidAmount <= 0 ? "Unpaid"
+                           : bill.PaidAmount < bill.TotalAmount ? "PartiallyPaid" : "Paid";
 
-            await _db.SaveChangesAsync();
-            TempData["Ok"] = "Payment applied.";
-            return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
+                await _db.SaveChangesAsync(); // can throw DbUpdateConcurrencyException
+                await tx.CommitAsync();
+
+                // If fully paid, email tenant
+                if (bill.Status == "Paid")
+                {
+                    var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == bill.TenantId);
+                    if (tenant?.UserId != null)
+                    {
+                        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == tenant.UserId);
+                        if (!string.IsNullOrWhiteSpace(user?.Email))
+                        {
+                            var subject = $"Receipt: {bill.Year}-{bill.Month:D2} bill PAID";
+                            var url = Url.Action(nameof(Receipt), "OwnerBilling", new { billId = bill.Id }, Request.Scheme);
+                            var body = $@"
+                                        <p>Thank you! Your bill for <strong>{bill.Year}-{bill.Month:D2}</strong> has been fully paid.</p>
+                                        <ul>
+                                          <li>Total: <strong>{bill.TotalAmount:C}</strong></li>
+                                          <li>Paid: <strong>{bill.PaidAmount:C}</strong></li>
+                                          <li>Status: <strong>{bill.Status}</strong></li>
+                                        </ul>
+                                        <p>You can view/print your receipt here: <a href=""{url}"">{url}</a></p>";
+                            await _mail.SendAsync(user.Email!, subject, body);
+                        }
+                    }
+                }
+
+                TempData["Ok"] = "Payment applied.";
+                return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                await tx.RollbackAsync();
+                TempData["Error"] = "The bill was updated by someone else. Reload and try again.";
+                return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "ApplyPayment failed for {BillId}", billId);
+                TempData["Error"] = "Failed to apply payment.";
+                return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
+            }
+        }
+
+        // GET: /OwnerBilling/Receipt/{billId}
+        [AllowAnonymous] // or keep locked down and require auth
+        public async Task<IActionResult> Receipt(Guid billId)
+        {
+            var bill = await _db.TenantBills
+                .Include(b => b.Tenant)
+                .Include(b => b.Flat)
+                .ThenInclude(f => f.Building)
+                .FirstOrDefaultAsync(b => b.Id == billId);
+
+            if (bill == null) return NotFound();
+
+            return View(bill);
         }
     }
 }

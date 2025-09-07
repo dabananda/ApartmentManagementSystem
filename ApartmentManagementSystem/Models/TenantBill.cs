@@ -14,7 +14,7 @@ namespace ApartmentManagementSystem.Models
         [ForeignKey(nameof(TenantId))] public Tenant? Tenant { get; set; }
 
         [Range(2000, 3000)] public int Year { get; set; }
-        [Range(1, 12)] public int Month { get; set; }           // 1..12
+        [Range(1, 12)] public int Month { get; set; }
 
         [Column(TypeName = "decimal(18,2)")] public decimal RentAmount { get; set; }
         [Column(TypeName = "decimal(18,2)")] public decimal ElectricityAmount { get; set; }
@@ -26,9 +26,12 @@ namespace ApartmentManagementSystem.Models
 
         [Column(TypeName = "decimal(18,2)")] public decimal TotalAmount { get; set; }
         [Column(TypeName = "decimal(18,2)")] public decimal PaidAmount { get; set; }
-        [StringLength(16)] public string Status { get; set; } = "Unpaid";   // Unpaid | PartiallyPaid | Paid
+        [StringLength(16)] public string Status { get; set; } = "Unpaid"; // Unpaid|PartiallyPaid|Paid
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime DueDate { get; set; }                   // e.g., the 1st of the month
+        public DateTime DueDate { get; set; }
+
+        // NEW: optimistic concurrency token
+        [Timestamp] public byte[]? RowVersion { get; set; }
     }
 }

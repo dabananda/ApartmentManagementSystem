@@ -27,6 +27,7 @@ else
                     <th>Period</th>
                     <th class="text-end">Total</th>
                     <th class="text-end">Paid</th>
+                    <th class="text-end">Paid</th>
                     <th>Status</th>
                     @* <th>Breakdown</th> *@
                     <th class="text-end">Apply Payment</th>
@@ -39,6 +40,10 @@ else
                         <td>@b.Year-@b.Month.ToString("D2")</td>
                         <td class="text-end">@b.TotalAmount.ToString("C", CultureInfo.CurrentCulture)</td>
                         <td class="text-end">@b.PaidAmount.ToString("C", CultureInfo.CurrentCulture)</td>
+                        <td class="text-end">
+                            @b.PaidAmount.ToString("C")
+                            <small class="text-muted d-block">Bal: @( (b.TotalAmount - b.PaidAmount).ToString("C") )</small>
+                        </td>
                         <td><span class="badge bg-@((b.Status == "Paid" ? "success" : (b.Status == "PartiallyPaid" ? "warning" : "secondary")))">@b.Status</span></td>
                         @* <td>
                             Rent @b.RentAmount.ToString("C"), Elec @b.ElectricityAmount, Gas @b.GasAmount, Water @b.WaterAmount, Common @b.CommonBillAmount, Service @b.ServiceChargeAmount, Other @b.OtherAmount

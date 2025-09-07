@@ -1,0 +1,60 @@
+﻿@model ApartmentManagementSystem.Models.TenantBill
+@using System.Globalization
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Payment Receipt";
+    var building = Model.Flat?.Building?.Name ?? "—";
+    var flatNo = Model.Flat?.FlatNumber ?? "—";
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h3 class="mb-1">Payment Receipt</h3>
+                <div class="text-muted">Bill Period: @Model.Year-@Model.Month.ToString("D2")</div>
+                <div class="text-muted">Generated: @Model.CreatedAt.ToString("yyyy-MM-dd")</div>
+            </div>
+            <div class="text-end">
+                <div><strong>Building:</strong> @building</div>
+                <div><strong>Flat:</strong> @flatNo</div>
+                <div><strong>Status:</strong> <span class="badge bg-@((Model.Status == "Paid" ? "success" : (Model.Status == "PartiallyPaid" ? "warning" : "secondary")))">@Model.Status</span></div>
+            </div>
+        </div>
+
+        <hr />
+
+        <h5>Breakdown</h5>
+        <table class="table table-sm w-auto">
+            <tbody>
+                <tr><td>Rent</td><td class="text-end">@Model.RentAmount.ToString("C", CultureInfo.CurrentCulture)</td></tr>
+                <tr><td>Electricity</td><td class="text-end">@Model.ElectricityAmount.ToString("C")</td></tr>
+                <tr><td>Gas</td><td class="text-end">@Model.GasAmount.ToString("C")</td></tr>
+                <tr><td>Water</td><td class="text-end">@Model.WaterAmount.ToString("C")</td></tr>
+                <tr><td>Common Bill</td><td class="text-end">@Model.CommonBillAmount.ToString("C")</td></tr>
+                <tr><td>Service Charge</td><td class="text-end">@Model.ServiceChargeAmount.ToString("C")</td></tr>
+                <tr><td>Other</td><td class="text-end">@Model.OtherAmount.ToString("C")</td></tr>
+                <tr class="table-active">
+                    <td><strong>Total</strong></td>
+                    <td class="text-end"><strong>@Model.TotalAmount.ToString("C")</strong></td>
+                </tr>
+                <tr>
+                    <td>Paid</td>
+                    <td class="text-end">@Model.PaidAmount.ToString("C")</td>
+                </tr>
+                <tr>
+                    <td>Balance</td>
+                    <td class="text-end">@((Model.TotalAmount - Model.PaidAmount).ToString("C"))</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="mt-3">
+            <small class="text-muted">Due Date: @Model.DueDate.ToString("yyyy-MM-dd")</small>
+        </div>
+
+        <div class="mt-4 d-print-none">
+            <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+    </div>
+</div>

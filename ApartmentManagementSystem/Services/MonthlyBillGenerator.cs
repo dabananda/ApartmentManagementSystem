@@ -4,60 +4,95 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Services
 {
+    /// <summary>
+    /// Runs daily at ~02:00 UTC. Ensures a bill exists for the current month per active OwnerBillingProfile.
+    /// Idempotent via (FlatId,Year,Month) unique index.
+    /// Also emails tenant if a new bill is created.
+    /// </summary>
     public class MonthlyBillGenerator : BackgroundService
     {
-        private readonly IServiceProvider _sp;
+        private readonly IServiceProvider _services;
+        private readonly ILogger<MonthlyBillGenerator> _logger;
 
-        public MonthlyBillGenerator(IServiceProvider sp) => _sp = sp;
+        public MonthlyBillGenerator(IServiceProvider services, ILogger<MonthlyBillGenerator> logger)
+        {
+            _services = services;
+            _logger = logger;
+        }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Simple scheduler: wait until the next 00:05 UTC on the 1st, then run monthly
             while (!stoppingToken.IsCancellationRequested)
             {
-                var now = DateTime.UtcNow;
-                var next = new DateTime(now.Year, now.Month, 1, 0, 5, 0, DateTimeKind.Utc);
-                if (now >= next) next = next.AddMonths(1);
-
-                var delay = next - now;
-                if (delay > TimeSpan.Zero)
-                    await Task.Delay(delay, stoppingToken);
-
-                try { await GenerateCurrentMonth(stoppingToken); }
-                catch { /* swallow to keep background loop alive; add logging if you like */ }
+                try
+                {
+                    var now = DateTime.UtcNow;
+                    var nextRun = new DateTime(now.Year, now.Month, now.Day, 2, 0, 0, DateTimeKind.Utc);
+                    if (now > nextRun) nextRun = nextRun.AddDays(1);
+                    await Task.Delay(nextRun - now, stoppingToken);
+                    await RunOnce(stoppingToken);
+                }
+                catch (TaskCanceledException) { }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "MonthlyBillGenerator failed; retrying in 1h");
+                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                }
             }
         }
 
-        private async Task GenerateCurrentMonth(CancellationToken ct)
+        public async Task RunOnce(CancellationToken ct = default)
         {
-            using var scope = _sp.CreateScope();
+            using var scope = _services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var mail = scope.ServiceProvider.GetRequiredService<IEmailSenderService>();
 
-            var now = DateTime.UtcNow;
-            int y = now.Year, m = now.Month;
+            var today = DateTime.UtcNow;
+            int y = today.Year, m = today.Month;
 
-            // Pull all active profiles with a flat that has an active tenant
             var profiles = await db.OwnerBillingProfiles
-                .Include(p => p.Flat)
+                .AsNoTracking()
                 .Where(p => p.IsActive)
+                .Select(p => new { p.FlatId, p.RentAmount, p.ElectricityAmount, p.GasAmount, p.WaterAmount, p.CommonBillAmount, p.ServiceChargeAmount, p.OtherAmount })
                 .ToListAsync(ct);
+
+            if (profiles.Count == 0) return;
+
+            var flatIds = profiles.Select(p => p.FlatId).Distinct().ToList();
+
+            var existing = await db.TenantBills
+                .Where(b => flatIds.Contains(b.FlatId) && b.Year == y && b.Month == m)
+                .Select(b => b.FlatId)
+                .ToListAsync(ct);
+            var exist = existing.ToHashSet();
+
+            var newBills = new List<TenantBill>();
+
+            // map active tenant per flat
+            var activeTenants = await db.Tenants
+                .AsNoTracking()
+                .Where(t => flatIds.Contains(t.FlatId) && t.IsActive)
+                .Select(t => new { t.Id, t.FlatId, t.UserId })
+                .ToListAsync(ct);
+
+            var userEmails = await db.Users
+                .AsNoTracking()
+                .Where(u => activeTenants.Select(t => t.UserId).Contains(u.Id))
+                .Select(u => new { u.Id, u.Email, u.UserName })
+                .ToListAsync(ct);
+            var emailByUserId = userEmails.ToDictionary(x => x.Id, x => x.Email);
 
             foreach (var p in profiles)
             {
-                // Find active tenant for the flat
-                var tenant = await db.Tenants
-                    .Where(t => t.FlatId == p.FlatId && t.IsActive)
-                    .FirstOrDefaultAsync(ct);
+                if (exist.Contains(p.FlatId)) continue;
 
-                if (tenant == null) continue;
+                var tenant = activeTenants.FirstOrDefault(t => t.FlatId == p.FlatId);
+                if (tenant == null) continue; // no active tenant
 
-                bool exists = await db.TenantBills
-                    .AnyAsync(b => b.FlatId == p.FlatId && b.Year == y && b.Month == m, ct);
+                var total = p.RentAmount + p.ElectricityAmount + p.GasAmount + p.WaterAmount
+                            + p.CommonBillAmount + p.ServiceChargeAmount + p.OtherAmount;
 
-                if (exists) continue;
-
-                var total = p.RentAmount + p.ElectricityAmount + p.GasAmount + p.WaterAmount +
-                            p.CommonBillAmount + p.ServiceChargeAmount + p.OtherAmount;
+                var due = new DateTime(y, m, 1);
 
                 var bill = new TenantBill
                 {
@@ -77,12 +112,42 @@ namespace ApartmentManagementSystem.Services
                     PaidAmount = 0m,
                     Status = "Unpaid",
                     CreatedAt = DateTime.UtcNow,
-                    DueDate = new DateTime(y, m, 1)
+                    DueDate = due
                 };
 
                 db.TenantBills.Add(bill);
+                newBills.Add(bill);
             }
+
+            if (newBills.Count == 0)
+            {
+                _logger.LogInformation("MonthlyBillGenerator: nothing to create for {Y}-{M:00}", y, m);
+                return;
+            }
+
             await db.SaveChangesAsync(ct);
+
+            // Send emails (best-effort; ignore failures)
+            foreach (var bill in newBills)
+            {
+                var tenant = activeTenants.FirstOrDefault(t => t.Id == bill.TenantId);
+                if (tenant == null) continue;
+                if (!emailByUserId.TryGetValue(tenant.UserId!, out var email) || string.IsNullOrWhiteSpace(email)) continue;
+
+                var subject = $"Your {bill.Year}-{bill.Month:D2} bill is ready";
+                var body = $@"
+                            <p>Hello,</p>
+                            <p>Your monthly bill for <strong>{bill.Year}-{bill.Month:D2}</strong> has been generated.</p>
+                            <ul>
+                                <li>Total Amount: <strong>{bill.TotalAmount:C}</strong></li>
+                                <li>Due Date: <strong>{bill.DueDate:yyyy-MM-dd}</strong></li>
+                                <li>Status: <strong>{bill.Status}</strong></li>
+                            </ul>
+                            <p>Please log in to your tenant portal to view details.</p>";
+                await mail.SendAsync(email, subject, body, ct: ct);
+            }
+
+            _logger.LogInformation("MonthlyBillGenerator: created {Count} bills for {Y}-{M:00}", newBills.Count, y, m);
         }
     }
 }
