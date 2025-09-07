@@ -58,3 +58,32 @@
     <span class="me-3">Created: @Model.NewlyCreated</span>
     <span>Closed: @Model.ClosedInRange</span>
 </div>
+
+<div class="card shadow mb-3">
+    <div class="card-header"><strong>Tickets by Status</strong></div>
+    <div class="card-body"><canvas id="maintBars" height="120"></canvas></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function() {
+          var labels = ['Open', 'In Progress', 'Closed'];
+          var counts = [@Model.OpenCount, @Model.InProgressCount, @Model.ClosedCount];
+          var ctx = document.getElementById('maintBars').getContext('2d');
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: 'Tickets',
+                data: counts,
+                backgroundColor: ['rgba(255,205,86,0.6)','rgba(54,162,235,0.6)','rgba(75,192,192,0.6)'],
+                borderColor:   ['rgba(255,205,86,1)','rgba(54,162,235,1)','rgba(75,192,192,1)'],
+                borderWidth: 1
+              }]
+            },
+            options: { scales: { yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }] } }
+          });
+        })();
+    </script>
+}

@@ -1,4 +1,5 @@
-﻿@model ApartmentManagementSystem.ViewModels.Reports.VisitorReportViewModel
+﻿@using System.Text.Json
+@model ApartmentManagementSystem.ViewModels.Reports.VisitorReportViewModel
 @{
     ViewData["Title"] = "Visitor Report";
 }
@@ -48,6 +49,21 @@
     </div>
 </div>
 
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-3">
+            <div class="card-header"><strong>Daily Entries</strong></div>
+            <div class="card-body"><canvas id="visLine" height="140"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow mb-3">
+            <div class="card-header"><strong>By Category</strong></div>
+            <div class="card-body"><canvas id="visDonut" height="140"></canvas></div>
+        </div>
+    </div>
+</div>
+
 <div class="card shadow">
     <div class="card-header"><strong>Daily Counts</strong></div>
     <div class="card-body table-responsive">
@@ -66,3 +82,74 @@
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function() {
+          // Daily line
+          var dailyLabels = @Html.Raw(JsonSerializer.Serialize(
+                        Model.DailyCounts.Select(d => d.Day.ToString("yyyy-MM-dd"))));
+      var dailyCounts = @Html.Raw(JsonSerializer.Serialize(
+                    Model.DailyCounts.Select(d => d.Count)));
+
+      if (dailyLabels.length) {
+        var lineCtx = document.getElementById('visLine').getContext('2d');
+        new Chart(lineCtx, {
+          type: 'line',
+          data: {
+            labels: dailyLabels,
+            datasets: [{
+              label: 'Entries',
+              data: dailyCounts,
+              fill: false,
+              borderWidth: 2,
+              borderColor: 'rgba(75,192,192,1)',
+              pointRadius: 2
+            }]
+          },
+          options: {
+            scales: {
+              yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }]
+            }
+          }
+        });
+      }
+
+          // Category doughnut
+          var catPairs = @Html.Raw(JsonSerializer.Serialize(
+                    Model.ByCategory.OrderByDescending(kv => kv.Value).ToArray()));
+      var catLabels = catPairs.map(p => p.Key || 'Unknown');
+      var catValues = catPairs.map(p => p.Value);
+
+          if (catLabels.length) {
+            var donutCtx = document.getElementById('visDonut').getContext('2d');
+            new Chart(donutCtx, {
+              type: 'doughnut',
+              data: {
+                labels: catLabels,
+                datasets: [{
+                  data: catValues,
+                  backgroundColor: [
+                    'rgba(54,162,235,0.6)',
+                    'rgba(255,99,132,0.6)',
+                    'rgba(255,206,86,0.6)',
+                    'rgba(75,192,192,0.6)',
+                    'rgba(153,102,255,0.6)',
+                    'rgba(201,203,207,0.6)'
+                  ],
+                  borderColor: [
+                    'rgba(54,162,235,1)',
+                    'rgba(255,99,132,1)',
+                    'rgba(255,206,86,1)',
+                    'rgba(75,192,192,1)',
+                    'rgba(153,102,255,1)',
+                    'rgba(201,203,207,1)'
+                  ]
+                }]
+              },
+              options: { legend: { position: 'bottom' } }
+            });
+          }
+        })();
+    </script>
+}

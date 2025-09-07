@@ -1,4 +1,5 @@
-﻿@model ApartmentManagementSystem.ViewModels.Reports.FinancialReportViewModel
+﻿@using System.Text.Json
+@model ApartmentManagementSystem.ViewModels.Reports.FinancialReportViewModel
 @{
     ViewData["Title"] = "Financial Report";
 }
@@ -55,6 +56,14 @@
     </div>
 </div>
 
+@* Chart.js *@
+<div class="card shadow mb-3">
+    <div class="card-header"><strong>Collected vs. Outstanding (by Bill)</strong></div>
+    <div class="card-body">
+        <canvas id="finStacked" height="120"></canvas>
+    </div>
+</div>
+
 <div class="card shadow">
     <div class="card-header"><strong>Bill Breakdown</strong></div>
     <div class="card-body table-responsive">
@@ -87,3 +96,39 @@
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function() {
+          var labels = @Html.Raw(JsonSerializer.Serialize(
+                        Model.Rows.Select(r => $"{r.BillDate:yyyy-MM-dd} — {r.Title}")));
+      var collected = @Html.Raw(JsonSerializer.Serialize(
+                    Model.Rows.Select(r => r.Collected)));
+      var outstanding = @Html.Raw(JsonSerializer.Serialize(
+                    Model.Rows.Select(r => Math.Max(r.TotalAmount - r.Collected, 0m))));
+
+      if (labels.length) {
+        var ctx = document.getElementById('finStacked').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              { label: 'Collected', data: collected, backgroundColor: 'rgba(40,167,69,0.6)', borderColor: 'rgba(40,167,69,1)', borderWidth: 1, stack: 's' },
+              { label: 'Outstanding', data: outstanding, backgroundColor: 'rgba(220,53,69,0.6)', borderColor: 'rgba(220,53,69,1)', borderWidth: 1, stack: 's' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            tooltips: { mode: 'index', intersect: false },
+            scales: {
+              xAxes: [{ stacked: true }],
+              yAxes: [{ stacked: true, ticks: { beginAtZero: true } }]
+            }
+          }
+        });
+      }
+    })();
+</script>
+}
