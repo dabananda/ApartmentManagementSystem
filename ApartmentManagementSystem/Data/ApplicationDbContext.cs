@@ -120,6 +120,11 @@ namespace ApartmentManagementSystem.Data
 
             modelBuilder.Entity<ApplicationUser>()
                 .HasIndex(u => u.BuildingId);
+            modelBuilder.Entity<MaintenanceTicket>()
+                .HasIndex(t => new { t.BuildingId, t.CreatedByUserId });
+
+            modelBuilder.Entity<MaintenanceTicket>()
+                .HasIndex(t => new { t.BuildingId, t.FlatId, t.CreatedAt });
         }
     }
 }

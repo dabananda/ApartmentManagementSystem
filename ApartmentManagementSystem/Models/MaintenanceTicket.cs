@@ -21,5 +21,8 @@ namespace ApartmentManagementSystem.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ClosedAt { get; set; }
+
+        public Guid? FlatId { get; set; }
+        public string? CreatedByUserId { get; set; }
     }
 }

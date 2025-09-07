@@ -1,0 +1,40 @@
+﻿@model IEnumerable<ApartmentManagementSystem.Models.MaintenanceTicket>
+@{
+    ViewData["Title"] = "Maintenance Tickets";
+    var ok = TempData["Ok"] as string;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Maintenance Tickets</h1>
+    <a asp-action="NewTicket" class="btn btn-primary">
+        <i class="bi bi-tools me-1"></i> Open Ticket
+    </a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(ok))
+{
+    <div class="alert alert-success">@ok</div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No tickets yet.</div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var t in Model)
+        {
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <strong>@t.Title</strong>
+                    <small class="text-muted">@t.Status • @t.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</small>
+                </div>
+                <div class="text-muted">@t.Description</div>
+                @if (t.ClosedAt.HasValue)
+                {
+                    <div><small class="text-muted">Closed @t.ClosedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</small></div>
+                }
+            </div>
+        }
+    </div>
+}
