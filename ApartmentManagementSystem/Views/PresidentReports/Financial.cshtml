@@ -1,0 +1,89 @@
+﻿@model ApartmentManagementSystem.ViewModels.Reports.FinancialReportViewModel
+@{
+    ViewData["Title"] = "Financial Report";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">Financial Report — @Model.BuildingName</h2>
+    <a asp-action="FinancialCsv" asp-route-from="@Model.Filter.From?.ToString("yyyy-MM-dd")"
+       asp-route-to="@Model.Filter.To?.ToString("yyyy-MM-dd")"
+       class="btn btn-outline-secondary">Export CSV</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <label class="form-label">From</label>
+        <input type="date" name="From" class="form-control" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">To</label>
+        <input type="date" name="To" class="form-control" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-auto align-self-end">
+        <button class="btn btn-primary">Apply</button>
+    </div>
+</form>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted">Bills</div><div class="h4">@Model.TotalBills.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted">Collected</div><div class="h4">@Model.TotalCollected.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted">Payments</div><div class="h4">@Model.TotalPayments.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted">Net</div>
+                <div class="h4 @(Model.NetBalance >= 0 ? "text-success" : "text-danger")">@Model.NetBalance.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header"><strong>Bill Breakdown</strong></div>
+    <div class="card-body table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Collected</th>
+                    <th class="text-end">Outstanding</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td>@r.BillDate.ToString("yyyy-MM-dd")</td>
+                        <td>@r.Title</td>
+                        <td class="text-end">@r.TotalAmount.ToString("C")</td>
+                        <td class="text-end">@r.Collected.ToString("C")</td>
+                        <td class="text-end">@r.Outstanding.ToString("C")</td>
+                    </tr>
+                }
+                @if (!Model.Rows.Any())
+                {
+                    <tr><td colspan="5"><em class="text-muted">No bills in this range.</em></td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

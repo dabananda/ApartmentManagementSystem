@@ -144,6 +144,21 @@
                                 </a>
                             </li>
                             <hr />
+                            <p class="ms-2"><strong>Reports</strong></p>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Financial"><i class="bi bi-cash-coin me-1"></i> Financial Report</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Occupancy"><i class="bi bi-house-door me-1"></i> Occupancy Report</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Visitors"><i class="bi bi-people me-1"></i> Visitor Report</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="PresidentReports" asp-action="Maintenance"><i class="bi bi-tools me-1"></i> Maintenance Report</a>
+                            </li>
+
+                            <hr />
                             <p class="ms-2"><strong>Owner Dasboard</strong></p>
                         }
                         @if (User.IsInRole("Owner"))
