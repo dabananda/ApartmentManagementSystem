@@ -8,9 +8,14 @@
 <h2 class="mb-3">Manage Users</h2>
 
 <!-- FILTERS -->
-<form method="get" asp-controller="Admin" asp-action="Users" class="row g-2 mb-3">
+<form method="get" asp-controller="Admin" asp-action="Users" class="row justify-content-between mb-3">
     <div class="col-md-3">
-        <input class="form-control" name="Query" placeholder="Search name/email/phone" value="@Model.Filter.Query" />
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon1">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input class="form-control" name="Query" placeholder="Search by name, email or phone" value="@Model.Filter.Query">
+        </div>
     </div>
 
     <div class="col-md-3">
@@ -50,12 +55,12 @@
         </select>
     </div>
 
-    <div class="col-md-2 d-flex align-items-center">
+    @* <div class="col-md-2 d-flex align-items-center">
         <div class="form-check">
             <input class="form-check-input" type="checkbox" name="LockedOnly" value="true" @(Model.Filter.LockedOnly ? "checked=\"checked\"" : "") />
             <label class="form-check-label">Locked only</label>
         </div>
-    </div>
+    </div> *@
 
     <div class="col-md-2">
         <select class="form-select" name="PageSize">
@@ -76,9 +81,9 @@
         </select>
     </div>
 
-    <div class="col-md-12 col-lg-12 mt-2 mt-lg-0">
+    <div class="col-md-2">
         <button class="btn btn-primary" type="submit">Filter</button>
-        <a class="btn btn-outline-secondary ms-1" asp-controller="Admin" asp-action="Users">Clear</a>
+        <a class="btn btn-outline-secondary" asp-controller="Admin" asp-action="Users">Clear</a>
     </div>
 </form>
 
@@ -107,14 +112,14 @@ else
                 <!-- Bulk role changes -->
                 <button type="submit"
                         formmethod="post"
-                        formaction="@Url.Action("BulkChangeRole","Admin")"
+                        formaction="@Url.Action("BulkChangeRole", "Admin")"
                         name="role" value="Owner"
                         class="btn btn-success btn-sm">
                     Set selected as Owner
                 </button>
                 <button type="submit"
                         formmethod="post"
-                        formaction="@Url.Action("BulkChangeRole","Admin")"
+                        formaction="@Url.Action("BulkChangeRole", "Admin")"
                         name="role" value="Tenant"
                         class="btn btn-primary btn-sm">
                     Set selected as Tenant
@@ -123,13 +128,13 @@ else
                 <!-- Bulk lock/unlock -->
                 <button type="submit"
                         formmethod="post"
-                        formaction="@Url.Action("BulkBlock","Admin")"
+                        formaction="@Url.Action("BulkBlock", "Admin")"
                         class="btn btn-warning btn-sm">
                     Block selected
                 </button>
                 <button type="submit"
                         formmethod="post"
-                        formaction="@Url.Action("BulkUnblock","Admin")"
+                        formaction="@Url.Action("BulkUnblock", "Admin")"
                         class="btn btn-outline-warning btn-sm">
                     Unblock selected
                 </button>
@@ -139,7 +144,7 @@ else
                 {
                     <button type="submit"
                             formmethod="post"
-                            formaction="@Url.Action("BulkDelete","Admin")"
+                            formaction="@Url.Action("BulkDelete", "Admin")"
                             class="btn btn-outline-danger btn-sm"
                             onclick="return confirm('Delete selected users? This cannot be undone.');">
                         Delete selected
@@ -165,85 +170,99 @@ else
                 </tr>
             </thead>
             <tbody>
-            @foreach (var u in Model.Users)
-            {
-                var rolesText = (u.Roles != null && u.Roles.Count > 0) ? string.Join(", ", u.Roles) : "-";
-                <tr>
-                    <td><input type="checkbox" name="ids" value="@u.Id" class="chkRow" /></td>
-                    <td>@u.Fullname</td>
-                    <td>@u.Email</td>
-                    <td>@u.PhoneNumber</td>
-                    <td>@u.BuildingName</td>
-                    <td>@rolesText</td>
-                    <td>
-                        @if (u.EmailConfirmed) { <span class="badge bg-success">Yes</span> }
-                        else { <span class="badge bg-secondary">No</span> }
-                    </td>
-                    <td>
-                        @if (u.IsLockedOut) { <span class="badge bg-warning text-dark">Locked</span> }
-                        else { <span class="badge bg-success">Active</span> }
-                    </td>
-                    <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
-                    <td>
-                        <!-- Role changes -->
-                        <button type="submit"
-                                formmethod="post"
-                                formaction="@Url.Action("ChangeRole","Admin", new { id = u.Id, role = "Owner" })"
-                                class="btn btn-sm btn-success">
-                            Make Owner
-                        </button>
-                        <button type="submit"
-                                formmethod="post"
-                                formaction="@Url.Action("ChangeRole","Admin", new { id = u.Id, role = "Tenant" })"
-                                class="btn btn-sm btn-primary ms-1"
-                                @(u.IsPresident ? "disabled" : null)>
-                            Make Tenant
-                        </button>
+                @foreach (var u in Model.Users)
+                {
+                    var rolesText = (u.Roles != null && u.Roles.Count > 0) ? string.Join(", ", u.Roles) : "-";
+                    <tr>
+                        <td><input type="checkbox" name="ids" value="@u.Id" class="chkRow" /></td>
+                        <td>@u.Fullname</td>
+                        <td>@u.Email</td>
+                        <td>@u.PhoneNumber</td>
+                        <td>@u.BuildingName</td>
+                        <td>@rolesText</td>
+                        <td>
+                            @if (u.EmailConfirmed)
+                            {
+                                <span class="badge bg-success">Yes</span>
+                            }
+                            else
+                            {
 
-                        <!-- Reset to pending -->
-                        <button type="submit"
-                                formmethod="post"
-                                formaction="@Url.Action("ResetUser","Admin", new { id = u.Id })"
-                                class="btn btn-sm btn-outline-secondary ms-1"
-                                @(u.IsPresident ? "disabled" : null)>
-                            Reset
-                        </button>
+                                <span class="badge bg-secondary">No</span>
+                            }
+                        </td>
+                        <td>
+                            @if (u.IsLockedOut)
+                            {
+                                <span class="badge bg-warning text-dark">Locked</span>
+                            }
+                            else
+                            {
 
-                        <!-- Block / Unblock -->
-                        @if (!u.IsLockedOut)
-                        {
+                                <span class="badge bg-success">Active</span>
+                            }
+                        </td>
+                        <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            <!-- Role changes -->
                             <button type="submit"
                                     formmethod="post"
-                                    formaction="@Url.Action("BlockUser","Admin", new { id = u.Id })"
-                                    class="btn btn-sm btn-warning ms-1"
-                                    @(u.IsPresident ? "disabled" : null)>
-                                Block
+                                    formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Owner" })"
+                                    class="btn btn-sm btn-success">
+                                Make Owner
                             </button>
-                        }
-                        else
-                        {
                             <button type="submit"
                                     formmethod="post"
-                                    formaction="@Url.Action("UnblockUser","Admin", new { id = u.Id })"
-                                    class="btn btn-sm btn-outline-warning ms-1">
-                                Unblock
+                                    formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Tenant" })"
+                                    class="btn btn-sm btn-primary ms-1"
+                                    @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                Make Tenant
                             </button>
-                        }
 
-                        <!-- Delete (SuperAdmin only) -->
-                        @if (User.IsInRole("SuperAdmin"))
-                        {
+                            <!-- Reset to pending -->
                             <button type="submit"
                                     formmethod="post"
-                                    formaction="@Url.Action("DeleteUser","Admin", new { id = u.Id })"
-                                    class="btn btn-sm btn-outline-danger ms-1"
-                                    onclick="return confirm('Delete this user? This cannot be undone.');">
-                                Delete
+                                    formaction="@Url.Action("ResetUser", "Admin", new { id = u.Id })"
+                                    class="btn btn-sm btn-outline-secondary ms-1"
+                                    @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                Reset
                             </button>
-                        }
-                    </td>
-                </tr>
-            }
+
+                            <!-- Block / Unblock -->
+                            @if (!u.IsLockedOut)
+                            {
+                                <button type="submit"
+                                        formmethod="post"
+                                        formaction="@Url.Action("BlockUser", "Admin", new { id = u.Id })"
+                                        class="btn btn-sm btn-warning ms-1"
+                                        @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                    Block
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit"
+                                        formmethod="post"
+                                        formaction="@Url.Action("UnblockUser", "Admin", new { id = u.Id })"
+                                        class="btn btn-sm btn-outline-warning ms-1">
+                                    Unblock
+                                </button>
+                            }
+
+                            <!-- Delete (SuperAdmin only) -->
+                            @if (User.IsInRole("SuperAdmin"))
+                            {
+                                <button type="submit"
+                                        formmethod="post"
+                                        formaction="@Url.Action("DeleteUser", "Admin", new { id = u.Id })"
+                                        class="btn btn-sm btn-outline-danger ms-1"
+                                        onclick="return confirm('Delete this user? This cannot be undone.');">
+                                    Delete
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
     </form>
