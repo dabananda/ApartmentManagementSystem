@@ -1,11 +1,10 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System.Data;
 
 namespace ApartmentManagementSystem.Controllers
@@ -15,13 +14,18 @@ namespace ApartmentManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _users;
-        private readonly IEmailSenderService _mail;
         private readonly ILogger<OwnerBillingController> _logger;
+        private readonly IEmailSender _mail;
 
-        public OwnerBillingController(ApplicationDbContext db, UserManager<ApplicationUser> users, IEmailSenderService mail,
-            ILogger<OwnerBillingController> logger)
+        public OwnerBillingController(ApplicationDbContext db,
+            UserManager<ApplicationUser> users,
+            ILogger<OwnerBillingController> logger,
+            IEmailSender mail)
         {
-            _db = db; _users = users; _mail = mail; _logger = logger;
+            _db = db;
+            _users = users;
+            _logger = logger;
+            _mail = mail;
         }
 
         // GET: /OwnerBilling/Profile/{flatId}
@@ -154,6 +158,21 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Bills), new { flatId = flat.Id });
         }
 
+        // GET: /OwnerBilling/Receipt/{billId}
+        [AllowAnonymous] // or keep locked down and require auth
+        public async Task<IActionResult> Receipt(Guid billId)
+        {
+            var bill = await _db.TenantBills
+                .Include(b => b.Tenant)
+                .Include(b => b.Flat)
+                .ThenInclude(f => f.Building)
+                .FirstOrDefaultAsync(b => b.Id == billId);
+
+            if (bill == null) return NotFound();
+
+            return View(bill);
+        }
+
         // POST: /OwnerBilling/ApplyPayment
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ApplyPayment(Guid billId, DateTime paymentDate, decimal amount, string? notes)
@@ -175,7 +194,7 @@ namespace ApartmentManagementSystem.Controllers
             using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
             try
             {
-                // Add rent record as the payment item (optional)
+                // Add rent record as the payment item
                 var rent = new Rent
                 {
                     Id = Guid.NewGuid(),
@@ -195,27 +214,57 @@ namespace ApartmentManagementSystem.Controllers
                 await _db.SaveChangesAsync(); // can throw DbUpdateConcurrencyException
                 await tx.CommitAsync();
 
-                // If fully paid, email tenant
+                // If fully paid, email tenant (moved outside transaction to avoid issues)
                 if (bill.Status == "Paid")
                 {
-                    var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == bill.TenantId);
-                    if (tenant?.UserId != null)
+                    try
                     {
-                        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == tenant.UserId);
-                        if (!string.IsNullOrWhiteSpace(user?.Email))
+                        var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == bill.TenantId);
+                        if (tenant != null)
                         {
-                            var subject = $"Receipt: {bill.Year}-{bill.Month:D2} bill PAID";
-                            var url = Url.Action(nameof(Receipt), "OwnerBilling", new { billId = bill.Id }, Request.Scheme);
-                            var body = $@"
-                                        <p>Thank you! Your bill for <strong>{bill.Year}-{bill.Month:D2}</strong> has been fully paid.</p>
-                                        <ul>
-                                          <li>Total: <strong>{bill.TotalAmount:C}</strong></li>
-                                          <li>Paid: <strong>{bill.PaidAmount:C}</strong></li>
-                                          <li>Status: <strong>{bill.Status}</strong></li>
-                                        </ul>
-                                        <p>You can view/print your receipt here: <a href=""{url}"">{url}</a></p>";
-                            await _mail.SendAsync(user.Email!, subject, body);
+                            string? emailToSend = null;
+
+                            // First, try to get email from the associated Identity user
+                            if (!string.IsNullOrEmpty(tenant.UserId))
+                            {
+                                var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == tenant.UserId);
+                                emailToSend = user?.Email;
+                            }
+
+                            // Fallback to tenant's direct email if no Identity user email found
+                            if (string.IsNullOrWhiteSpace(emailToSend) && !string.IsNullOrWhiteSpace(tenant.Email))
+                            {
+                                emailToSend = tenant.Email;
+                            }
+
+                            // Send email if we have a valid email address
+                            if (!string.IsNullOrWhiteSpace(emailToSend))
+                            {
+                                var subject = $"Receipt: {bill.Year}-{bill.Month:D2} bill PAID";
+                                var url = Url.Action(nameof(Receipt), "OwnerBilling", new { billId = bill.Id }, Request.Scheme);
+                                var body = $@"
+                                            <p>Dear {tenant.Fullname},</p>
+                                            <p>Thank you! Your bill for <strong>{bill.Year}-{bill.Month:D2}</strong> has been fully paid.</p>
+                                            <ul>
+                                              <li>Total: <strong>{bill.TotalAmount:C}</strong></li>
+                                              <li>Paid: <strong>{bill.PaidAmount:C}</strong></li>
+                                              <li>Status: <strong>{bill.Status}</strong></li>
+                                            </ul>
+                                            <p>You can view/print your receipt here: <a href=""{url}"">{url}</a></p>
+                                            <p>Best regards,<br/>Apartment Management</p>";
+
+                                await _mail.SendEmailAsync(emailToSend, subject, body);
+                                _logger.LogInformation("Payment confirmation email sent to {Email} for bill {BillId}", emailToSend, billId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("No email address found for tenant {TenantId} - cannot send payment confirmation", tenant.Id);
+                            }
                         }
+                    }
+                    catch (Exception emailEx)
+                    {
+                        _logger.LogError(emailEx, "Failed to send email notification for bill {BillId}", billId);
                     }
                 }
 
@@ -224,32 +273,17 @@ namespace ApartmentManagementSystem.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                await tx.RollbackAsync();
+                // Transaction will be automatically disposed, no need to manually rollback
                 TempData["Error"] = "The bill was updated by someone else. Reload and try again.";
                 return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
             }
             catch (Exception ex)
             {
-                await tx.RollbackAsync();
+                // Transaction will be automatically disposed, no need to manually rollback
                 _logger.LogError(ex, "ApplyPayment failed for {BillId}", billId);
                 TempData["Error"] = "Failed to apply payment.";
                 return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
             }
-        }
-
-        // GET: /OwnerBilling/Receipt/{billId}
-        [AllowAnonymous] // or keep locked down and require auth
-        public async Task<IActionResult> Receipt(Guid billId)
-        {
-            var bill = await _db.TenantBills
-                .Include(b => b.Tenant)
-                .Include(b => b.Flat)
-                .ThenInclude(f => f.Building)
-                .FirstOrDefaultAsync(b => b.Id == billId);
-
-            if (bill == null) return NotFound();
-
-            return View(bill);
         }
     }
 }

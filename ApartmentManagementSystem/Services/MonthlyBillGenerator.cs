@@ -1,5 +1,6 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Services
@@ -45,7 +46,7 @@ namespace ApartmentManagementSystem.Services
         {
             using var scope = _services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var mail = scope.ServiceProvider.GetRequiredService<IEmailSenderService>();
+            var mail = scope.ServiceProvider.GetRequiredService<IEmailSender>();
 
             var today = DateTime.UtcNow;
             int y = today.Year, m = today.Month;
@@ -128,23 +129,59 @@ namespace ApartmentManagementSystem.Services
             await db.SaveChangesAsync(ct);
 
             // Send emails (best-effort; ignore failures)
+            // Replace the email sending logic in MonthlyBillGenerator.RunOnce method
+
+            // Send emails (best-effort; ignore failures)
             foreach (var bill in newBills)
             {
-                var tenant = activeTenants.FirstOrDefault(t => t.Id == bill.TenantId);
-                if (tenant == null) continue;
-                if (!emailByUserId.TryGetValue(tenant.UserId!, out var email) || string.IsNullOrWhiteSpace(email)) continue;
+                try
+                {
+                    var tenant = activeTenants.FirstOrDefault(t => t.Id == bill.TenantId);
+                    if (tenant == null) continue;
 
-                var subject = $"Your {bill.Year}-{bill.Month:D2} bill is ready";
-                var body = $@"
-                            <p>Hello,</p>
-                            <p>Your monthly bill for <strong>{bill.Year}-{bill.Month:D2}</strong> has been generated.</p>
-                            <ul>
-                                <li>Total Amount: <strong>{bill.TotalAmount:C}</strong></li>
-                                <li>Due Date: <strong>{bill.DueDate:yyyy-MM-dd}</strong></li>
-                                <li>Status: <strong>{bill.Status}</strong></li>
-                            </ul>
-                            <p>Please log in to your tenant portal to view details.</p>";
-                await mail.SendAsync(email, subject, body, ct: ct);
+                    string? emailToSend = null;
+
+                    // First, try to get email from the associated Identity user
+                    if (!string.IsNullOrEmpty(tenant.UserId) && emailByUserId.TryGetValue(tenant.UserId, out var userEmail))
+                    {
+                        emailToSend = userEmail;
+                    }
+
+                    // If no Identity user email, get the tenant's direct email from the database
+                    if (string.IsNullOrWhiteSpace(emailToSend))
+                    {
+                        var tenantWithEmail = await db.Tenants.AsNoTracking()
+                            .FirstOrDefaultAsync(t => t.Id == tenant.Id, ct);
+                        emailToSend = tenantWithEmail?.Email;
+                    }
+
+                    // Send email if we have a valid email address
+                    if (!string.IsNullOrWhiteSpace(emailToSend))
+                    {
+                        var subject = $"Your {bill.Year}-{bill.Month:D2} bill is ready";
+                        var body = $@"
+                                    <p>Dear Tenant,</p>
+                                    <p>Your monthly bill for <strong>{bill.Year}-{bill.Month:D2}</strong> has been generated.</p>
+                                    <ul>
+                                        <li>Total Amount: <strong>{bill.TotalAmount:C}</strong></li>
+                                        <li>Due Date: <strong>{bill.DueDate:yyyy-MM-dd}</strong></li>
+                                        <li>Status: <strong>{bill.Status}</strong></li>
+                                    </ul>
+                                    <p>Please log in to your tenant portal to view details and make payments.</p>
+                                    <p>Best regards,<br/>Apartment Management</p>";
+
+                        await mail.SendEmailAsync(emailToSend, subject, body);
+                        _logger.LogInformation("Bill notification email sent to {Email} for bill {BillId}", emailToSend, bill.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No email address found for tenant {TenantId} - cannot send bill notification", tenant.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send email notification for bill {BillId}", bill.Id);
+                }
             }
 
             _logger.LogInformation("MonthlyBillGenerator: created {Count} bills for {Y}-{M:00}", newBills.Count, y, m);
