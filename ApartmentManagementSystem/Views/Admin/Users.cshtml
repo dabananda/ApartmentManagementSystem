@@ -1,201 +1,288 @@
-﻿@model IEnumerable<ApartmentManagementSystem.ViewModels.UserDetailsViewModel>
+﻿@model ApartmentManagementSystem.ViewModels.ManageUsersPageViewModel
 @{
-    ViewData["Title"] = "System Users";
+    ViewData["Title"] = "Manage Users";
+    var totalPages = (int)Math.Ceiling((double)Model.Total / Math.Max(1, Model.Filter.PageSize));
+    var current = Math.Max(1, Model.Filter.Page);
 }
 
-<div class="container-fluid px-4 py-3">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-dark mb-1">System Users</h2>
-            <p class="text-muted mb-0">Manage all users across the platform</p>
-        </div>
-        <a asp-action="CreateUser" class="btn btn-primary rounded-pill px-4">
-            <i class="fas fa-plus me-2"></i>Add New User
-        </a>
+<h2 class="mb-3">Manage Users</h2>
+
+<!-- FILTERS -->
+<form method="get" asp-controller="Admin" asp-action="Users" class="row g-2 mb-3">
+    <div class="col-md-3">
+        <input class="form-control" name="Query" placeholder="Search name/email/phone" value="@Model.Filter.Query" />
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="stats-card stats-card-blue">
-                <div class="stats-card-body">
-                    <div class="stats-label">TOTAL USERS</div>
-                    <div class="stats-value">@Model.Count()</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card stats-card-green">
-                <div class="stats-card-body">
-                    <div class="stats-label">ACTIVE USERS</div>
-                    <div class="stats-value">@Model.Count(u => u.AccountStatus == "Active")</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card stats-card-orange">
-                <div class="stats-card-body">
-                    <div class="stats-label">PRESIDENTS</div>
-                    <div class="stats-value">@Model.Count(u => u.IsPresident)</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-card stats-card-purple">
-                <div class="stats-card-body">
-                    <div class="stats-label">PROPERTY OWNERS</div>
-                    <div class="stats-value">@Model.Count(u => u.IsOwner)</div>
-                </div>
-            </div>
+    <div class="col-md-3">
+        <select class="form-select" name="BuildingId">
+            <option value="">All Buildings</option>
+            @foreach (var b in Model.Buildings)
+            {
+                var selected = (Model.Filter.BuildingId.HasValue && Model.Filter.BuildingId.Value.ToString() == b.Value);
+                if (selected)
+                {
+                    <option value="@b.Value" selected="selected">@b.Text</option>
+                }
+                else
+                {
+                    <option value="@b.Value">@b.Text</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <select class="form-select" name="Role">
+            @{
+                var roles = new[] { "All", "President", "Owner", "Tenant" };
+            }
+            @foreach (var r in roles)
+            {
+                if (string.Equals(Model.Filter.Role, r, StringComparison.OrdinalIgnoreCase))
+                {
+                    <option value="@r" selected="selected">@r</option>
+                }
+                else
+                {
+                    <option value="@r">@r</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-center">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="LockedOnly" value="true" @(Model.Filter.LockedOnly ? "checked=\"checked\"" : "") />
+            <label class="form-check-label">Locked only</label>
         </div>
     </div>
 
-    <!-- Users Grid -->
-    <div class="row">
-        @foreach (var user in Model)
-        {
-            <div class="col-lg-6 col-xl-4 mb-4">
-                <div class="card border-0 shadow-sm h-100 user-card">
-                    <div class="card-body p-4">
-                        <!-- Header -->
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="avatar-circle me-3">
-                                @user.Fullname.Substring(0, 1).ToUpper()
-                            </div>
-                            <div class="flex-grow-1">
-                                <h5 class="fw-bold mb-1">@user.Fullname</h5>
-                                <div class="d-flex flex-wrap gap-1">
-                                    @foreach (var role in user.Roles)
-                                    {
-                                        <span class="badge rounded-pill role-badge role-@role.ToLower()">
-                                            @role
-                                        </span>
-                                    }
-                                </div>
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="dropdown">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit</a></li>
-                                    <li><a class="dropdown-item" href="#"><i class="fas fa-lock me-2"></i>Details</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
-                                </ul>
-                            </div>
-                        </div>
+    <div class="col-md-2">
+        <select class="form-select" name="PageSize">
+            @{
+                var sizes = new[] { 10, 20, 50, 100 };
+            }
+            @foreach (var ps in sizes)
+            {
+                if (Model.Filter.PageSize == ps)
+                {
+                    <option value="@ps" selected="selected">@ps / page</option>
+                }
+                else
+                {
+                    <option value="@ps">@ps / page</option>
+                }
+            }
+        </select>
+    </div>
 
-                        <!-- Contact Info -->
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="fas fa-envelope text-muted me-2" style="width: 16px;"></i>
-                                <small class="text-muted">@user.Email</small>
-                            </div>
-                            @if (!string.IsNullOrEmpty(user.PhoneNumber))
-                            {
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-phone text-muted me-2" style="width: 16px;"></i>
-                                    <small class="text-muted">@user.PhoneNumber</small>
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(user.BuildingName))
-                            {
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-building text-muted me-2" style="width: 16px;"></i>
-                                    <small class="text-muted">@user.BuildingName</small>
-                                </div>
-                            }
-                        </div>
+    <div class="col-md-12 col-lg-12 mt-2 mt-lg-0">
+        <button class="btn btn-primary" type="submit">Filter</button>
+        <a class="btn btn-outline-secondary ms-1" asp-controller="Admin" asp-action="Users">Clear</a>
+    </div>
+</form>
 
-                        <!-- Status -->
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-@user.StatusClass bg-opacity-10 text-@user.StatusClass border border-@user.StatusClass border-opacity-25 px-3 py-2">
-                                @user.AccountStatus
-                            </span>
-                            @if (user.EmailConfirmed)
-                            {
-                                <i class="fas fa-check-circle text-success" title="Email Verified"></i>
-                            }
-                            else
-                            {
-                                <i class="fas fa-exclamation-circle text-warning" title="Email Not Verified"></i>
-                            }
-                        </div>
+<!-- FLASH -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
 
-                        <!-- Stats Row -->
-                        @if (user.IsOwner)
+@if (!Model.Users.Any())
+{
+    <div class="alert alert-info">No approved users found.</div>
+}
+else
+{
+    <!-- SINGLE OUTER FORM (bulk actions). Row buttons override with formaction. -->
+    <form id="bulkForm" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+            <div class="d-flex flex-wrap gap-2">
+                <!-- Bulk role changes -->
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkChangeRole","Admin")"
+                        name="role" value="Owner"
+                        class="btn btn-success btn-sm">
+                    Set selected as Owner
+                </button>
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkChangeRole","Admin")"
+                        name="role" value="Tenant"
+                        class="btn btn-primary btn-sm">
+                    Set selected as Tenant
+                </button>
+
+                <!-- Bulk lock/unlock -->
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkBlock","Admin")"
+                        class="btn btn-warning btn-sm">
+                    Block selected
+                </button>
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkUnblock","Admin")"
+                        class="btn btn-outline-warning btn-sm">
+                    Unblock selected
+                </button>
+
+                <!-- Bulk delete (SuperAdmin only) -->
+                @if (User.IsInRole("SuperAdmin"))
+                {
+                    <button type="submit"
+                            formmethod="post"
+                            formaction="@Url.Action("BulkDelete","Admin")"
+                            class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('Delete selected users? This cannot be undone.');">
+                        Delete selected
+                    </button>
+                }
+            </div>
+            <small class="text-muted">Showing @Model.Users.Count of @Model.Total result(s)</small>
+        </div>
+
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th style="width:28px;"><input type="checkbox" id="chkAll" /></th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Building</th>
+                    <th>Roles</th>
+                    <th>Email Confirmed</th>
+                    <th>Locked</th>
+                    <th>Registered</th>
+                    <th style="width:350px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var u in Model.Users)
+            {
+                var rolesText = (u.Roles != null && u.Roles.Count > 0) ? string.Join(", ", u.Roles) : "-";
+                <tr>
+                    <td><input type="checkbox" name="ids" value="@u.Id" class="chkRow" /></td>
+                    <td>@u.Fullname</td>
+                    <td>@u.Email</td>
+                    <td>@u.PhoneNumber</td>
+                    <td>@u.BuildingName</td>
+                    <td>@rolesText</td>
+                    <td>
+                        @if (u.EmailConfirmed) { <span class="badge bg-success">Yes</span> }
+                        else { <span class="badge bg-secondary">No</span> }
+                    </td>
+                    <td>
+                        @if (u.IsLockedOut) { <span class="badge bg-warning text-dark">Locked</span> }
+                        else { <span class="badge bg-success">Active</span> }
+                    </td>
+                    <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <!-- Role changes -->
+                        <button type="submit"
+                                formmethod="post"
+                                formaction="@Url.Action("ChangeRole","Admin", new { id = u.Id, role = "Owner" })"
+                                class="btn btn-sm btn-success">
+                            Make Owner
+                        </button>
+                        <button type="submit"
+                                formmethod="post"
+                                formaction="@Url.Action("ChangeRole","Admin", new { id = u.Id, role = "Tenant" })"
+                                class="btn btn-sm btn-primary ms-1"
+                                @(u.IsPresident ? "disabled" : null)>
+                            Make Tenant
+                        </button>
+
+                        <!-- Reset to pending -->
+                        <button type="submit"
+                                formmethod="post"
+                                formaction="@Url.Action("ResetUser","Admin", new { id = u.Id })"
+                                class="btn btn-sm btn-outline-secondary ms-1"
+                                @(u.IsPresident ? "disabled" : null)>
+                            Reset
+                        </button>
+
+                        <!-- Block / Unblock -->
+                        @if (!u.IsLockedOut)
                         {
-                            <div class="row text-center border-top pt-3">
-                                <div class="col-4">
-                                    <div class="fw-bold text-primary">@user.FlatCount</div>
-                                    <small class="text-muted">Flats</small>
-                                </div>
-                                <div class="col-4">
-                                    <div class="fw-bold text-info">@user.TenantCount</div>
-                                    <small class="text-muted">Tenants</small>
-                                </div>
-                                <div class="col-4">
-                                    @if (user.HasOutstandingBills)
-                                    {
-                                        <div class="fw-bold text-danger">$@user.OutstandingAmount.ToString("N0")</div>
-                                        <small class="text-muted">Outstanding</small>
-                                    }
-                                    else
-                                    {
-                                        <div class="fw-bold text-success">$0</div>
-                                        <small class="text-muted">Outstanding</small>
-                                    }
-                                </div>
-                            </div>
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("BlockUser","Admin", new { id = u.Id })"
+                                    class="btn btn-sm btn-warning ms-1"
+                                    @(u.IsPresident ? "disabled" : null)>
+                                Block
+                            </button>
                         }
                         else
                         {
-                            <div class="text-center border-top pt-3">
-                                @if (user.LastLoginDate.HasValue)
-                                {
-                                    <small class="text-muted">Last seen @user.LastLoginDate.Value.ToString("MMM dd, yyyy")</small>
-                                }
-                                else
-                                {
-                                    <small class="text-muted">Never logged in</small>
-                                }
-                            </div>
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("UnblockUser","Admin", new { id = u.Id })"
+                                    class="btn btn-sm btn-outline-warning ms-1">
+                                Unblock
+                            </button>
                         }
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
 
-    @if (!Model.Any())
+                        <!-- Delete (SuperAdmin only) -->
+                        @if (User.IsInRole("SuperAdmin"))
+                        {
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("DeleteUser","Admin", new { id = u.Id })"
+                                    class="btn btn-sm btn-outline-danger ms-1"
+                                    onclick="return confirm('Delete this user? This cannot be undone.');">
+                                Delete
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </form>
+
+    @if (totalPages > 1)
     {
-        <div class="text-center py-5">
-            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-            <h4 class="text-muted">No Users Found</h4>
-            <p class="text-muted">Start by creating your first user account.</p>
-            <a asp-action="CreateUser" class="btn btn-primary rounded-pill px-4">
-                <i class="fas fa-plus me-2"></i>Create User
-            </a>
-        </div>
+        <nav aria-label="Users pagination">
+            <ul class="pagination">
+                @for (int p = 1; p <= totalPages; p++)
+                {
+                    <li class="page-item @(p == current ? "active" : "")">
+                        <a class="page-link"
+                           asp-controller="Admin"
+                           asp-action="Users"
+                           asp-route-Page="@p"
+                           asp-route-PageSize="@Model.Filter.PageSize"
+                           asp-route-Query="@Model.Filter.Query"
+                           asp-route-BuildingId="@Model.Filter.BuildingId"
+                           asp-route-Role="@Model.Filter.Role"
+                           asp-route-LockedOnly="@Model.Filter.LockedOnly">
+                            @p
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
     }
-</div>
+}
 
-
-<link href="~/css/users.css" rel="stylesheet" />
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add smooth animations and interactions
-        const cards = document.querySelectorAll('.user-card');
-
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-4px)';
+@section Scripts {
+    <script>
+        (function () {
+            var chkAll = document.getElementById('chkAll');
+            if (!chkAll) return;
+            chkAll.addEventListener('change', function (e) {
+                var on = e.target.checked;
+                var rows = document.querySelectorAll('.chkRow');
+                for (var i = 0; i < rows.length; i++) rows[i].checked = on;
             });
-
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-    });
-</script>
+        })();
+    </script>
+}

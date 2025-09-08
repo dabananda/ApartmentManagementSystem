@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApartmentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250905134357_LinkTenantToUser")]
-    partial class LinkTenantToUser
+    [Migration("20250908110253_AddBuildingCode")]
+    partial class AddBuildingCode
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,35 @@ namespace ApartmentManagementSystem.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.Announcement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("BuildingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId", "CreatedAt");
+
+                    b.ToTable("Announcements");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -33,12 +62,21 @@ namespace ApartmentManagementSystem.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid?>("BuildingId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -51,6 +89,9 @@ namespace ApartmentManagementSystem.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -107,9 +148,13 @@ namespace ApartmentManagementSystem.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -117,6 +162,9 @@ namespace ApartmentManagementSystem.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -296,6 +344,104 @@ namespace ApartmentManagementSystem.Migrations
                     b.ToTable("Flats");
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.MaintenanceTicket", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BuildingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("FlatId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(140)
+                        .HasColumnType("nvarchar(140)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId", "CreatedByUserId");
+
+                    b.HasIndex("BuildingId", "FlatId", "CreatedAt");
+
+                    b.HasIndex("BuildingId", "Status", "CreatedAt");
+
+                    b.ToTable("MaintenanceTickets");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.OwnerBillingProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CommonBillAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ElectricityAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("FlatId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("GasAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal>("OtherAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("RentAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ServiceChargeAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("WaterAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FlatId")
+                        .IsUnique();
+
+                    b.ToTable("OwnerBillingProfiles");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.Rent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -311,10 +457,15 @@ namespace ApartmentManagementSystem.Migrations
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("TenantBillId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantBillId");
 
                     b.HasIndex("TenantId");
 
@@ -358,6 +509,77 @@ namespace ApartmentManagementSystem.Migrations
                         .HasFilter("[UserId] IS NOT NULL");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.TenantBill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CommonBillAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ElectricityAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("FlatId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("GasAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("OtherAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("RentAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<decimal>("ServiceChargeAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("WaterAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("FlatId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("TenantBills");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -593,8 +815,24 @@ namespace ApartmentManagementSystem.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.OwnerBillingProfile", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Flat");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.Rent", b =>
                 {
+                    b.HasOne("ApartmentManagementSystem.Models.TenantBill", "TenantBill")
+                        .WithMany()
+                        .HasForeignKey("TenantBillId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ApartmentManagementSystem.Models.Tenant", "Tenant")
                         .WithMany("Rents")
                         .HasForeignKey("TenantId")
@@ -602,6 +840,8 @@ namespace ApartmentManagementSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Tenant");
+
+                    b.Navigation("TenantBill");
                 });
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.Tenant", b =>
@@ -609,7 +849,7 @@ namespace ApartmentManagementSystem.Migrations
                     b.HasOne("ApartmentManagementSystem.Models.Flat", "Flat")
                         .WithMany("Tenants")
                         .HasForeignKey("FlatId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ApartmentManagementSystem.Models.ApplicationUser", "User")
@@ -620,6 +860,25 @@ namespace ApartmentManagementSystem.Migrations
                     b.Navigation("Flat");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.TenantBill", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ApartmentManagementSystem.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Flat");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

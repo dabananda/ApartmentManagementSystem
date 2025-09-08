@@ -5,7 +5,7 @@
 namespace ApartmentManagementSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class AddTenantBillRowVersion12 : Migration
+    public partial class UpdateModels : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

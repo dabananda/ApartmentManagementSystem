@@ -5,10 +5,14 @@ namespace ApartmentManagementSystem.Data
 {
     public static class DbInitializer
     {
-        public static async Task Initialize(ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, string superAdminPassword)
+        public static async Task Initialize(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            string superAdminPassword)
         {
-            // create roles
-            string[] roleNames = { "SuperAdmin", "President", "Owner", "Tenant" };
+            // Roles (added "User" for pending registrants)
+            string[] roleNames = { "SuperAdmin", "President", "Owner", "Tenant", "User" };
             foreach (var roleName in roleNames)
             {
                 if (!await roleManager.RoleExistsAsync(roleName))
@@ -17,7 +21,7 @@ namespace ApartmentManagementSystem.Data
                 }
             }
 
-            // create super admin user
+            // Seed SuperAdmin
             if (await userManager.FindByEmailAsync("superadmin@ams.com") == null)
             {
                 var superAdmin = new ApplicationUser
@@ -25,8 +29,10 @@ namespace ApartmentManagementSystem.Data
                     UserName = "superadmin@ams.com",
                     Email = "superadmin@ams.com",
                     Fullname = "Super Admin",
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    IsApproved = true
                 };
+
                 var result = await userManager.CreateAsync(superAdmin, superAdminPassword);
                 if (result.Succeeded)
                 {

@@ -159,6 +159,15 @@ namespace ApartmentManagementSystem.Data
 
             modelBuilder.Entity<MaintenanceTicket>()
                 .HasIndex(t => new { t.BuildingId, t.FlatId, t.CreatedAt });
+
+            // NEW: unique building code
+            modelBuilder.Entity<Building>()
+                .HasIndex(b => b.Code)
+                .IsUnique();
+
+            // Helpful indexes
+            modelBuilder.Entity<ApplicationUser>()
+                .HasIndex(u => u.BuildingId);
         }
     }
 }
