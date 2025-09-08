@@ -2,6 +2,7 @@ using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddSingleton<IEmailSenderService, SmtpEmailSender>();
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.AddHostedService<MonthlyBillGenerator>();
 
 var app = builder.Build();

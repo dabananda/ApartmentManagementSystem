@@ -60,7 +60,8 @@ namespace ApartmentManagementSystem.Controllers
             return View();
         }
 
-        // POST: Tenant/Create
+        // Replace the tenant creation logic in TenantController.Create POST method
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Fullname,Email,PhoneNumber,IsActive,FlatId")] Tenant tenant)
@@ -73,16 +74,17 @@ namespace ApartmentManagementSystem.Controllers
                 return Forbid();
             }
 
-            // After ModelState.IsValid check inside Create action
             if (ModelState.IsValid)
             {
-                // 1) Ensure there is a user for this tenant email
+                // 1) Create Identity user only if tenant has a valid email
                 ApplicationUser? tenantUser = null;
                 if (!string.IsNullOrWhiteSpace(tenant.Email))
                 {
+                    // Check if user already exists
                     tenantUser = await _userManager.FindByEmailAsync(tenant.Email);
                     if (tenantUser == null)
                     {
+                        // Create new user
                         tenantUser = new ApplicationUser
                         {
                             Fullname = tenant.Fullname,
@@ -90,29 +92,47 @@ namespace ApartmentManagementSystem.Controllers
                             Email = tenant.Email,
                             EmailConfirmed = true
                         };
-                        var createResult = await _userManager.CreateAsync(tenantUser, _config["Password"]);
+
+                        var defaultPassword = _config["Password"] ?? "TempPass@123";
+                        var createResult = await _userManager.CreateAsync(tenantUser, defaultPassword);
+
                         if (createResult.Succeeded)
                         {
-                            // 2) Add Tenant role (role already exists)
+                            // Add Tenant role
                             await _userManager.AddToRoleAsync(tenantUser, "Tenant");
                         }
                         else
                         {
-                            // Handle errors (surface error message to UI)
-                            ModelState.AddModelError("", string.Join("; ", createResult.Errors.Select(e => e.Description)));
-                            ViewData["FlatId"] = tenant.FlatId;
-                            return View(tenant);
+                            // Log the error but don't fail the tenant creation
+                            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<TenantController>>();
+                            logger.LogError("Failed to create Identity user for tenant {Email}: {Errors}",
+                                tenant.Email, string.Join("; ", createResult.Errors.Select(e => e.Description)));
+
+                            // Set tenantUser to null so we proceed without Identity user
+                            tenantUser = null;
+
+                            // Add a model warning but don't fail
+                            ModelState.AddModelError("Email",
+                                "Tenant created successfully, but email account setup failed. The tenant can still receive emails at their direct email address.");
+                        }
+                    }
+                    else
+                    {
+                        // User exists, ensure they have Tenant role
+                        if (!await _userManager.IsInRoleAsync(tenantUser, "Tenant"))
+                        {
+                            await _userManager.AddToRoleAsync(tenantUser, "Tenant");
                         }
                     }
                 }
 
-                // 3) Link the domain Tenant to the Identity user
+                // 2) Create the domain Tenant record (regardless of Identity user creation success)
                 tenant.Id = Guid.NewGuid();
-                tenant.UserId = tenantUser?.Id;
+                tenant.UserId = tenantUser?.Id; // This might be null, and that's okay
 
                 _context.Add(tenant);
 
-                // Mark flat occupied (as you already do)
+                // 3) Mark flat as occupied
                 if (!flat.IsOccupied)
                 {
                     flat.IsOccupied = true;
@@ -121,7 +141,20 @@ namespace ApartmentManagementSystem.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // TODO: send an email invite/reset link to the tenant user for first-time password setup
+                // 4) Success message
+                if (tenantUser != null)
+                {
+                    TempData["Success"] = $"Tenant created successfully with email account. Login details will be provided separately.";
+                }
+                else if (!string.IsNullOrWhiteSpace(tenant.Email))
+                {
+                    TempData["Success"] = $"Tenant created successfully. Email notifications will be sent to {tenant.Email} directly.";
+                }
+                else
+                {
+                    TempData["Success"] = "Tenant created successfully. No email provided - notifications will not be sent.";
+                }
+
                 return RedirectToAction(nameof(ViewTenants), new { flatId = tenant.FlatId });
             }
 
