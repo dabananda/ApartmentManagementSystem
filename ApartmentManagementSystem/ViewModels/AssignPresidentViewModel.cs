@@ -1,20 +1,20 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ApartmentManagementSystem.ViewModels
 {
     public class AssignPresidentViewModel
     {
-        [Required]
-        [Display(Name = "Select User")]
-        public string UserId { get; set; }
+        [Display(Name = "Building")]
+        public Guid? BuildingId { get; set; }
 
-        [Required]
-        [Display(Name = "Select Building")]
-        public Guid BuildingId { get; set; }
+        public List<SelectListItem> Buildings { get; set; } = new();
 
-        // These properties will hold the data for the dropdowns
-        public SelectList? Users { get; set; }
-        public SelectList? Buildings { get; set; }
+        [Required, Display(Name = "Owner (of selected building)")]
+        public string? OwnerUserId { get; set; }
+
+        public List<SelectListItem> Owners { get; set; } = new();
     }
 }

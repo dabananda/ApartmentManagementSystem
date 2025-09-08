@@ -108,47 +108,46 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account
         {
             returnUrl ??= Url.Content("~/");
 
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+            if (!ModelState.IsValid)
+                return Page();
 
-            if (ModelState.IsValid)
+            var user = await _userManager.FindByEmailAsync(Input.Email);
+            if (user == null)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation("User logged in.");
-
-                    // Check if the user is a President and redirect to their building details page
-                    var user = await _userManager.FindByEmailAsync(Input.Email);
-                    if (await _userManager.IsInRoleAsync(user, "President"))
-                    {
-                        // Redirect to the building details page for their assigned building
-                        if (user.BuildingId.HasValue)
-                        {
-                            return RedirectToPage("/Building/Details", new { id = user.BuildingId.Value });
-                        }
-                    }
-
-                    return LocalRedirect(returnUrl);
-                }
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
-                }
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("User account locked out.");
-                    return RedirectToPage("./Lockout");
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return Page();
-                }
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                return Page();
             }
 
-            // If we got this far, something failed, redisplay form
+            // Try to sign in (our custom SignInManager will reject if not approved)
+            var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User logged in.");
+                return LocalRedirect(returnUrl);
+            }
+
+            if (result.IsLockedOut)
+            {
+                _logger.LogWarning("User account locked out.");
+                return RedirectToPage("./Lockout");
+            }
+
+            // Friendly reasons
+            if (!await _userManager.IsEmailConfirmedAsync(user))
+            {
+                ModelState.AddModelError(string.Empty, "Please confirm your email to continue.");
+                return Page();
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            if (!user.IsApproved || (roles.Count == 1 && roles.Contains("User")))
+            {
+                ModelState.AddModelError(string.Empty, "Your account is pending approval and role assignment by your building president.");
+                return Page();
+            }
+
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             return Page();
         }
     }

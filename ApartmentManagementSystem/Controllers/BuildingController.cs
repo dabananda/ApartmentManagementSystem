@@ -1,5 +1,6 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +13,16 @@ namespace ApartmentManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IBuildingCodeGenerator _codeGen;
 
-        public BuildingController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public BuildingController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            IBuildingCodeGenerator codeGen)
         {
             _context = context;
             _userManager = userManager;
+            _codeGen = codeGen;
         }
 
         // GET: Buildings
@@ -57,23 +63,28 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Buildings Create View
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            ViewData["SuggestedCode"] = await _codeGen.GenerateAsync();
             return View();
         }
 
         // POST: Building Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Address")] Building building)
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("Name,Address,Code")] Building building)
         {
-            if (ModelState.IsValid)
-            {
-                await _context.AddAsync(building);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(building);
+            if (string.IsNullOrWhiteSpace(building.Code))
+                building.Code = await _codeGen.GenerateAsync();
+
+            if (await _context.Buildings.AnyAsync(b => b.Code == building.Code))
+                ModelState.AddModelError(nameof(Building.Code), "Building code already exists.");
+
+            if (!ModelState.IsValid)
+                return View(building);
+
+            await _context.AddAsync(building);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Buildings Edit View
