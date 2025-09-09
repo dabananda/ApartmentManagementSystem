@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "SuperAdmin")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -269,18 +268,18 @@ namespace ApartmentManagementSystem.Controllers
 
             // Roles list (Owner is granted automatically with President)
             ViewBag.Roles = new List<SelectListItem>
-    {
-        new SelectListItem("User (pending)", "User"),
-        new SelectListItem("Tenant", "Tenant"),
-        new SelectListItem("President", "President")
-    };
+            {
+                new("User", "User"),
+                new("Tenant", "Tenant"),
+                new("Owner", "Owner")
+            };
 
             // Prefill building for President
             var vm = new CreateUserViewModel();
             if (User.IsInRole("President") && me?.BuildingId != null)
                 vm.BuildingId = me.BuildingId.Value;
 
-            return View(vm); // Views/Admin/CreateUser.cshtml
+            return View(vm);
         }
 
         // POST: Admin/CreateUser
@@ -310,11 +309,11 @@ namespace ApartmentManagementSystem.Controllers
                 ViewBag.Buildings = buildingItems;
 
                 ViewBag.Roles = new List<SelectListItem>
-        {
-            new SelectListItem("User (pending)", "User"),
-            new SelectListItem("Tenant", "Tenant"),
-            new SelectListItem("President", "President")
-        };
+                {
+                    new("User", "User"),
+                    new("Tenant", "Tenant"),
+                    new("Owner", "Owner")
+                };
             }
 
             if (!ModelState.IsValid)
@@ -355,7 +354,7 @@ namespace ApartmentManagementSystem.Controllers
                 UserName = model.Email,
                 PhoneNumber = model.PhoneNumber,
                 BuildingId = model.BuildingId,
-                EmailConfirmed = true,          // admin-created: mark confirmed
+                EmailConfirmed = true,
                 IsApproved = model.Role != "User", // pending only when role is "User"
                 ApprovedAt = model.Role == "User" ? null : DateTime.UtcNow,
                 ApprovedByUserId = model.Role == "User" ? null : me?.Id,
@@ -371,18 +370,26 @@ namespace ApartmentManagementSystem.Controllers
             }
 
             // Apply role rules
-            if (model.Role == "President")
+            //if (model.Role == "President")
+            //{
+            //    // President must also have Owner
+            //    await EnsureOnlyRolesAsync(user, "President", "Owner");
+            //    user.IsApproved = true;
+            //    user.ApprovedAt = DateTime.UtcNow;
+            //    user.ApprovedByUserId = me?.Id;
+            //    await _userManager.UpdateAsync(user);
+            //}
+            if (model.Role == "Tenant")
             {
-                // President must also have Owner
-                await EnsureOnlyRolesAsync(user, "President", "Owner");
+                await EnsureOnlyRolesAsync(user, "Tenant");
                 user.IsApproved = true;
                 user.ApprovedAt = DateTime.UtcNow;
                 user.ApprovedByUserId = me?.Id;
                 await _userManager.UpdateAsync(user);
             }
-            else if (model.Role == "Tenant")
+            else if (model.Role == "Owner")
             {
-                await EnsureOnlyRolesAsync(user, "Tenant");
+                await EnsureOnlyRolesAsync(user, "Owner");
                 user.IsApproved = true;
                 user.ApprovedAt = DateTime.UtcNow;
                 user.ApprovedByUserId = me?.Id;
