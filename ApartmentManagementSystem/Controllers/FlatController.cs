@@ -28,6 +28,10 @@ namespace ApartmentManagementSystem.Controllers
                             .Include(f => f.Building)
                             .Include(f => f.Tenants)
                             .ToListAsync();
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            ViewData["BuildingId"] = currentUser?.BuildingId;
+
             return View(flats);
         }
 
