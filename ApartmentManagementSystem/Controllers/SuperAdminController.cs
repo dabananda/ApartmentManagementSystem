@@ -37,6 +37,8 @@ namespace ApartmentManagementSystem.Controllers
             var superAdmins = await _userManager.GetUsersInRoleAsync("SuperAdmin");
             var presidents = await _userManager.GetUsersInRoleAsync("President");
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
+            var tenants = await _userManager.GetUsersInRoleAsync("Tenant");
+            var staffs = await _userManager.GetUsersInRoleAsync("Staff");
             var pendingUsers = await _userManager.GetUsersInRoleAsync("User"); // Users awaiting approval
             var totalTenants = await _context.Tenants.CountAsync();
 
@@ -93,8 +95,9 @@ namespace ApartmentManagementSystem.Controllers
                 TotalSuperAdmins = superAdmins.Count,
                 TotalPresidents = presidents.Count,
                 TotalOwners = owners.Count,
+                TotalStaffs = staffs.Count,
                 PendingApprovals = pendingUsers.Count,
-                TotalTenants = totalTenants,
+                TotalTenants = tenants.Count,
 
                 // Flats Data
                 TotalFlats = totalFlats,
