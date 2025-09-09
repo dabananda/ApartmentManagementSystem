@@ -421,6 +421,146 @@ namespace ApartmentManagementSystem.Controllers
             }
         }
 
+        // GET: Admin/EditUser/{id}
+        [Authorize(Roles = "SuperAdmin,President")]
+        [HttpGet]
+        public async Task<IActionResult> EditUser(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return BadRequest();
+
+            var me = await _userManager.GetUserAsync(User);
+            var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null) return NotFound();
+
+            // Presidents can only edit users from their building
+            if (User.IsInRole("President"))
+            {
+                if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
+            }
+
+            // Building select list
+            var buildingItems = new List<SelectListItem>();
+            if (User.IsInRole("SuperAdmin"))
+            {
+                buildingItems = await _context.Buildings
+                    .OrderBy(b => b.Name)
+                    .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                    .ToListAsync();
+            }
+            else if (user.BuildingId != null)
+            {
+                // President: show the current building only (read-only)
+                var b = await _context.Buildings.FindAsync(user.BuildingId);
+                if (b != null)
+                    buildingItems.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
+            }
+            ViewBag.Buildings = buildingItems;
+
+            var vm = new EditUserViewModel
+            {
+                Id = user.Id,
+                Fullname = user.Fullname,
+                Email = user.Email, // read-only in the view (changing email = changing username; handled elsewhere)
+                PhoneNumber = user.PhoneNumber,
+                BuildingId = user.BuildingId,
+                BuildingName = user.Building?.Name,
+                IsSuperAdminCaller = User.IsInRole("SuperAdmin")
+            };
+
+            return View(vm); // Views/Admin/EditUser.cshtml
+        }
+
+        // POST: Admin/EditUser
+        [Authorize(Roles = "SuperAdmin,President")]
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditUser(EditUserViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                // Refill building list
+                var buildingItems = new List<SelectListItem>();
+                if (User.IsInRole("SuperAdmin"))
+                {
+                    buildingItems = await _context.Buildings
+                        .OrderBy(b => b.Name)
+                        .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                        .ToListAsync();
+                }
+                else if (model.BuildingId != null)
+                {
+                    var b = await _context.Buildings.FindAsync(model.BuildingId);
+                    if (b != null)
+                        buildingItems.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
+                }
+                ViewBag.Buildings = buildingItems;
+                return View(model);
+            }
+
+            var me = await _userManager.GetUserAsync(User);
+            var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == model.Id);
+            if (user == null) return NotFound();
+
+            // Presidents can only edit within their building
+            if (User.IsInRole("President"))
+            {
+                if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
+            }
+
+            // Update basic fields
+            user.Fullname = model.Fullname?.Trim() ?? user.Fullname;
+            user.PhoneNumber = string.IsNullOrWhiteSpace(model.PhoneNumber) ? null : model.PhoneNumber.Trim();
+
+            // Building changes: only SuperAdmin can change
+            if (User.IsInRole("SuperAdmin"))
+            {
+                if (model.BuildingId.HasValue)
+                {
+                    var targetBuilding = await _context.Buildings.FindAsync(model.BuildingId.Value);
+                    if (targetBuilding == null)
+                    {
+                        ModelState.AddModelError(nameof(model.BuildingId), "Invalid building.");
+                        // rebuild list
+                        ViewBag.Buildings = await _context.Buildings
+                            .OrderBy(b => b.Name)
+                            .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                            .ToListAsync();
+                        return View(model);
+                    }
+                    user.BuildingId = model.BuildingId.Value;
+                }
+                else
+                {
+                    user.BuildingId = null;
+                }
+            }
+
+            var res = await _userManager.UpdateAsync(user);
+            if (!res.Succeeded)
+            {
+                foreach (var e in res.Errors) ModelState.AddModelError(string.Empty, e.Description);
+                // rebuild list
+                var buildingItems = new List<SelectListItem>();
+                if (User.IsInRole("SuperAdmin"))
+                {
+                    buildingItems = await _context.Buildings
+                        .OrderBy(b => b.Name)
+                        .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                        .ToListAsync();
+                }
+                else if (user.BuildingId != null)
+                {
+                    var b = await _context.Buildings.FindAsync(user.BuildingId);
+                    if (b != null)
+                        buildingItems.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
+                }
+                ViewBag.Buildings = buildingItems;
+                return View(model);
+            }
+
+            TempData["Success"] = $"Updated user {user.Fullname}.";
+            return RedirectToAction(nameof(Users), new { BuildingId = user.BuildingId });
+        }
+
         // GET: Admin/ApproveOwners
         [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> ApproveOwners()

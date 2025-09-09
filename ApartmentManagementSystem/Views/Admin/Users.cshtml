@@ -249,8 +249,15 @@ else
                                 </button>
                             }
 
+                            <a class="btn btn-sm btn-outline-dark"
+                               asp-controller="Admin"
+                               asp-action="EditUser"
+                               asp-route-id="@u.Id">
+                                Update
+                            </a>
+
                             <!-- Delete (SuperAdmin only) -->
-                            @if (User.IsInRole("SuperAdmin"))
+                            @if (User.IsInRole("SuperAdmin") || User.IsInRole("Owner"))
                             {
                                 <button type="submit"
                                         formmethod="post"
