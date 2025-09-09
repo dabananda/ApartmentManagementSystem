@@ -1,0 +1,39 @@
+﻿@model ApartmentManagementSystem.Models.CommonBill
+@{
+    ViewData["Title"] = "Edit Common Bill";
+}
+<h1>Edit Common Bill</h1>
+<hr />
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="BuildingId" />
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    @* <div class="mb-3">
+        <label class="form-label">Bill Date</label>
+        <input class="form-control" value="@Model.BillDate.ToString("yyyy-MM-dd")" readonly />
+        <small class="form-text text-muted">Bill date is recorded; not editable.</small>
+    </div> *@
+    <div class="mb-3">
+        <label asp-for="TotalAmount" class="form-label"></label>
+        <input asp-for="TotalAmount" class="form-control" />
+        <span asp-validation-for="TotalAmount" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Notes" class="form-label"></label>
+        <input asp-for="Notes" class="form-control" />
+        <span asp-validation-for="Notes" class="text-danger"></span>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-buildingId="@Model.BuildingId">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

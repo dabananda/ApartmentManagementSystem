@@ -6,6 +6,7 @@
 
 <div class="d-flex justify-content-between align-content-center mb-4">
     <h2 class="mb-0"><strong>All Flats</strong></h2>
+    <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]" class="btn btn-primary align-self-center">Add New Flat</a>
 </div>
 
 <table class="table" id="allFlatsTable">
@@ -15,7 +16,7 @@
             <th>Flat No.</th>
             <th>Owner</th>
             <th>Status</th>
-            <th>Tenant(s)</th>
+            <th>Tenant</th>
             <th>Actions</th>
         </tr>
     </thead>

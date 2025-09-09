@@ -112,7 +112,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="PresidentUsers" asp-action="Pending">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Approvals">
                                     <i class="bi bi-people me-1"></i>
                                     Pending Users
                                 </a>
@@ -138,6 +138,15 @@
                                     </a>
                                 }
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="OwnerSummary"
+                                   asp-action="Index"
+                                   asp-route-buildingId=@buildingId>
+                                    <i class="bi bi-people me-1"></i> Owner Bills Summary
+                                </a>
+                            </li>
+
                             <li class="nav-item">
                                 @if (buildingId.HasValue)
                                 {

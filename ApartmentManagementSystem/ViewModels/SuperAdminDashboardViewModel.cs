@@ -13,6 +13,7 @@ namespace ApartmentManagementSystem.ViewModels
         public int TotalSuperAdmins { get; set; }
         public int TotalPresidents { get; set; }
         public int TotalOwners { get; set; }
+        public int TotalStaffs { get; set; }
         public int PendingApprovals { get; set; }
         public int TotalTenants { get; set; }
 
