@@ -270,6 +270,7 @@ namespace ApartmentManagementSystem.Controllers
             ViewBag.Roles = new List<SelectListItem>
             {
                 new("User", "User"),
+                new("Staff", "Staff"),
                 new("Tenant", "Tenant"),
                 new("Owner", "Owner")
             };
@@ -311,6 +312,7 @@ namespace ApartmentManagementSystem.Controllers
                 ViewBag.Roles = new List<SelectListItem>
                 {
                     new("User", "User"),
+                    new("Staff", "Staff"),
                     new("Tenant", "Tenant"),
                     new("Owner", "Owner")
                 };
@@ -395,6 +397,14 @@ namespace ApartmentManagementSystem.Controllers
                 user.ApprovedByUserId = me?.Id;
                 await _userManager.UpdateAsync(user);
             }
+            else if (model.Role == "Staff")
+            {
+                await EnsureOnlyRolesAsync(user, "Staff");
+                user.IsApproved = true;
+                user.ApprovedAt = DateTime.UtcNow;
+                user.ApprovedByUserId = me?.Id;
+                await _userManager.UpdateAsync(user);
+            }
             else // "User" (pending)
             {
                 await EnsureOnlyRolesAsync(user, "User");
@@ -411,7 +421,7 @@ namespace ApartmentManagementSystem.Controllers
             async Task EnsureOnlyRolesAsync(ApplicationUser u, params string[] rolesToKeep)
             {
                 // Remove all managed roles
-                foreach (var r in new[] { "User", "Tenant", "Owner", "President" })
+                foreach (var r in new[] { "User", "Staff", "Tenant", "Owner", "President" })
                     if (await _userManager.IsInRoleAsync(u, r))
                         await _userManager.RemoveFromRoleAsync(u, r);
 
@@ -693,7 +703,7 @@ namespace ApartmentManagementSystem.Controllers
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
             role = (role ?? "").Trim();
-            if (role != "Owner" && role != "Tenant")
+            if (role != "Owner" && role != "Tenant" && role != "Staff")
             {
                 TempData["Error"] = "Invalid role.";
                 return RedirectToAction(nameof(Approvals));
@@ -716,7 +726,7 @@ namespace ApartmentManagementSystem.Controllers
                 if (currentIsSuperAdmin)
                 {
                     // SuperAdmin may demote a President to Owner-only or Tenant-only
-                    foreach (var r in new[] { "User", "Owner", "Tenant", "President" })
+                    foreach (var r in new[] { "User", "Staff", "Owner", "Tenant", "President" })
                         if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
 
                     await _userManager.AddToRoleAsync(user, role); // Owner OR Tenant
@@ -740,7 +750,7 @@ namespace ApartmentManagementSystem.Controllers
             else
             {
                 // Non-president: exactly one of Owner/Tenant
-                foreach (var r in new[] { "User", "Owner", "Tenant" })
+                foreach (var r in new[] { "User", "Staff", "Owner", "Tenant" })
                     if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
                 await _userManager.AddToRoleAsync(user, role);
             }
@@ -776,7 +786,7 @@ namespace ApartmentManagementSystem.Controllers
                 return RedirectToAction(nameof(Approvals));
             }
             role = (role ?? "").Trim();
-            if (role != "Owner" && role != "Tenant")
+            if (role != "Owner" && role != "Tenant" && role != "Staff")
             {
                 TempData["Error"] = "Invalid role.";
                 return RedirectToAction(nameof(Approvals));
@@ -801,7 +811,7 @@ namespace ApartmentManagementSystem.Controllers
                 {
                     if (currentIsSuperAdmin)
                     {
-                        foreach (var r in new[] { "User", "Owner", "Tenant", "President" })
+                        foreach (var r in new[] { "User", "Staff", "Owner", "Tenant", "President" })
                             if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
                         await _userManager.AddToRoleAsync(user, role);
                     }
@@ -816,7 +826,7 @@ namespace ApartmentManagementSystem.Controllers
                 }
                 else
                 {
-                    foreach (var r in new[] { "User", "Owner", "Tenant" })
+                    foreach (var r in new[] { "User", "Staff", "Owner", "Tenant" })
                         if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
                     await _userManager.AddToRoleAsync(user, role);
                 }
@@ -872,121 +882,99 @@ namespace ApartmentManagementSystem.Controllers
 
         // -------------------- APPROVED USERS MANAGEMENT --------------------
 
+        // GET: Admin/Users
         [Authorize(Roles = "SuperAdmin,President")]
         [HttpGet]
         public async Task<IActionResult> Users([FromQuery] ManageUsersFilterViewModel filter)
         {
             var me = await _userManager.GetUserAsync(User);
 
-            // Exclude "pending" (role: User) AND exclude SuperAdmins entirely
-            var pendingIds = (await _userManager.GetUsersInRoleAsync("User")).Select(u => u.Id).ToHashSet();
-            var superAdminIds = (await _userManager.GetUsersInRoleAsync("SuperAdmin")).Select(u => u.Id).ToHashSet();
+            // Base query: exclude self, only approved users
+            IQueryable<ApplicationUser> q = _userManager.Users
+                .Where(u => u.Id != me.Id && u.IsApproved)
+                .Include(u => u.Building);
 
-            var query = _userManager.Users
-                .Include(u => u.Building)
-                .Where(u => u.IsApproved && !pendingIds.Contains(u.Id) && !superAdminIds.Contains(u.Id)); // <-- exclude SuperAdmins
-
-            // Presidents only see/manage their building
+            // Presidents are scoped to their own building
             if (User.IsInRole("President"))
             {
                 if (me?.BuildingId == null) return Forbid();
                 filter.BuildingId ??= me.BuildingId;
             }
-            if (filter.BuildingId != null)
-                query = query.Where(u => u.BuildingId == filter.BuildingId);
 
-            // Search
+            if (filter.BuildingId.HasValue)
+                q = q.Where(u => u.BuildingId == filter.BuildingId);
+
+            if (filter.LockedOnly)
+                q = q.Where(u => u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+
             if (!string.IsNullOrWhiteSpace(filter.Query))
             {
-                var q = filter.Query.Trim().ToLower();
-                query = query.Where(u =>
-                    (u.Fullname ?? "").ToLower().Contains(q) ||
-                    (u.Email ?? "").ToLower().Contains(q) ||
-                    (u.PhoneNumber ?? "").ToLower().Contains(q));
+                var term = filter.Query.Trim().ToLower();
+                q = q.Where(u =>
+                    (u.Fullname ?? "").ToLower().Contains(term) ||
+                    (u.Email ?? "").ToLower().Contains(term) ||
+                    (u.PhoneNumber ?? "").ToLower().Contains(term));
             }
 
-            // Execute base page (after excluding superadmins)
-            var total = await query.CountAsync();
+            // Role filter (All | President | Owner | Tenant | Staff)
+            if (!string.Equals(filter.Role, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                var roleUsers = await _userManager.GetUsersInRoleAsync(filter.Role);
+                var ids = roleUsers.Select(u => u.Id).ToList();
+                q = q.Where(u => ids.Contains(u.Id));
+            }
+
+            // Pagination
+            var total = await q.CountAsync();
             var pageSize = Math.Clamp(filter.PageSize, 5, 100);
             var page = Math.Max(1, filter.Page);
 
-            var pageUsers = await query
-                .OrderBy(u => u.Fullname)
+            var users = await q.OrderBy(u => u.Fullname)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
             // Roles for the page
             var roleMap = new Dictionary<string, IList<string>>();
-            foreach (var u in pageUsers)
-                roleMap[u.Id] = await _userManager.GetRolesAsync(u);
+            foreach (var u in users) roleMap[u.Id] = await _userManager.GetRolesAsync(u);
 
-            // Optional role filter on the page results
-            IEnumerable<ApplicationUser> filteredUsers = pageUsers;
-            if (filter.Role.Equals("President", StringComparison.OrdinalIgnoreCase))
-                filteredUsers = pageUsers.Where(u => roleMap[u.Id].Contains("President"));
-            else if (filter.Role.Equals("Owner", StringComparison.OrdinalIgnoreCase))
-                filteredUsers = pageUsers.Where(u => roleMap[u.Id].Contains("Owner"));
-            else if (filter.Role.Equals("Tenant", StringComparison.OrdinalIgnoreCase))
-                filteredUsers = pageUsers.Where(u => roleMap[u.Id].Contains("Tenant"));
-
-            if (filter.LockedOnly)
-                filteredUsers = filteredUsers.Where(u => (u.LockoutEnabled && u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.UtcNow));
-
-            // Buildings dropdown
-            var buildings = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+            // Building dropdown
+            var buildings = new List<SelectListItem>();
             if (User.IsInRole("SuperAdmin"))
             {
-                buildings = await _context.Buildings
-                    .OrderBy(b => b.Name)
-                    .Select(b => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
-                    {
-                        Value = b.Id.ToString(),
-                        Text = $"{b.Name} ({b.Code})"
-                    })
+                buildings = await _context.Buildings.OrderBy(b => b.Name)
+                    .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
                     .ToListAsync();
             }
             else if (me?.BuildingId != null)
             {
                 var b = await _context.Buildings.FindAsync(me.BuildingId);
-                if (b != null)
-                {
-                    buildings.Add(new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
-                    {
-                        Value = b.Id.ToString(),
-                        Text = $"{b.Name} ({b.Code})"
-                    });
-                }
+                if (b != null) buildings.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
             }
 
-            // Map to VM
             var vm = new ManageUsersPageViewModel
             {
                 Filter = filter,
                 Buildings = buildings,
-                Total = total, // total after excluding superadmins
-                Users = filteredUsers.Select(u =>
+                Users = users.Select(u => new UserRowViewModel
                 {
-                    var roles = roleMap[u.Id].ToList();
-                    return new UserRowViewModel
-                    {
-                        Id = u.Id,
-                        Fullname = u.Fullname,
-                        Email = u.Email,
-                        PhoneNumber = u.PhoneNumber,
-                        BuildingId = u.BuildingId,
-                        BuildingName = u.Building?.Name,
-                        EmailConfirmed = u.EmailConfirmed,
-                        IsApproved = u.IsApproved,
-                        IsPresident = roles.Contains("President"),
-                        Roles = roles,
-                        CreatedAt = u.CreatedAt,
-                        IsLockedOut = u.LockoutEnabled && u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.UtcNow
-                    };
-                }).ToList()
+                    Id = u.Id,
+                    Fullname = u.Fullname,
+                    Email = u.Email,
+                    PhoneNumber = u.PhoneNumber,
+                    BuildingId = u.BuildingId,
+                    BuildingName = u.Building?.Name,
+                    EmailConfirmed = u.EmailConfirmed,
+                    IsApproved = u.IsApproved,
+                    IsLockedOut = u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow,
+                    IsPresident = roleMap[u.Id].Contains("President"),
+                    CreatedAt = u.CreatedAt,
+                    Roles = roleMap[u.Id].ToList()
+                }).ToList(),
+                Total = total
             };
 
-            return View(vm); // Views/Admin/Users.cshtml
+            return View(vm);
         }
 
         [Authorize(Roles = "SuperAdmin,President")]
@@ -995,7 +983,7 @@ namespace ApartmentManagementSystem.Controllers
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
             role = (role ?? "").Trim();
-            if (role != "Owner" && role != "Tenant")
+            if (role != "Owner" && role != "Tenant" && role != "Staff")
             {
                 TempData["Error"] = "Invalid role.";
                 return RedirectToAction(nameof(Users));
@@ -1018,7 +1006,7 @@ namespace ApartmentManagementSystem.Controllers
                 if (currentIsSuperAdmin)
                 {
                     // Demote to single role (Owner or Tenant)
-                    foreach (var r in new[] { "User", "Owner", "Tenant", "President" })
+                    foreach (var r in new[] { "User", "Staff", "Owner", "Tenant", "President" })
                         if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
                     await _userManager.AddToRoleAsync(user, role);
                 }
@@ -1037,7 +1025,7 @@ namespace ApartmentManagementSystem.Controllers
             }
             else
             {
-                foreach (var r in new[] { "Owner", "Tenant", "User" })
+                foreach (var r in new[] { "Owner", "Tenant", "Staff", "User" })
                     if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
                 await _userManager.AddToRoleAsync(user, role);
             }

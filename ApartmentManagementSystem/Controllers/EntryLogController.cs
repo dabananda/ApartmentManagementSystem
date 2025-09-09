@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "SuperAdmin,President,Owner,Staff")]
     public class EntryLogController : Controller
     {
         private readonly ApplicationDbContext _context;
