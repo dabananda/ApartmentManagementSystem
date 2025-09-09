@@ -43,23 +43,31 @@ namespace ApartmentManagementSystem.Controllers
             if (user?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
             ViewData["BuildingId"] = buildingId;
-            return View();
+            // Prefill today's date; the view will display it (read-only)
+            return View(new CommonBill
+            {
+                BuildingId = buildingId.Value,
+                BillDate = DateTime.Today
+            });
         }
 
         // POST: CommonBill/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,BillDate,TotalAmount,Notes,BuildingId")] CommonBill bill)
+        public async Task<IActionResult> Create([Bind("Name,TotalAmount,Notes,BuildingId")] CommonBill bill)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+
+            // Auto-implement bill date on the server
+            bill.BillDate = DateTime.Today;
 
             if (ModelState.IsValid)
             {
                 await _context.AddAsync(bill);
                 await _context.SaveChangesAsync();
 
-                // Allocate the bill to all flat owners in the building
+                // Allocate the bill to all flat owners in the building (existing behavior)
                 var owners = await _context.Flats
                     .Where(f => f.BuildingId == bill.BuildingId && f.OwnerId != null)
                     .Select(f => f.Owner)
@@ -93,6 +101,113 @@ namespace ApartmentManagementSystem.Controllers
 
             ViewData["BuildingId"] = bill.BuildingId;
             return View(bill);
+        }
+
+        // GET: CommonBill/Details/{id}
+        public async Task<IActionResult> Details(Guid id)
+        {
+            var bill = await _context.CommonBills
+                .Include(b => b.Building)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+            if (bill == null) return NotFound();
+
+            var me = await _userManager.GetUserAsync(User);
+            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+
+            ViewData["BuildingId"] = bill.BuildingId;
+            return View(bill);
+        }
+
+        // GET: CommonBill/Edit/{id}
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            var bill = await _context.CommonBills.FindAsync(id);
+            if (bill == null) return NotFound();
+
+            var me = await _userManager.GetUserAsync(User);
+            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+
+            ViewData["BuildingId"] = bill.BuildingId;
+            return View(bill);
+        }
+
+        // POST: CommonBill/Edit/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,TotalAmount,Notes,BuildingId")] CommonBill input)
+        {
+            if (id != input.Id) return NotFound();
+
+            var bill = await _context.CommonBills.FirstOrDefaultAsync(b => b.Id == id);
+            if (bill == null) return NotFound();
+
+            var me = await _userManager.GetUserAsync(User);
+            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+
+            if (!ModelState.IsValid)
+            {
+                ViewData["BuildingId"] = bill.BuildingId;
+                return View(bill);
+            }
+
+            // Only allow editing name/amount/notes; keep original BillDate
+            bill.Name = input.Name;
+            bill.TotalAmount = input.TotalAmount;
+            bill.Notes = input.Notes;
+
+            _context.Update(bill);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Common bill updated successfully.";
+            return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
+        }
+
+        // GET: CommonBill/Delete/{id}
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var bill = await _context.CommonBills
+                .Include(b => b.Building)
+                .FirstOrDefaultAsync(b => b.Id == id);
+            if (bill == null) return NotFound();
+
+            var me = await _userManager.GetUserAsync(User);
+            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+
+            // Prevent delete if there are payments referencing this bill (DB has NoAction on FK)
+            var hasPayments = await _context.ExpensePayments.AnyAsync(p => p.CommonBillId == bill.Id);
+            ViewData["HasPayments"] = hasPayments;
+
+            return View(bill);
+        }
+
+        // POST: CommonBill/Delete/{id}
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
+            var bill = await _context.CommonBills.FirstOrDefaultAsync(b => b.Id == id);
+            if (bill == null) return NotFound();
+
+            var me = await _userManager.GetUserAsync(User);
+            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+
+            var hasPayments = await _context.ExpensePayments.AnyAsync(p => p.CommonBillId == bill.Id);
+            if (hasPayments)
+            {
+                TempData["Error"] = "Cannot delete this common bill because there are recorded payments against it.";
+                return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
+            }
+
+            // Remove allocations first (cascades would handle, but be explicit and safe)
+            var allocations = _context.ExpenseAllocations.Where(a => a.CommonBillId == bill.Id);
+            _context.ExpenseAllocations.RemoveRange(allocations);
+
+            _context.CommonBills.Remove(bill);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Common bill deleted.";
+            return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
         }
     }
 }

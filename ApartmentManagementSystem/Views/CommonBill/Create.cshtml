@@ -17,11 +17,16 @@
                 <input asp-for="Name" class="form-control" />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            @* <div class="form-group">
                 <label asp-for="BillDate" class="control-label"></label>
                 <input asp-for="BillDate" class="form-control" />
                 <span asp-validation-for="BillDate" class="text-danger"></span>
-            </div>
+            </div> *@
+            @* <div class="mb-3">
+                <label class="form-label">Bill Date</label>
+                <input class="form-control" value="@Model.BillDate.ToString("yyyy-MM-dd")" readonly />
+                <small class="form-text text-muted">This is set automatically.</small>
+            </div> *@
             <div class="form-group">
                 <label asp-for="TotalAmount" class="control-label"></label>
                 <input asp-for="TotalAmount" class="form-control" />

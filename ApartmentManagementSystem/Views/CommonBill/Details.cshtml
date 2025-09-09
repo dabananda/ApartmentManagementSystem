@@ -1,0 +1,21 @@
+﻿@model ApartmentManagementSystem.Models.CommonBill
+@{
+    ViewData["Title"] = "Common Bill Details";
+}
+<h1>Common Bill Details</h1>
+<hr />
+<dl class="row">
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@Model.Name</dd>
+    <dt class="col-sm-3">Total Amount</dt>
+    <dd class="col-sm-9">@Model.TotalAmount</dd>
+    <dt class="col-sm-3">Bill Date</dt>
+    <dd class="col-sm-9">@Model.BillDate.ToString("yyyy-MM-dd")</dd>
+    <dt class="col-sm-3">Notes</dt>
+    <dd class="col-sm-9">@Model.Notes</dd>
+</dl>
+<div class="mt-3 d-flex gap-2">
+    <a class="btn btn-warning" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+    <a class="btn btn-danger" asp-action="Delete" asp-route-id="@Model.Id">Delete</a>
+    <a class="btn btn-outline-secondary" asp-action="Index" asp-route-buildingId="@Model.BuildingId">Back to Bills</a>
+</div>
