@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "SuperAdmin")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -269,18 +268,18 @@ namespace ApartmentManagementSystem.Controllers
 
             // Roles list (Owner is granted automatically with President)
             ViewBag.Roles = new List<SelectListItem>
-    {
-        new SelectListItem("User (pending)", "User"),
-        new SelectListItem("Tenant", "Tenant"),
-        new SelectListItem("President", "President")
-    };
+            {
+                new("User", "User"),
+                new("Tenant", "Tenant"),
+                new("Owner", "Owner")
+            };
 
             // Prefill building for President
             var vm = new CreateUserViewModel();
             if (User.IsInRole("President") && me?.BuildingId != null)
                 vm.BuildingId = me.BuildingId.Value;
 
-            return View(vm); // Views/Admin/CreateUser.cshtml
+            return View(vm);
         }
 
         // POST: Admin/CreateUser
@@ -310,11 +309,11 @@ namespace ApartmentManagementSystem.Controllers
                 ViewBag.Buildings = buildingItems;
 
                 ViewBag.Roles = new List<SelectListItem>
-        {
-            new SelectListItem("User (pending)", "User"),
-            new SelectListItem("Tenant", "Tenant"),
-            new SelectListItem("President", "President")
-        };
+                {
+                    new("User", "User"),
+                    new("Tenant", "Tenant"),
+                    new("Owner", "Owner")
+                };
             }
 
             if (!ModelState.IsValid)
@@ -355,7 +354,7 @@ namespace ApartmentManagementSystem.Controllers
                 UserName = model.Email,
                 PhoneNumber = model.PhoneNumber,
                 BuildingId = model.BuildingId,
-                EmailConfirmed = true,          // admin-created: mark confirmed
+                EmailConfirmed = true,
                 IsApproved = model.Role != "User", // pending only when role is "User"
                 ApprovedAt = model.Role == "User" ? null : DateTime.UtcNow,
                 ApprovedByUserId = model.Role == "User" ? null : me?.Id,
@@ -371,18 +370,26 @@ namespace ApartmentManagementSystem.Controllers
             }
 
             // Apply role rules
-            if (model.Role == "President")
+            //if (model.Role == "President")
+            //{
+            //    // President must also have Owner
+            //    await EnsureOnlyRolesAsync(user, "President", "Owner");
+            //    user.IsApproved = true;
+            //    user.ApprovedAt = DateTime.UtcNow;
+            //    user.ApprovedByUserId = me?.Id;
+            //    await _userManager.UpdateAsync(user);
+            //}
+            if (model.Role == "Tenant")
             {
-                // President must also have Owner
-                await EnsureOnlyRolesAsync(user, "President", "Owner");
+                await EnsureOnlyRolesAsync(user, "Tenant");
                 user.IsApproved = true;
                 user.ApprovedAt = DateTime.UtcNow;
                 user.ApprovedByUserId = me?.Id;
                 await _userManager.UpdateAsync(user);
             }
-            else if (model.Role == "Tenant")
+            else if (model.Role == "Owner")
             {
-                await EnsureOnlyRolesAsync(user, "Tenant");
+                await EnsureOnlyRolesAsync(user, "Owner");
                 user.IsApproved = true;
                 user.ApprovedAt = DateTime.UtcNow;
                 user.ApprovedByUserId = me?.Id;
@@ -412,6 +419,146 @@ namespace ApartmentManagementSystem.Controllers
                 foreach (var r in rolesToKeep.Distinct())
                     await _userManager.AddToRoleAsync(u, r);
             }
+        }
+
+        // GET: Admin/EditUser/{id}
+        [Authorize(Roles = "SuperAdmin,President")]
+        [HttpGet]
+        public async Task<IActionResult> EditUser(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return BadRequest();
+
+            var me = await _userManager.GetUserAsync(User);
+            var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null) return NotFound();
+
+            // Presidents can only edit users from their building
+            if (User.IsInRole("President"))
+            {
+                if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
+            }
+
+            // Building select list
+            var buildingItems = new List<SelectListItem>();
+            if (User.IsInRole("SuperAdmin"))
+            {
+                buildingItems = await _context.Buildings
+                    .OrderBy(b => b.Name)
+                    .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                    .ToListAsync();
+            }
+            else if (user.BuildingId != null)
+            {
+                // President: show the current building only (read-only)
+                var b = await _context.Buildings.FindAsync(user.BuildingId);
+                if (b != null)
+                    buildingItems.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
+            }
+            ViewBag.Buildings = buildingItems;
+
+            var vm = new EditUserViewModel
+            {
+                Id = user.Id,
+                Fullname = user.Fullname,
+                Email = user.Email, // read-only in the view (changing email = changing username; handled elsewhere)
+                PhoneNumber = user.PhoneNumber,
+                BuildingId = user.BuildingId,
+                BuildingName = user.Building?.Name,
+                IsSuperAdminCaller = User.IsInRole("SuperAdmin")
+            };
+
+            return View(vm); // Views/Admin/EditUser.cshtml
+        }
+
+        // POST: Admin/EditUser
+        [Authorize(Roles = "SuperAdmin,President")]
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditUser(EditUserViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                // Refill building list
+                var buildingItems = new List<SelectListItem>();
+                if (User.IsInRole("SuperAdmin"))
+                {
+                    buildingItems = await _context.Buildings
+                        .OrderBy(b => b.Name)
+                        .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                        .ToListAsync();
+                }
+                else if (model.BuildingId != null)
+                {
+                    var b = await _context.Buildings.FindAsync(model.BuildingId);
+                    if (b != null)
+                        buildingItems.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
+                }
+                ViewBag.Buildings = buildingItems;
+                return View(model);
+            }
+
+            var me = await _userManager.GetUserAsync(User);
+            var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == model.Id);
+            if (user == null) return NotFound();
+
+            // Presidents can only edit within their building
+            if (User.IsInRole("President"))
+            {
+                if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
+            }
+
+            // Update basic fields
+            user.Fullname = model.Fullname?.Trim() ?? user.Fullname;
+            user.PhoneNumber = string.IsNullOrWhiteSpace(model.PhoneNumber) ? null : model.PhoneNumber.Trim();
+
+            // Building changes: only SuperAdmin can change
+            if (User.IsInRole("SuperAdmin"))
+            {
+                if (model.BuildingId.HasValue)
+                {
+                    var targetBuilding = await _context.Buildings.FindAsync(model.BuildingId.Value);
+                    if (targetBuilding == null)
+                    {
+                        ModelState.AddModelError(nameof(model.BuildingId), "Invalid building.");
+                        // rebuild list
+                        ViewBag.Buildings = await _context.Buildings
+                            .OrderBy(b => b.Name)
+                            .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                            .ToListAsync();
+                        return View(model);
+                    }
+                    user.BuildingId = model.BuildingId.Value;
+                }
+                else
+                {
+                    user.BuildingId = null;
+                }
+            }
+
+            var res = await _userManager.UpdateAsync(user);
+            if (!res.Succeeded)
+            {
+                foreach (var e in res.Errors) ModelState.AddModelError(string.Empty, e.Description);
+                // rebuild list
+                var buildingItems = new List<SelectListItem>();
+                if (User.IsInRole("SuperAdmin"))
+                {
+                    buildingItems = await _context.Buildings
+                        .OrderBy(b => b.Name)
+                        .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
+                        .ToListAsync();
+                }
+                else if (user.BuildingId != null)
+                {
+                    var b = await _context.Buildings.FindAsync(user.BuildingId);
+                    if (b != null)
+                        buildingItems.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
+                }
+                ViewBag.Buildings = buildingItems;
+                return View(model);
+            }
+
+            TempData["Success"] = $"Updated user {user.Fullname}.";
+            return RedirectToAction(nameof(Users), new { BuildingId = user.BuildingId });
         }
 
         // GET: Admin/ApproveOwners
