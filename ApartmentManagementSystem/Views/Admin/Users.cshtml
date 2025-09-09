@@ -39,7 +39,7 @@
     <div class="col-md-2">
         <select class="form-select" name="Role">
             @{
-                var roles = new[] { "All", "President", "Owner", "Tenant" };
+                var roles = new[] { "All", "President", "Owner", "Tenant", "Staff" };
             }
             @foreach (var r in roles)
             {
@@ -123,6 +123,13 @@ else
                         name="role" value="Tenant"
                         class="btn btn-primary btn-sm">
                     Set selected as Tenant
+                </button>
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkChangeRole", "Admin")"
+                        name="role" value="Staff"
+                        class="btn btn-secondary btn-sm">
+                    Set selected as Staff
                 </button>
 
                 <!-- Bulk lock/unlock -->
@@ -217,6 +224,13 @@ else
                                     class="btn btn-sm btn-primary ms-1"
                                     @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
                                 Make Tenant
+                            </button>
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Staff" })"
+                                    class="btn btn-sm btn-secondary ms-1"
+                                    @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                Make Staff
                             </button>
 
                             <!-- Reset to pending -->

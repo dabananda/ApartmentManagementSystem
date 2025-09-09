@@ -248,6 +248,16 @@
                                 </a>
                             </li>
                         }
+                        @if (User.IsInRole("Staff"))
+                        {
+                            <p class="ms-2"><strong>Staff</strong></p>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="EntryLog" asp-action="Index">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                                    Entry Logs
+                                </a>
+                            </li>
+                        }
                         <hr />
                         <li class="nav-item" id="logout-section-2">
                             <form id="logoutForm" class="form-inline nav-link" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">

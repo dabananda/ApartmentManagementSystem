@@ -12,7 +12,7 @@ namespace ApartmentManagementSystem.Data
             string superAdminPassword)
         {
             // Roles (added "User" for pending registrants)
-            string[] roleNames = { "SuperAdmin", "President", "Owner", "Tenant", "User" };
+            string[] roleNames = { "SuperAdmin", "President", "Owner", "Tenant", "Staff", "User" };
             foreach (var roleName in roleNames)
             {
                 if (!await roleManager.RoleExistsAsync(roleName))

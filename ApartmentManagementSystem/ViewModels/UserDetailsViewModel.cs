@@ -55,6 +55,7 @@ namespace ApartmentManagementSystem.ViewModels
         public string PrimaryRole => Roles.FirstOrDefault() ?? "User";
         public bool HasMultipleRoles => Roles.Count > 1;
         public bool IsOwner => Roles.Contains("Owner");
+        public bool IsStaff => Roles.Contains("Staff");
         public bool IsPresident => Roles.Contains("President");
         public bool HasOutstandingBills => OutstandingBillsCount > 0;
         public string StatusClass => AccountStatus switch

@@ -91,6 +91,9 @@ else
                 <button type="submit" name="role" value="Tenant" class="btn btn-primary btn-sm ms-1">
                     Approve selected as Tenant
                 </button>
+                <button type="submit" name="role" value="Staff" class="btn btn-secondary btn-sm ms-1">
+                    Approve selected as Staff
+                </button>
             </div>
             <small class="text-muted">Showing @Model.PendingUsers.Count of @Model.Total result(s)</small>
         </div>
@@ -154,6 +157,14 @@ else
                                     class="btn btn-sm btn-primary ms-1"
                                     @(u.IsPresident ? "disabled" : null)>
                                 Tenant
+                            </button>
+
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("ApproveUser", "Admin", new { id = u.Id, role = "Staff" })"
+                                    class="btn btn-sm btn-secondary ms-1"
+                                    @(u.IsPresident ? "disabled" : null)>
+                                Staff
                             </button>
 
                             <button type="submit"
