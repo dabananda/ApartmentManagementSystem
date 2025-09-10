@@ -4,22 +4,9 @@
     ViewData["Title"] = "Owner Dashboard";
 }
 
-<h1 class="mb-4">Owner Dashboard</h1>
-<hr />
-
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h5 class="card-title">Welcome, @Model.OwnerName! 👋</h5>
-                <p class="card-text text-muted">
-                    This dashboard provides a quick overview of your flats and finances in **@Model.BuildingName**.
-                </p>
-                <a asp-action="MyFlats" class="btn btn-outline-primary">View My Flats</a>
-            </div>
-        </div>
-    </div>
-</div>
+<h2 class="mb-4">
+    <strong>@Model.OwnerName's Dashboard</strong>
+</h2>
 
 <div class="row text-center mb-4">
     <div class="col-md-4 mb-3">
