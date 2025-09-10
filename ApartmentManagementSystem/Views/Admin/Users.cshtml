@@ -5,7 +5,15 @@
     var current = Math.Max(1, Model.Filter.Page);
 }
 
-<h2 class="mb-3">Manage Users</h2>
+<div class="d-flex justify-content-between">
+    <h2 class="mb-4">Manage Users</h2>
+    <div>
+        <a class="btn btn-primary mb-3" asp-controller="Admin" asp-action="CreateUser">
+            <i class="fa-solid fa-user-plus me-1"></i>
+            Create User
+        </a>
+    </div>
+</div>
 
 <!-- FILTERS -->
 <form method="get" asp-controller="Admin" asp-action="Users" class="row justify-content-between mb-3">
