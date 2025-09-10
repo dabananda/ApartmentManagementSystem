@@ -25,6 +25,7 @@ namespace ApartmentManagementSystem.ViewModels
 
     public class OwnerPaymentRecord
     {
+        public Guid PaymentId { get; set; }
         public DateTime PaymentDate { get; set; }
         public string BillTitle { get; set; } = "";
         public DateTime BillDate { get; set; }

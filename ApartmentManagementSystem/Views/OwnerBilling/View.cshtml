@@ -147,6 +147,7 @@
                         <th>Bill Date</th>
                         <th class="text-end">Amount</th>
                         <th>Reference</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -158,6 +159,16 @@
                             <td>@h.BillDate.ToString("yyyy-MM-dd")</td>
                             <td class="text-end">@h.Amount.ToString("C")</td>
                             <td>@(string.IsNullOrWhiteSpace(h.Reference) ? "-" : h.Reference)</td>
+                            <td class="text-end">
+                                <a asp-action="Receipt" asp-route-id="@h.PaymentId" class="btn btn-sm btn-outline-secondary">Print</a>
+                                @if (canPay)
+                                {
+                                    <form asp-action="EmailReceipt" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@h.PaymentId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Email</button>
+                                    </form>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
