@@ -1,0 +1,229 @@
+﻿@model ApartmentManagementSystem.ViewModels.OwnerBillsPage
+@{
+    ViewData["Title"] = "Owner Bills";
+    bool canPay = User.IsInRole("President") || User.IsInRole("SuperAdmin");
+}
+
+<h2 class="mb-1">Owner Billing — @Model.OwnerName</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<!-- Status Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Total Common Bill</div>
+                        <div class="h4 mb-0">@Model.TotalAllocated.ToString("C")</div>
+                    </div>
+                    <i class="bi bi-receipt h2 text-secondary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Paid</div>
+                        <div class="h4 mb-0 text-success">@Model.TotalPaid.ToString("C")</div>
+                    </div>
+                    <i class="bi bi-check-circle h2 text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Due</div>
+                        <div class="h4 mb-0 @(Model.TotalDue > 0 ? "text-danger" : "text-success")">@Model.TotalDue.ToString("C")</div>
+                    </div>
+                    <i class="bi bi-cash-coin h2 @(Model.TotalDue > 0 ? "text-danger" : "text-success")"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0">Bills</h4>
+    <div>
+        @if (canPay && Model.TotalDue > 0)
+        {
+            <form asp-action="PayAll" method="post" class="d-inline"
+                  onsubmit="return confirm('Pay all outstanding dues for @Model.OwnerName?');">
+                <input type="hidden" name="ownerId" value="@Model.OwnerId" />
+                <button type="submit" class="btn btn-sm btn-success">
+                    <i class="bi bi-lightning-charge"></i> Pay All
+                </button>
+            </form>
+        }
+        <a asp-action="Index" asp-route-buildingId="@Model.BuildingId" class="btn btn-sm btn-outline-secondary">Back to Owners</a>
+    </div>
+</div>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Bill</th>
+            <th class="text-end">Allocated</th>
+            <th class="text-end">Paid</th>
+            <th class="text-end">Due</th>
+            <th class="text-end">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var b in Model.Bills)
+        {
+            <tr>
+                <td>@b.BillDate.ToString("yyyy-MM-dd")</td>
+                <td>@b.Title</td>
+                <td class="text-end">@b.Allocated.ToString("C")</td>
+                <td class="text-end">@b.Paid.ToString("C")</td>
+                <td class="text-end">
+                    <span class="fw-semibold @(b.Due > 0 ? "text-danger" : "text-success")">@b.Due.ToString("C")</span>
+                </td>
+                <td class="text-end">
+                    @if (canPay && b.Due > 0)
+                    {
+                        <div class="d-inline-flex gap-1">
+                            <!-- Partial Pay (modal) -->
+                            <button class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#payModal"
+                                    data-bill-id="@b.CommonBillId"
+                                    data-due="@b.Due">
+                                Pay
+                            </button>
+
+                            <!-- Full Pay (posts exact due for this bill) -->
+                            <form asp-action="FullPay" method="post" class="d-inline"
+                                  onsubmit="return confirm('Fully pay this bill for @Model.OwnerName?');">
+                                <input type="hidden" name="ownerId" value="@Model.OwnerId" />
+                                <input type="hidden" name="commonBillId" value="@b.CommonBillId" />
+                                <button type="submit" class="btn btn-sm btn-success" title="Pay the full remaining due">Full Pay</button>
+                            </form>
+                        </div>
+                    }
+                    else if (b.Due <= 0)
+                    {
+                        <span class="badge bg-success">Paid</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Payment History -->
+<div class="mt-4">
+    <h4 class="mb-2">Payment History</h4>
+    @if (Model.History.Count == 0)
+    {
+        <div class="text-muted">No payments recorded yet.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Bill</th>
+                        <th>Bill Date</th>
+                        <th class="text-end">Amount</th>
+                        <th>Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model.History)
+                    {
+                        <tr>
+                            <td>@h.PaymentDate.ToString("yyyy-MM-dd")</td>
+                            <td>@h.BillTitle</td>
+                            <td>@h.BillDate.ToString("yyyy-MM-dd")</td>
+                            <td class="text-end">@h.Amount.ToString("C")</td>
+                            <td>@(string.IsNullOrWhiteSpace(h.Reference) ? "-" : h.Reference)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Pay Modal -->
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Pay" method="post" onsubmit="
+                  const a=document.getElementById('PayAmount');
+                  const m=parseFloat(a.getAttribute('max'));
+                  if(parseFloat(a.value)>
+                m){ alert('Amount exceeds due.'); return false; }">
+                <div class="modal-header">
+                    <h5 class="modal-title">Record Payment — @Model.OwnerName</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="OwnerId" value="@Model.OwnerId" />
+                    <input type="hidden" id="CommonBillId" name="CommonBillId" />
+
+                    <div class="mb-2">
+                        <label class="form-label">Due</label>
+                        <input type="text" id="CurrentDue" class="form-control" readonly />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Amount</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" name="Amount" id="PayAmount" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Payment Date</label>
+                        <input type="date" class="form-control" name="PaymentDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Reference (optional)</label>
+                        <input type="text" maxlength="100" class="form-control" name="Reference" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" type="submit">Save</button>
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('payModal')?.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const billId = button.getAttribute('data-bill-id');
+            const due = parseFloat(button.getAttribute('data-due'));
+
+            document.getElementById('CommonBillId').value = billId;
+            document.getElementById('CurrentDue').value = due.toFixed(2);
+
+            const amount = document.getElementById('PayAmount');
+            amount.setAttribute('max', due.toFixed(2));
+        });
+    </script>
+}

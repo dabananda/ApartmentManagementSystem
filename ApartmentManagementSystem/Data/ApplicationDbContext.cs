@@ -24,6 +24,7 @@ namespace ApartmentManagementSystem.Data
         public DbSet<MaintenanceTicket> MaintenanceTickets { get; set; }
         public DbSet<TenantBill> TenantBills => Set<TenantBill>();
         public DbSet<OwnerBillingProfile> OwnerBillingProfiles => Set<OwnerBillingProfile>();
+        public DbSet<ExpenseAllocationPayment> ExpenseAllocationPayments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -96,6 +97,17 @@ namespace ApartmentManagementSystem.Data
                 .WithMany()
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<ExpenseAllocationPayment>(e =>
+            {
+                e.HasIndex(x => new { x.CommonBillId, x.OwnerId, x.PaymentDate });
+                e.Property(x => x.Amount).HasColumnType("decimal(18, 2)");
+
+                e.HasOne(x => x.ExpenseAllocation)
+                 .WithMany(a => a.Payments)
+                 .HasForeignKey(x => x.ExpenseAllocationId)
+                 .OnDelete(DeleteBehavior.Cascade); // deleting allocation removes owner payments
+            });
 
             // Optional: unique constraint so a user maps to at most one Tenant
             modelBuilder.Entity<Tenant>()

@@ -57,14 +57,6 @@
                         <span>N/A</span>
                     }
                 </td>
-                <td>
-                    @if (!item.IsPaid)
-                    {
-                        <form asp-action="MarkAsPaid" asp-route-id="@item.Id" method="post">
-                            <button type="submit" class="btn btn-primary">Mark as Paid</button>
-                        </form>
-                    }
-                </td>
             </tr>
         }
     </tbody>

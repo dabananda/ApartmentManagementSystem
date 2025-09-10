@@ -1,0 +1,38 @@
+﻿@model List<ApartmentManagementSystem.ViewModels.OwnerBillingRow>
+@{
+    ViewData["Title"] = "Owners - Billing Summary";
+    var buildingId = (Guid)ViewData["BuildingId"];
+}
+<h2 class="mb-3">Owners — Billing Summary</h2>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Owner</th>
+            <th>Flats</th>
+            <th class="text-end">Total Common Bill</th>
+            <th class="text-end">Paid</th>
+            <th class="text-end">Due</th>
+            <th class="text-end">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.OwnerName</td>
+                <td>@r.FlatsCsv</td>
+                <td class="text-end">@r.TotalAllocated.ToString("C")</td>
+                <td class="text-end">@r.TotalPaid.ToString("C")</td>
+                <td class="text-end">
+                    <strong class="@(r.TotalDue > 0 ? "text-danger" : "text-success")">@r.TotalDue.ToString("C")</strong>
+                </td>
+                <td class="text-end">
+                    <a asp-action="View" asp-route-ownerId="@r.OwnerId" class="btn btn-sm btn-primary">View</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-controller="CommonBill" asp-action="Index" asp-route-buildingId="@buildingId" class="btn btn-outline-secondary">Back to Bills</a>
