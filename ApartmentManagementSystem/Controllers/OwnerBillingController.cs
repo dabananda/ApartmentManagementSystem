@@ -1,289 +1,495 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
-using System.Data;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner,SuperAdmin")]
+    [Authorize(Roles = "President,SuperAdmin")]
     public class OwnerBillingController : Controller
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _users;
-        private readonly ILogger<OwnerBillingController> _logger;
-        private readonly IEmailSender _mail;
+        private readonly IEmailSender _email;
+        private readonly IUrlHelperFactory _urlHelperFactory;
+        private readonly IActionContextAccessor _actionContextAccessor;
 
-        public OwnerBillingController(ApplicationDbContext db,
+        public OwnerBillingController(
+            ApplicationDbContext db,
             UserManager<ApplicationUser> users,
-            ILogger<OwnerBillingController> logger,
-            IEmailSender mail)
+            IEmailSender email,
+            IUrlHelperFactory urlHelperFactory,
+            IActionContextAccessor actionContextAccessor)
         {
             _db = db;
             _users = users;
-            _logger = logger;
-            _mail = mail;
+            _email = email;
+            _urlHelperFactory = urlHelperFactory;
+            _actionContextAccessor = actionContextAccessor;
         }
 
-        // GET: /OwnerBilling/Profile/{flatId}
-        public async Task<IActionResult> Profile(Guid? flatId)
+        // GET: /OwnerBilling/Index/{buildingId}
+        public async Task<IActionResult> Index(Guid? buildingId)
         {
-            if (flatId is null || flatId == Guid.Empty) return NotFound();
-
-            var flat = await _db.Flats.Include(f => f.Building).FirstOrDefaultAsync(f => f.Id == flatId);
-            if (flat == null) return NotFound();
+            if (buildingId == null) return NotFound();
 
             var me = await _users.GetUserAsync(User);
-            // NOTE: if Flat.OwnerId is Guid, cast/parse accordingly.
-            if (!User.IsInRole("SuperAdmin") && flat.OwnerId != me.Id) return Forbid();
+            if (me?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            var profile = await _db.OwnerBillingProfiles.FirstOrDefaultAsync(x => x.FlatId == flat.Id)
-                          ?? new OwnerBillingProfile { FlatId = flat.Id };
+            // Owners -> names
+            var owners = await _db.Flats
+                .Include(f => f.Owner)
+                .Where(f => f.BuildingId == buildingId && f.OwnerId != null)
+                .Select(f => new { f.OwnerId, Name = f.Owner!.Fullname })
+                .Distinct()
+                .ToListAsync();
 
-            ViewData["FlatNumber"] = flat.FlatNumber;
-            return View(profile);
-        }
+            // Flats per owner
+            var flatsCsv = await _db.Flats
+                .Where(f => f.BuildingId == buildingId && f.OwnerId != null)
+                .GroupBy(f => f.OwnerId!)
+                .Select(g => new { OwnerId = g.Key, Csv = string.Join(", ", g.OrderBy(x => x.FlatNumber).Select(x => x.FlatNumber)) })
+                .ToDictionaryAsync(x => x.OwnerId, x => x.Csv);
 
-        // POST: /OwnerBilling/Profile
-        [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Profile(OwnerBillingProfile model)
-        {
-            var flat = await _db.Flats.FirstOrDefaultAsync(f => f.Id == model.FlatId);
-            if (flat == null) return NotFound();
+            // Totals per owner
+            // 1) Allocated totals per owner
+            var allocAggList = await _db.ExpenseAllocations
+                .Include(a => a.CommonBill)
+                .Where(a => a.CommonBill!.BuildingId == buildingId)
+                .GroupBy(a => a.OwnerId)
+                .Select(g => new
+                {
+                    OwnerId = g.Key,
+                    Alloc = g.Sum(x => x.AmountDue)
+                })
+                .ToListAsync();
+            var allocAgg = allocAggList.ToDictionary(x => x.OwnerId, x => x.Alloc);
 
-            var me = await _users.GetUserAsync(User);
-            if (!User.IsInRole("SuperAdmin") && flat.OwnerId != me.Id) return Forbid();
+            // 2) Paid totals per owner (join payments → allocations to get OwnerId)
+            var paidAggList = await _db.ExpenseAllocationPayments
+                .Join(
+                    _db.ExpenseAllocations.Include(a => a.CommonBill)
+                        .Where(a => a.CommonBill!.BuildingId == buildingId),
+                    p => p.ExpenseAllocationId,
+                    a => a.Id,
+                    (p, a) => new { a.OwnerId, p.Amount }
+                )
+                .GroupBy(x => x.OwnerId)
+                .Select(g => new
+                {
+                    OwnerId = g.Key!,
+                    Paid = g.Sum(x => x.Amount)
+                })
+                .ToListAsync();
+            var paidAgg = paidAggList.ToDictionary(x => x.OwnerId, x => x.Paid);
 
-            var existing = await _db.OwnerBillingProfiles.FirstOrDefaultAsync(x => x.FlatId == model.FlatId);
-            if (existing == null)
+            // Build rows
+            var rows = owners.Select(o => new OwnerBillingRow
             {
-                model.Id = Guid.NewGuid();
-                model.CreatedAt = DateTime.UtcNow;
-                _db.OwnerBillingProfiles.Add(model);
+                OwnerId = o.OwnerId!,
+                OwnerName = string.IsNullOrWhiteSpace(o.Name) ? "(no name)" : o.Name!,
+                FlatsCsv = flatsCsv.TryGetValue(o.OwnerId!, out var csv) ? csv : "",
+                TotalAllocated = allocAgg.TryGetValue(o.OwnerId!, out var alloc) ? alloc : 0m,
+                TotalPaid = paidAgg.TryGetValue(o.OwnerId!, out var paid) ? paid : 0m
+            })
+            .OrderBy(r => r.OwnerName)
+            .ToList();
+
+            ViewData["BuildingId"] = buildingId;
+
+            return View(rows);
+        }
+
+        // GET: /OwnerBilling/View/{ownerId}
+        public async Task<IActionResult> View(string ownerId)
+        {
+            if (string.IsNullOrWhiteSpace(ownerId)) return NotFound();
+
+            var me = await _users.GetUserAsync(User);
+            if (me?.BuildingId == null && !User.IsInRole("SuperAdmin")) return Forbid();
+
+            // All allocations for this owner across their building(s); restrict for President
+            var q = _db.ExpenseAllocations
+                .Include(a => a.CommonBill)
+                .Include(a => a.Payments)
+                .Where(a => a.OwnerId == ownerId);
+
+            if (User.IsInRole("President"))
+                q = q.Where(a => a.CommonBill!.BuildingId == me!.BuildingId);
+
+            var allocations = await q.AsNoTracking().ToListAsync();
+            if (allocations.Count == 0) return NotFound("No bills found for this owner.");
+
+            var buildingId = allocations.First().CommonBill!.BuildingId;
+            var owner = await _users.FindByIdAsync(ownerId);
+
+            var items = allocations
+                .OrderByDescending(a => a.CommonBill!.BillDate)
+                .Select(a => new OwnerBillItem
+                {
+                    CommonBillId = a.CommonBillId,
+                    Title = a.CommonBill!.Name,
+                    BillDate = a.CommonBill!.BillDate,
+                    Allocated = a.AmountDue,
+                    Paid = a.Payments.Sum(p => p.Amount)
+                })
+                .ToList();
+
+            var page = new OwnerBillsPage
+            {
+                OwnerId = ownerId,
+                OwnerName = owner?.Fullname ?? "(no name)",
+                BuildingId = buildingId,
+                Bills = items
+            };
+
+            // ---- Payment history for this owner (scoped to building for President) ----
+            var paymentsQuery = _db.ExpenseAllocationPayments
+                .Join(_db.ExpenseAllocations.Include(a => a.CommonBill),
+                      p => p.ExpenseAllocationId,
+                      a => a.Id,
+                      (p, a) => new { p, a });
+
+            if (User.IsInRole("President"))
+            {
+                var bld = buildingId; // computed earlier from allocations
+                paymentsQuery = paymentsQuery.Where(z => z.a.OwnerId == ownerId && z.a.CommonBill!.BuildingId == bld);
             }
             else
             {
-                existing.RentAmount = model.RentAmount;
-                existing.ElectricityAmount = model.ElectricityAmount;
-                existing.GasAmount = model.GasAmount;
-                existing.WaterAmount = model.WaterAmount;
-                existing.CommonBillAmount = model.CommonBillAmount;
-                existing.ServiceChargeAmount = model.ServiceChargeAmount;
-                existing.OtherAmount = model.OtherAmount;
-                existing.Notes = model.Notes;
-                existing.IsActive = model.IsActive;
-                existing.UpdatedAt = DateTime.UtcNow;
+                paymentsQuery = paymentsQuery.Where(z => z.a.OwnerId == ownerId);
             }
 
-            await _db.SaveChangesAsync();
-            TempData["Ok"] = "Billing profile saved.";
-            return RedirectToAction(nameof(Profile), new { flatId = model.FlatId });
-        }
-
-        // GET: /OwnerBilling/Bills/{flatId}
-        public async Task<IActionResult> Bills(Guid? flatId)
-        {
-            if (flatId is null || flatId == Guid.Empty) return NotFound();
-
-            var flat = await _db.Flats.Include(f => f.Building).FirstOrDefaultAsync(f => f.Id == flatId);
-            if (flat == null) return NotFound();
-
-            var me = await _users.GetUserAsync(User);
-            if (!User.IsInRole("SuperAdmin") && flat.OwnerId != me.Id) return Forbid();
-
-            var bills = await _db.TenantBills
-                .Where(b => b.FlatId == flat.Id)
-                .OrderByDescending(b => b.Year).ThenByDescending(b => b.Month)
+            var history = await paymentsQuery
+                .OrderByDescending(z => z.p.PaymentDate)
+                .ThenByDescending(z => z.a.CommonBill!.BillDate)
+                .Select(z => new OwnerPaymentRecord
+                {
+                    PaymentId = z.p.Id,
+                    PaymentDate = z.p.PaymentDate,
+                    BillTitle = z.a.CommonBill!.Name,
+                    BillDate = z.a.CommonBill!.BillDate,
+                    Amount = z.p.Amount,
+                    Reference = z.p.Reference
+                })
                 .ToListAsync();
 
-            ViewData["FlatId"] = flat.Id;
-            ViewData["FlatNumber"] = flat.FlatNumber;
-            return View(bills);
+            page.History = history;
+
+            return View(page);
         }
 
-        // GET: /OwnerBilling/CreateBill/{flatId}?year=2025&month=9
-        public async Task<IActionResult> CreateBill(Guid? flatId, int? year, int? month)
+        // POST: /OwnerBilling/Pay
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Pay(RecordOwnerPaymentVM vm)
         {
-            if (flatId is null || flatId == Guid.Empty) return NotFound();
-
-            var flat = await _db.Flats.Include(f => f.Tenants).FirstOrDefaultAsync(f => f.Id == flatId);
-            if (flat == null) return NotFound();
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var me = await _users.GetUserAsync(User);
-            if (!User.IsInRole("SuperAdmin") && flat.OwnerId != me.Id) return Forbid();
+            if (me == null) return Forbid();
 
-            var tenant = flat.Tenants?.FirstOrDefault(t => t.IsActive);
-            if (tenant == null) return BadRequest("No active tenant in this flat.");
+            var bill = await _db.CommonBills.AsNoTracking().FirstOrDefaultAsync(b => b.Id == vm.CommonBillId);
+            if (bill == null) return NotFound();
 
-            var profile = await _db.OwnerBillingProfiles.FirstOrDefaultAsync(x => x.FlatId == flat.Id);
-            if (profile == null) return RedirectToAction(nameof(Profile), new { flatId = flat.Id });
+            if (User.IsInRole("President") && me.BuildingId != bill.BuildingId) return Forbid();
 
-            var now = DateTime.UtcNow;
-            int y = year ?? now.Year, m = month ?? now.Month;
+            var allocs = await _db.ExpenseAllocations
+                .Include(a => a.Payments)
+                .Where(a => a.CommonBillId == vm.CommonBillId && a.OwnerId == vm.OwnerId)
+                .ToListAsync();
+            if (allocs.Count == 0) return NotFound("No allocation found for this owner & bill.");
 
-            bool exists = await _db.TenantBills.AnyAsync(b => b.FlatId == flat.Id && b.Year == y && b.Month == m);
-            if (exists) return RedirectToAction(nameof(Bills), new { flatId = flat.Id });
-
-            var total = profile.RentAmount + profile.ElectricityAmount + profile.GasAmount + profile.WaterAmount
-                        + profile.CommonBillAmount + profile.ServiceChargeAmount + profile.OtherAmount;
-
-            var bill = new TenantBill
+            var totalDue = allocs.Sum(a => a.AmountDue - a.Payments.Sum(p => p.Amount));
+            if (vm.Amount > totalDue)
             {
-                Id = Guid.NewGuid(),
-                FlatId = flat.Id,
-                TenantId = tenant.Id,
-                Year = y,
-                Month = m,
-                RentAmount = profile.RentAmount,
-                ElectricityAmount = profile.ElectricityAmount,
-                GasAmount = profile.GasAmount,
-                WaterAmount = profile.WaterAmount,
-                CommonBillAmount = profile.CommonBillAmount,
-                ServiceChargeAmount = profile.ServiceChargeAmount,
-                OtherAmount = profile.OtherAmount,
-                TotalAmount = total,
-                PaidAmount = 0m,
-                Status = "Unpaid",
-                CreatedAt = DateTime.UtcNow,
-                DueDate = new DateTime(y, m, 1)
-            };
+                TempData["Error"] = $"Amount exceeds due. Maximum payable is {totalDue:C}.";
+                return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
+            }
 
-            _db.TenantBills.Add(bill);
+            var created = new List<ExpenseAllocationPayment>(); // <-- collect new payments
+
+            var remaining = vm.Amount;
+            foreach (var a in allocs.OrderBy(x => x.Id))
+            {
+                if (remaining <= 0) break;
+                var already = a.Payments.Sum(p => p.Amount);
+                var due = a.AmountDue - already;
+                var take = Math.Min(due, remaining);
+                if (take > 0)
+                {
+                    var entity = new ExpenseAllocationPayment
+                    {
+                        ExpenseAllocationId = a.Id,
+                        Amount = take,
+                        PaymentDate = vm.PaymentDate,
+                        Reference = vm.Reference,
+                        CommonBillId = vm.CommonBillId,
+                        OwnerId = vm.OwnerId
+                    };
+                    await _db.ExpenseAllocationPayments.AddAsync(entity);
+                    created.Add(entity); // <-- track it
+
+                    if (take == due)
+                    {
+                        a.IsPaid = true;
+                        a.PaymentDate = vm.PaymentDate;
+                    }
+                    remaining -= take;
+                }
+            }
+
             await _db.SaveChangesAsync();
 
-            TempData["Ok"] = "Bill created.";
-            return RedirectToAction(nameof(Bills), new { flatId = flat.Id });
+            // ✅ send email automatically
+            await SendPaymentEmailAsync(vm.OwnerId, created);
+
+            TempData["Success"] = "Payment recorded.";
+            return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
         }
 
-        // GET: /OwnerBilling/Receipt/{billId}
-        [AllowAnonymous] // or keep locked down and require auth
-        public async Task<IActionResult> Receipt(Guid billId)
-        {
-            var bill = await _db.TenantBills
-                .Include(b => b.Tenant)
-                .Include(b => b.Flat)
-                .ThenInclude(f => f.Building)
-                .FirstOrDefaultAsync(b => b.Id == billId);
-
-            if (bill == null) return NotFound();
-
-            return View(bill);
-        }
-
-        // POST: /OwnerBilling/ApplyPayment
+        // POST: /OwnerBilling/PayAll
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> ApplyPayment(Guid billId, DateTime paymentDate, decimal amount, string? notes)
+        public async Task<IActionResult> PayAll(string ownerId)
         {
-            if (amount <= 0)
-            {
-                TempData["Error"] = "Amount must be positive.";
-                return RedirectToAction(nameof(Bills));
-            }
+            if (string.IsNullOrWhiteSpace(ownerId)) return BadRequest();
 
-            var bill = await _db.TenantBills.Include(b => b.Tenant).FirstOrDefaultAsync(b => b.Id == billId);
-            if (bill == null) return NotFound();
-
-            // Owner check
-            var flat = await _db.Flats.FirstOrDefaultAsync(f => f.Id == bill.FlatId);
             var me = await _users.GetUserAsync(User);
-            if (flat == null || (!User.IsInRole("SuperAdmin") && flat.OwnerId != me.Id)) return Forbid();
+            if (me == null) return Forbid();
 
-            using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
-            try
+            var q = _db.ExpenseAllocations
+                .Include(a => a.Payments)
+                .Include(a => a.CommonBill)
+                .Where(a => a.OwnerId == ownerId);
+
+            if (User.IsInRole("President"))
+                q = q.Where(a => a.CommonBill!.BuildingId == me.BuildingId);
+
+            var allocs = await q.ToListAsync();
+            if (allocs.Count == 0)
             {
-                // Add rent record as the payment item
-                var rent = new Rent
+                TempData["Error"] = "No bills found for this owner.";
+                return RedirectToAction(nameof(View), new { ownerId });
+            }
+
+            var totalDue = allocs.Sum(a => a.AmountDue - a.Payments.Sum(p => p.Amount));
+            if (totalDue <= 0)
+            {
+                TempData["Error"] = "Nothing due to pay.";
+                return RedirectToAction(nameof(View), new { ownerId });
+            }
+
+            var created = new List<ExpenseAllocationPayment>(); // <-- collect new payments
+            var today = DateTime.Today;
+
+            foreach (var a in allocs.OrderBy(x => x.CommonBill!.BillDate).ThenBy(x => x.Id))
+            {
+                var due = a.AmountDue - a.Payments.Sum(p => p.Amount);
+                if (due <= 0) continue;
+
+                var entity = new ExpenseAllocationPayment
                 {
-                    Id = Guid.NewGuid(),
-                    PaymentDate = paymentDate,
-                    Amount = amount,
-                    Notes = string.IsNullOrWhiteSpace(notes) ? $"Payment for {bill.Year}-{bill.Month:D2}" : notes,
-                    TenantId = bill.TenantId,
-                    TenantBillId = bill.Id
+                    ExpenseAllocationId = a.Id,
+                    Amount = due,
+                    PaymentDate = today,
+                    Reference = "PayAll",
+                    CommonBillId = a.CommonBillId,
+                    OwnerId = ownerId
                 };
-                _db.Rents.Add(rent);
+                await _db.ExpenseAllocationPayments.AddAsync(entity);
+                created.Add(entity); // <-- track it
 
-                // Roll up totals — RowVersion protects against races
-                bill.PaidAmount += amount;
-                bill.Status = bill.PaidAmount <= 0 ? "Unpaid"
-                           : bill.PaidAmount < bill.TotalAmount ? "PartiallyPaid" : "Paid";
+                a.IsPaid = true;
+                a.PaymentDate = today;
+            }
 
-                await _db.SaveChangesAsync(); // can throw DbUpdateConcurrencyException
-                await tx.CommitAsync();
+            await _db.SaveChangesAsync();
 
-                // If fully paid, email tenant (moved outside transaction to avoid issues)
-                if (bill.Status == "Paid")
+            // ✅ send email automatically
+            await SendPaymentEmailAsync(ownerId, created);
+
+            TempData["Success"] = $"All outstanding dues paid ({totalDue:C}).";
+            return RedirectToAction(nameof(View), new { ownerId });
+        }
+
+        // POST: /OwnerBilling/FullPay
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> FullPay(string ownerId, Guid commonBillId)
+        {
+            if (string.IsNullOrWhiteSpace(ownerId) || commonBillId == Guid.Empty)
+                return BadRequest();
+
+            var me = await _users.GetUserAsync(User);
+            if (me == null) return Forbid();
+
+            var q = _db.ExpenseAllocations
+                .Include(a => a.Payments)
+                .Include(a => a.CommonBill)
+                .Where(a => a.OwnerId == ownerId && a.CommonBillId == commonBillId);
+
+            if (User.IsInRole("President"))
+                q = q.Where(a => a.CommonBill!.BuildingId == me.BuildingId);
+
+            var allocs = await q.ToListAsync();
+            if (allocs.Count == 0)
+            {
+                TempData["Error"] = "No allocations found for this owner and bill.";
+                return RedirectToAction(nameof(View), new { ownerId });
+            }
+
+            var totalDue = allocs.Sum(a => a.AmountDue - a.Payments.Sum(p => p.Amount));
+            if (totalDue <= 0)
+            {
+                TempData["Error"] = "This bill has no due amount.";
+                return RedirectToAction(nameof(View), new { ownerId });
+            }
+
+            var created = new List<ExpenseAllocationPayment>(); // <-- collect new payments
+            var today = DateTime.Today;
+
+            foreach (var a in allocs.OrderBy(x => x.Id))
+            {
+                var already = a.Payments.Sum(p => p.Amount);
+                var due = a.AmountDue - already;
+                if (due <= 0) continue;
+
+                var entity = new ExpenseAllocationPayment
                 {
-                    try
-                    {
-                        var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == bill.TenantId);
-                        if (tenant != null)
-                        {
-                            string? emailToSend = null;
+                    ExpenseAllocationId = a.Id,
+                    Amount = due,
+                    PaymentDate = today,
+                    Reference = "FullPay",
+                    CommonBillId = a.CommonBillId,
+                    OwnerId = ownerId
+                };
+                await _db.ExpenseAllocationPayments.AddAsync(entity);
+                created.Add(entity); // <-- track it
 
-                            // First, try to get email from the associated Identity user
-                            if (!string.IsNullOrEmpty(tenant.UserId))
-                            {
-                                var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == tenant.UserId);
-                                emailToSend = user?.Email;
-                            }
-
-                            // Fallback to tenant's direct email if no Identity user email found
-                            if (string.IsNullOrWhiteSpace(emailToSend) && !string.IsNullOrWhiteSpace(tenant.Email))
-                            {
-                                emailToSend = tenant.Email;
-                            }
-
-                            // Send email if we have a valid email address
-                            if (!string.IsNullOrWhiteSpace(emailToSend))
-                            {
-                                var subject = $"Receipt: {bill.Year}-{bill.Month:D2} bill PAID";
-                                var url = Url.Action(nameof(Receipt), "OwnerBilling", new { billId = bill.Id }, Request.Scheme);
-                                var body = $@"
-                                            <p>Dear {tenant.Fullname},</p>
-                                            <p>Thank you! Your bill for <strong>{bill.Year}-{bill.Month:D2}</strong> has been fully paid.</p>
-                                            <ul>
-                                              <li>Total: <strong>{bill.TotalAmount:C}</strong></li>
-                                              <li>Paid: <strong>{bill.PaidAmount:C}</strong></li>
-                                              <li>Status: <strong>{bill.Status}</strong></li>
-                                            </ul>
-                                            <p>You can view/print your receipt here: <a href=""{url}"">{url}</a></p>
-                                            <p>Best regards,<br/>Apartment Management</p>";
-
-                                await _mail.SendEmailAsync(emailToSend, subject, body);
-                                _logger.LogInformation("Payment confirmation email sent to {Email} for bill {BillId}", emailToSend, billId);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("No email address found for tenant {TenantId} - cannot send payment confirmation", tenant.Id);
-                            }
-                        }
-                    }
-                    catch (Exception emailEx)
-                    {
-                        _logger.LogError(emailEx, "Failed to send email notification for bill {BillId}", billId);
-                    }
-                }
-
-                TempData["Ok"] = "Payment applied.";
-                return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
+                a.IsPaid = true;
+                a.PaymentDate = today;
             }
-            catch (DbUpdateConcurrencyException)
+
+            await _db.SaveChangesAsync();
+
+            // ✅ send email automatically
+            await SendPaymentEmailAsync(ownerId, created);
+
+            TempData["Success"] = "Bill fully paid.";
+            return RedirectToAction(nameof(View), new { ownerId });
+        }
+
+        [Authorize(Roles = "President,SuperAdmin")]
+        public async Task<IActionResult> Receipt(Guid id)
+        {
+            var p = await _db.ExpenseAllocationPayments
+                .Where(x => x.Id == id)
+                .Join(_db.ExpenseAllocations.Include(a => a.CommonBill).Include(a => a.Owner),
+                      pay => pay.ExpenseAllocationId,
+                      alloc => alloc.Id,
+                      (pay, alloc) => new
+                      {
+                          Payment = pay,
+                          Allocation = alloc,
+                          Bill = alloc.CommonBill!,
+                          Owner = alloc.Owner!
+                      })
+                .FirstOrDefaultAsync();
+
+            if (p == null) return NotFound();
+
+            // Building scoping for President
+            var me = await _users.GetUserAsync(User);
+            if (User.IsInRole("President") && me?.BuildingId != p.Bill.BuildingId) return Forbid();
+
+            var vm = new ReceiptViewModel
             {
-                // Transaction will be automatically disposed, no need to manually rollback
-                TempData["Error"] = "The bill was updated by someone else. Reload and try again.";
-                return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
-            }
-            catch (Exception ex)
+                PaymentId = p.Payment.Id,
+                ReceiptNo = p.Payment.Id.ToString("N")[..8].ToUpperInvariant(),
+                OwnerName = p.Owner.Fullname ?? p.Owner.UserName ?? "(no name)",
+                OwnerEmail = p.Owner.Email ?? "",
+                BillTitle = p.Bill.Name,
+                BillDate = p.Bill.BillDate,
+                Amount = p.Payment.Amount,
+                Reference = p.Payment.Reference,
+                PaidOn = p.Payment.PaymentDate,
+                BuildingId = p.Bill.BuildingId
+            };
+
+            return View(vm);
+        }
+
+        private string AbsoluteUrl(string action, object? routeValues = null)
+        {
+            var actionContext = _actionContextAccessor.ActionContext!;
+            var urlHelper = _urlHelperFactory.GetUrlHelper(actionContext);
+            var rel = urlHelper.Action(action, "OwnerBilling", routeValues, actionContext.HttpContext.Request.Scheme)!;
+            return rel;
+        }
+
+        private async Task SendPaymentEmailAsync(string ownerId, IEnumerable<ExpenseAllocationPayment> payments)
+        {
+            var owner = await _users.FindByIdAsync(ownerId);
+            if (owner == null || string.IsNullOrWhiteSpace(owner.Email)) return;
+
+            var list = payments.ToList();
+            if (list.Count == 0) return;
+
+            // Build a small HTML receipt list
+            var rows = new System.Text.StringBuilder();
+            foreach (var p in list)
             {
-                // Transaction will be automatically disposed, no need to manually rollback
-                _logger.LogError(ex, "ApplyPayment failed for {BillId}", billId);
-                TempData["Error"] = "Failed to apply payment.";
-                return RedirectToAction(nameof(Bills), new { flatId = bill.FlatId });
+                var allocation = await _db.ExpenseAllocations
+                    .Include(a => a.CommonBill)
+                    .FirstAsync(a => a.Id == p.ExpenseAllocationId);
+
+                var receiptUrl = AbsoluteUrl(nameof(Receipt), new { id = p.Id });
+                rows.AppendLine($@"
+            <tr>
+                <td>{allocation.CommonBill!.Name}</td>
+                <td>{allocation.CommonBill.BillDate:yyyy-MM-dd}</td>
+                <td style=""text-align:right"">{p.Amount:C}</td>
+                <td>{(string.IsNullOrWhiteSpace(p.Reference) ? "-" : p.Reference)}</td>
+                <td><a href=""{receiptUrl}"">Receipt</a></td>
+            </tr>");
             }
+
+            var total = list.Sum(x => x.Amount);
+
+            var html = $@"
+        <p>Hello {System.Net.WebUtility.HtmlEncode(owner.Fullname ?? owner.UserName)},</p>
+        <p>We’ve recorded your payment{(list.Count > 1 ? "s" : "")}:</p>
+        <table cellpadding=""6"" cellspacing=""0"" border=""1"" style=""border-collapse:collapse;"">
+            <thead><tr>
+                <th>Bill</th><th>Bill Date</th><th>Amount</th><th>Reference</th><th>Receipt</th>
+            </tr></thead>
+            <tbody>{rows}</tbody>
+            <tfoot><tr><td colspan=""2"" style=""text-align:right""><strong>Total</strong></td><td style=""text-align:right""><strong>{total:C}</strong></td><td colspan=""2""></td></tr></tfoot>
+        </table>
+        <p>Thank you.</p>";
+
+            await _email.SendEmailAsync(owner.Email!, "Payment receipt", html);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = "President,SuperAdmin")]
+        public async Task<IActionResult> EmailReceipt(Guid id)
+        {
+            var pay = await _db.ExpenseAllocationPayments.FindAsync(id);
+            if (pay == null) return NotFound();
+
+            var alloc = await _db.ExpenseAllocations.Include(a => a.CommonBill).FirstAsync(a => a.Id == pay.ExpenseAllocationId);
+
+            var me = await _users.GetUserAsync(User);
+            if (User.IsInRole("President") && me?.BuildingId != alloc.CommonBill!.BuildingId) return Forbid();
+
+            await SendPaymentEmailAsync(pay.OwnerId, new[] { pay });
+            TempData["Success"] = "Receipt email sent.";
+            return RedirectToAction(nameof(View), new { ownerId = pay.OwnerId });
         }
     }
 }

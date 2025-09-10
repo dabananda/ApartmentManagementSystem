@@ -37,16 +37,19 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(b => b.BuildingId == buildingId)
                 .SumAsync(b => (decimal?)b.TotalAmount) ?? 0m;
 
+            // Building-level outgoing payments still tracked in ExpensePayments (e.g., vendor)
             var totalPayments = await _context.ExpensePayments
                 .AsNoTracking()
                 .Where(p => p.BuildingId == buildingId)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0m;
 
-            var totalCollected = await _context.ExpenseAllocations
+            // Collected from owners = sum of per-owner allocation payments for this building
+            var totalCollected = await _context.ExpenseAllocationPayments
                 .AsNoTracking()
-                .Include(a => a.CommonBill)
-                .Where(a => a.CommonBill.BuildingId == buildingId && a.IsPaid)
-                .SumAsync(a => (decimal?)a.AmountDue) ?? 0m;
+                .Where(p => p.CommonBillId != Guid.Empty)
+                .Join(_context.CommonBills.AsNoTracking().Where(b => b.BuildingId == buildingId),
+                      p => p.CommonBillId, b => b.Id, (p, b) => p.Amount)
+                .SumAsync(a => (decimal?)a) ?? 0m;
 
             // ---------- Occupancy ----------
             var totalFlats = await _context.Flats

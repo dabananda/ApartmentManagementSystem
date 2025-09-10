@@ -3,6 +3,8 @@ using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +30,8 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInMana
 builder.Services.AddTransient<IBuildingCodeGenerator, BuildingCodeGenerator>();
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.AddHostedService<MonthlyBillGenerator>();
+builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
 
 var app = builder.Build();
 

@@ -3,6 +3,8 @@
     ViewData["Title"] = "Common Bill Details";
 }
 <h1>Common Bill Details</h1>
+<a asp-action="Allocations" asp-route-billId="@Model.Id" class="btn btn-primary">Manage Owner Payments</a>
+
 <hr />
 <dl class="row">
     <dt class="col-sm-3">Name</dt>

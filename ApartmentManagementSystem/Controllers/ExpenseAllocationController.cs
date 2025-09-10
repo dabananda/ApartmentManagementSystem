@@ -46,33 +46,5 @@ namespace ApartmentManagementSystem.Controllers
             ViewData["BuildingId"] = commonBill.BuildingId;
             return View(allocations);
         }
-
-        // POST: ExpenseAllocation/MarkAsPaid/{id}
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MarkAsPaid(Guid id)
-        {
-            var allocation = await _context.ExpenseAllocations
-                                           .Include(a => a.CommonBill)
-                                           .FirstOrDefaultAsync(a => a.Id == id);
-
-            if (allocation == null) return NotFound();
-
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
-
-            // Security check: The user's BuildingId must match the allocation's bill's BuildingId
-            if (allocation.CommonBill?.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin"))
-            {
-                return Forbid();
-            }
-
-            allocation.IsPaid = true;
-            allocation.PaymentDate = DateTime.Now;
-            _context.Update(allocation);
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Index), new { commonBillId = allocation.CommonBillId });
-        }
     }
 }

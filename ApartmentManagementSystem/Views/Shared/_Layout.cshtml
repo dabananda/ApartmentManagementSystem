@@ -124,37 +124,22 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Building" asp-action="Index">
-                                    <i class="bi bi-buildings me-1"></i>
-                                    Buildings
+                                <a class="nav-link" asp-controller="CommonBill" asp-action="Index" asp-route-buildingId="@buildingId">
+                                    <i class="fa-solid fa-file-invoice-dollar me-1"></i>
+                                    Common Bills
                                 </a>
                             </li>
                             <li class="nav-item">
-                                @if (buildingId.HasValue)
-                                {
-                                    <a class="nav-link" asp-controller="CommonBill" asp-action="Index" asp-route-buildingId="@buildingId">
-                                        <i class="fa-solid fa-file-invoice-dollar me-1"></i>
-                                        Common Bills
-                                    </a>
-                                }
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link"
-                                   asp-controller="OwnerSummary"
-                                   asp-action="Index"
-                                   asp-route-buildingId=@buildingId>
-                                    <i class="bi bi-people me-1"></i> Owner Bills Summary
+                                <a class="nav-link" asp-controller="OwnerBilling" asp-action="Index" asp-route-buildingId="@buildingId">
+                                    <i class="bi bi-coin"></i>
+                                    Owner Bills
                                 </a>
                             </li>
-
                             <li class="nav-item">
-                                @if (buildingId.HasValue)
-                                {
-                                    <a class="nav-link" asp-controller="ExpensePayment" asp-action="Index" asp-route-buildingId="@buildingId">
-                                        <i class="fa-solid fa-money-check-dollar me-1"></i>
-                                        Bill Pay
-                                    </a>
-                                }
+                                <a class="nav-link" asp-controller="ExpensePayment" asp-action="Index" asp-route-buildingId="@buildingId">
+                                    <i class="fa-solid fa-money-check-dollar me-1"></i>
+                                    Bill Pay
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Flat" asp-action="AllFlats">
