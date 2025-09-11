@@ -876,6 +876,7 @@ namespace ApartmentManagementSystem.Controllers
 
         // GET: Admin/Users
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
+        [HttpGet]
         public async Task<IActionResult> Users([FromQuery] ManageUsersFilterViewModel filter)
         {
             var me = await _userManager.GetUserAsync(User);
