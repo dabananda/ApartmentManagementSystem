@@ -1,6 +1,7 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels;
+using ApartmentManagementSystem.ViewModels.Tenant;
+using ApartmentManagementSystem.ViewModels.TenantPortal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -42,7 +43,7 @@ namespace ApartmentManagementSystem.Controllers
                     UserName = a.TenantUser!.UserName,
                     Email = a.TenantUser!.Email
                 })
-                .Select(g => new ApartmentManagementSystem.ViewModels.TenantRentListRow
+                .Select(g => new TenantRentListRow
                 {
                     TenantUserId = g.Key.TenantUserId!,
                     Name = (g.Key.Fullname ?? g.Key.UserName)!,

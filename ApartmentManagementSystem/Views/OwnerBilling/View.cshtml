@@ -1,4 +1,5 @@
-﻿@model ApartmentManagementSystem.ViewModels.OwnerBillsPage
+﻿@using ApartmentManagementSystem.ViewModels.Owner
+@model OwnerBillsPage
 @{
     ViewData["Title"] = "Owner Bills";
     bool canPay = User.IsInRole("President") || User.IsInRole("SuperAdmin");

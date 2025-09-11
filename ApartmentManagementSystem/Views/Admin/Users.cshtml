@@ -1,4 +1,5 @@
-﻿@model ApartmentManagementSystem.ViewModels.ManageUsersPageViewModel
+﻿@using ApartmentManagementSystem.ViewModels.Admin
+@model ManageUsersPageViewModel
 @{
     ViewData["Title"] = "Manage Users";
     var totalPages = (int)Math.Ceiling((double)Model.Total / Math.Max(1, Model.Filter.PageSize));

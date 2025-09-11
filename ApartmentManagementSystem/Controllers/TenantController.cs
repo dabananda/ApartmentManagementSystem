@@ -1,5 +1,7 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.ViewModels.Building;
+using ApartmentManagementSystem.ViewModels.Flat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -50,7 +52,7 @@ namespace ApartmentManagementSystem.Controllers
             var assignmentRows = await _context.TenantAssignments.AsNoTracking()
                 .Include(a => a.TenantUser)
                 .Where(a => a.FlatId == flat.Id && a.EndDate == null)
-                .Select(a => new ApartmentManagementSystem.ViewModels.FlatTenantRow
+                .Select(a => new FlatTenantRow
                 {
                     FlatId = a.FlatId,
                     FlatNumber = flat.FlatNumber,
@@ -71,7 +73,7 @@ namespace ApartmentManagementSystem.Controllers
             // 2) Legacy tenants that don’t duplicate current assignments
             var legacyRows = await _context.Tenants.AsNoTracking()
                 .Where(t => t.FlatId == flat.Id && (t.UserId == null || !assignedUserIds.Contains(t.UserId)))
-                .Select(t => new ApartmentManagementSystem.ViewModels.FlatTenantRow
+                .Select(t => new FlatTenantRow
                 {
                     FlatId = t.FlatId,
                     FlatNumber = flat.FlatNumber,
@@ -110,7 +112,7 @@ namespace ApartmentManagementSystem.Controllers
                 .Include(a => a.Flat)!.ThenInclude(f => f.Owner)
                 .Include(a => a.TenantUser)
                 .Where(a => a.EndDate == null && a.Flat!.BuildingId == buildingId)
-                .Select(a => new ApartmentManagementSystem.ViewModels.BuildingTenantRow
+                .Select(a => new BuildingTenantRow
                 {
                     FlatId = a.FlatId,
                     FlatNumber = a.Flat!.FlatNumber,
@@ -131,7 +133,7 @@ namespace ApartmentManagementSystem.Controllers
             var legacyRows = await _context.Tenants
                 .Include(t => t.Flat)!.ThenInclude(f => f.Owner)
                 .Where(t => t.IsActive && t.Flat!.BuildingId == buildingId && !assignedFlatIds.Contains(t.FlatId))
-                .Select(t => new ApartmentManagementSystem.ViewModels.BuildingTenantRow
+                .Select(t => new BuildingTenantRow
                 {
                     FlatId = t.FlatId,
                     FlatNumber = t.Flat!.FlatNumber,

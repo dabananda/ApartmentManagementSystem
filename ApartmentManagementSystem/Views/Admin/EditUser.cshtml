@@ -1,4 +1,5 @@
-﻿@model ApartmentManagementSystem.ViewModels.EditUserViewModel
+﻿@using ApartmentManagementSystem.ViewModels.Admin
+@model EditUserViewModel
 @{
     ViewData["Title"] = "Edit User";
     var buildings = ViewBag.Buildings as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
