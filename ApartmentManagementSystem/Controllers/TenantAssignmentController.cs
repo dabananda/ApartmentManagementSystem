@@ -119,46 +119,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: /TenantAssignment/MyTenants
-        public async Task<IActionResult> MyFlats()
-        {
-            var me = await _users.GetUserAsync(User);
-            if (me == null) return Forbid();
-
-            var today = DateTime.Today;
-
-            var flats = await _db.Flats
-                .Where(f => f.OwnerId == me.Id)
-                .Select(f => new OwnerMyFlatVM
-                {
-                    FlatId = f.Id,
-                    FlatNumber = f.FlatNumber,
-
-                    // pick the latest active assignment (EndDate null or in future)
-                    CurrentTenantUserId = _db.TenantAssignments
-                        .Where(a => a.FlatId == f.Id && (a.EndDate == null || a.EndDate >= today))
-                        .OrderByDescending(a => a.StartDate)
-                        .Select(a => a.TenantUserId)
-                        .FirstOrDefault(),
-
-                    CurrentTenantName = _db.TenantAssignments
-                        .Where(a => a.FlatId == f.Id && (a.EndDate == null || a.EndDate >= today))
-                        .OrderByDescending(a => a.StartDate)
-                        .Select(a => a.TenantUser!.Fullname ?? a.TenantUser.UserName)
-                        .FirstOrDefault(),
-
-                    CurrentTenantEmail = _db.TenantAssignments
-                        .Where(a => a.FlatId == f.Id && (a.EndDate == null || a.EndDate >= today))
-                        .OrderByDescending(a => a.StartDate)
-                        .Select(a => a.TenantUser!.Email)
-                        .FirstOrDefault()
-                })
-                .OrderBy(x => x.FlatNumber)
-                .ToListAsync();
-
-            return View(flats);
-        }
-
-        // GET: /TenantAssignment/MyTenants
         public async Task<IActionResult> MyTenants()
         {
             var me = await _users.GetUserAsync(User);
