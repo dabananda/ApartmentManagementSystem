@@ -242,7 +242,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Admin/CreateUser
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = "SuperAdmin,President, Owner")]
         [HttpGet]
         public async Task<IActionResult> CreateUser()
         {
@@ -284,7 +284,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // POST: Admin/CreateUser
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = "SuperAdmin,President, Owner")]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateUser(CreateUserViewModel model)
         {

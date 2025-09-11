@@ -1,0 +1,22 @@
+﻿@model ApartmentManagementSystem.ViewModels.AssignTenantVM
+@{
+    ViewData["Title"] = "Assign Tenant to Flat";
+}
+<h2>Assign Tenant</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div class="mb-2">
+                <label class="form-label">Flat</label>
+                <select asp-for="FlatId" class="form-select" asp-items="@(new SelectList(Model.Flats, "Id", "FlatNumber"))"></select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Tenant</label>
+                <select asp-for="TenantUserId" class="form-select"
+                        asp-items="@(new SelectList(Model.Tenants, "Id", "Fullname"))"></select>
+            </div>
+            <button class="btn btn-primary">Assign</button>
+        </form>
+    </div>
+</div>
