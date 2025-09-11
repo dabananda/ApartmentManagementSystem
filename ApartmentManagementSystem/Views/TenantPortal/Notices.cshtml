@@ -1,29 +1,25 @@
-﻿@model IEnumerable<ApartmentManagementSystem.Models.Announcement>
+﻿@model List<ApartmentManagementSystem.Models.Announcement>
 @{
     ViewData["Title"] = "Notices";
 }
-<h1 class="mb-3">Building Notices</h1>
+<h2>Notices</h2>
 
-@if (Model == null || !Model.Any())
+@if (!Model.Any())
 {
-    <div class="alert alert-info">No notices yet.</div>
+    <div class="text-muted">No notices published yet.</div>
 }
 else
 {
     <div class="list-group">
         @foreach (var n in Model)
         {
-            <article class="list-group-item">
+            <div class="list-group-item">
                 <div class="d-flex justify-content-between">
-                    <strong>@n.Title</strong>
-                    <small class="text-muted">
-                        @n.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
-                    </small>
+                    <h5 class="mb-1">@n.Title</h5>
+                    <small class="text-muted">@n.CreatedAt.ToString("yyyy-MM-dd")</small>
                 </div>
-                <div class="mt-1" style="white-space:pre-wrap;">
-                    @n.Body
-                </div>
-            </article>
+                <p class="mb-1">@n.Body</p>
+            </div>
         }
     </div>
 }
