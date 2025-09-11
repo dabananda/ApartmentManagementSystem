@@ -2,15 +2,15 @@
 
 namespace ApartmentManagementSystem.ViewModels
 {
-    public class TenantBillRow
-    {
-        public Guid BillId { get; set; }
-        public string Title { get; set; } = "";
-        public DateTime BillDate { get; set; }
-        public decimal Amount { get; set; }
-        public decimal Paid { get; set; }
-        public decimal Due => Amount - Paid;
-    }
+    //public class TenantBillRow
+    //{
+    //    public Guid BillId { get; set; }
+    //    public string Title { get; set; } = "";
+    //    public DateTime BillDate { get; set; }
+    //    public decimal Amount { get; set; }
+    //    public decimal Paid { get; set; }
+    //    public decimal Due => Amount - Paid;
+    //}
 
     public class TenantBillsPage
     {

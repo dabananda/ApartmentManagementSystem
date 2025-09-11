@@ -1,42 +1,31 @@
-﻿@model IEnumerable<ApartmentManagementSystem.Models.TenantBill>
+﻿@model List<ApartmentManagementSystem.ViewModels.TenantBillRow>
 @{
     ViewData["Title"] = "My Bills";
 }
-<h1>My Bills</h1>
-@if (!Model.Any())
-{
-    <div class="alert alert-info">No bills yet.</div>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>Period</th>
-                    <th class="text-end">Total</th>
-                    <th class="text-end">Paid</th>
-                    <th class="text-end">Paid</th>
-                    <th>Status</th>
-                    <th>Breakdown</th>
-                </tr>
-            </thead>
-            @* <tbody>
-                @foreach (var b in Model)
-                {
-                    <tr>
-                        <td>@b.Year-@b.Month.ToString("D2")</td>
-                        <td class="text-end">@b.TotalAmount.ToString("C")</td>
-                        <td class="text-end">@b.PaidAmount.ToString("C")</td>
-                        <td class="text-end">
-                            @b.PaidAmount.ToString("C")
-                            <small class="text-muted d-block">Bal: @( (b.TotalAmount - b.PaidAmount).ToString("C") )</small>
-                        </td>
-                        <td><span class="badge bg-@((b.Status == "Paid" ? "success" : (b.Status == "PartiallyPaid" ? "warning" : "secondary")))">@b.Status</span></td>
-                        <td>Rent @b.RentAmount, Elec @b.ElectricityAmount, Gas @b.GasAmount, Water @b.WaterAmount, Common @b.CommonBillAmount, Service @b.ServiceChargeAmount, Other @b.OtherAmount</td>
-                    </tr>
-                }
-            </tbody> *@
-        </table>
-    </div>
-}
+<h2>My Bills</h2>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Title</th>
+            <th>Building / Flat</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Paid</th>
+            <th class="text-end">Due</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var b in Model)
+        {
+            <tr>
+                <td>@b.BillDate.ToString("yyyy-MM-dd")</td>
+                <td>@b.Title</td>
+                <td>@b.BuildingName / @b.FlatNumber</td>
+                <td class="text-end">@b.Amount.ToString("C")</td>
+                <td class="text-end">@b.Paid.ToString("C")</td>
+                <td class="text-end @(b.Due > 0 ? "text-danger" : "text-success")">@b.Due.ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+</table>

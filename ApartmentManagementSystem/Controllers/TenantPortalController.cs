@@ -1,5 +1,6 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,186 +11,265 @@ namespace ApartmentManagementSystem.Controllers
     [Authorize(Roles = "Tenant")]
     public class TenantPortalController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ApplicationDbContext _db;
+        private readonly UserManager<ApplicationUser> _users;
 
-        public TenantPortalController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public TenantPortalController(ApplicationDbContext db, UserManager<ApplicationUser> users)
         {
-            _context = context;
-            _userManager = userManager;
+            _db = db;
+            _users = users;
         }
 
-        // GET: /TenantPortal/Dashboard
+        // -------- Dashboard --------
+        [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
+            var me = await _users.GetUserAsync(User);
+            if (me == null) return Forbid();
 
-            // Find the domain Tenant record linked to this user
-            var tenant = await _context.Tenants
-                .Include(t => t.Flat)
-                    .ThenInclude(f => f.Building)
-                .FirstOrDefaultAsync(t => t.UserId == user.Id);
+            // Resolve the tenant's active flat assignment (supports future multi-flat by taking the latest)
+            var today = DateTime.Today;
+            var assignment = await _db.TenantAssignments
+                .Include(a => a.Flat)!.ThenInclude(f => f.Building)
+                .Where(a => a.TenantUserId == me.Id && (a.EndDate == null || a.EndDate >= today))
+                .OrderByDescending(a => a.StartDate)
+                .FirstOrDefaultAsync();
 
-            if (tenant == null)
+            if (assignment?.Flat == null)
             {
-                // No linked Tenant record — guide user or show empty state.
-                ViewData["Message"] = "No tenant record linked to your account yet.";
-                return View("DashboardEmpty");
+                return View("TenantSetupRequired", "Your account isn’t linked to a flat yet.");
             }
 
-            // Pull recent rent payments and simple metrics
-            var rents = await _context.Rents
-                .Where(r => r.TenantId == tenant.Id)
-                .OrderByDescending(r => r.PaymentDate)
+            var flatId = assignment.FlatId;
+            var buildingId = assignment.Flat.BuildingId;
+
+            // Bills + payments (owner-president rent system)
+            var bills = await _db.TenantBills
+                .Include(b => b.Payments)
+                .Where(b => b.TenantUserId == me.Id)
+                .OrderByDescending(b => b.BillDate)
                 .ToListAsync();
 
-            var lastPayment = rents.FirstOrDefault();
-            var totalPaidThisYear = rents
-                .Where(r => r.PaymentDate.Year == DateTime.UtcNow.Year)
-                .Sum(r => r.Amount);
+            var total = bills.Sum(b => b.Amount);
+            var paid = bills.Sum(b => b.Payments.Sum(p => p.Amount));
+            var due = total - paid;
 
-            var vm = new
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var paidThisMonth = await _db.TenantPayments
+                .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)
+                .Where(p => p.PaymentDate >= monthStart && p.TenantBill!.TenantUserId == me.Id)
+                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+            // A few recent items for the dashboard
+            var recentBills = bills.Take(6).Select(b => new TenantBillRow
             {
-                TenantName = tenant.Fullname,
-                BuildingName = tenant.Flat?.Building?.Name,
-                FlatNumber = tenant.Flat?.FlatNumber,
-                LastPayment = lastPayment,
-                TotalPaidThisYear = totalPaidThisYear,
-                TenantId = tenant.Id
+                BillId = b.Id,
+                Title = b.Title,
+                BillDate = b.BillDate,
+                Amount = b.Amount,
+                Paid = b.Payments.Sum(p => p.Amount)
+            }).ToList();
+
+            var recentPayments = await _db.TenantPayments
+                .Include(p => p.TenantBill)
+                .Where(p => p.TenantBill!.TenantUserId == me.Id)
+                .OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id)
+                .Take(6)
+                .Select(p => new TenantPaymentRow
+                {
+                    PaymentId = p.Id,
+                    PaymentDate = p.PaymentDate,
+                    Amount = p.Amount,
+                    Reference = p.Reference,
+                    BillTitle = p.TenantBill!.Title,
+                    BillDate = p.TenantBill!.BillDate
+                })
+                .ToListAsync();
+
+            // Notices for tenant's building (and optional global)
+            var notices = await _db.Announcements
+                .AsNoTracking()
+                .Where(a => a.BuildingId == buildingId || a.BuildingId == null) // treat null as global
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(6)
+                .ToListAsync();
+
+            var vm = new TenantDashboardVM
+            {
+                TenantName = me.Fullname ?? me.UserName ?? "Me",
+                BuildingName = assignment.Flat.Building!.Name,
+                FlatNumber = assignment.Flat.FlatNumber,
+
+                TotalBilled = total,
+                TotalPaid = paid,
+                //TotalDue = due,
+                PaidThisMonth = paidThisMonth,
+
+                RecentBills = recentBills,
+                RecentPayments = recentPayments,
+                RecentNotices = notices
             };
 
             return View(vm);
         }
 
-        // GET: /TenantPortal/Payments
-        public async Task<IActionResult> Payments()
+        // -------- Bills (all) --------
+        [HttpGet]
+        public async Task<IActionResult> Bills()
         {
-            var user = await _userManager.GetUserAsync(User);
-            var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.UserId == user.Id);
-            if (tenant == null) return Forbid();
+            var me = await _users.GetUserAsync(User);
+            if (me == null) return Forbid();
 
-            var rents = await _context.Rents
-                .Where(r => r.TenantId == tenant.Id)
-                .OrderByDescending(r => r.PaymentDate)
+            var items = await _db.TenantBills
+                .Include(b => b.Payments)
+                .Include(b => b.Flat)!.ThenInclude(f => f.Building)
+                .Where(b => b.TenantUserId == me.Id)
+                .OrderByDescending(b => b.BillDate)
+                .Select(b => new TenantBillRow
+                {
+                    BillId = b.Id,
+                    Title = b.Title,
+                    BillDate = b.BillDate,
+                    Amount = b.Amount,
+                    Paid = b.Payments.Sum(p => p.Amount),
+                    BuildingName = b.Flat!.Building!.Name,
+                    FlatNumber = b.Flat!.FlatNumber
+                })
                 .ToListAsync();
 
-            return View(rents);
+            return View(items);
         }
 
-        // --- TENANT NOTICES ---
+        // -------- Payments (all) --------
+        [HttpGet]
+        public async Task<IActionResult> Payments()
+        {
+            var me = await _users.GetUserAsync(User);
+            if (me == null) return Forbid();
+
+            var items = await _db.TenantPayments
+                .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)!.ThenInclude(f => f.Building)
+                .Where(p => p.TenantBill!.TenantUserId == me.Id)
+                .OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id)
+                .Select(p => new TenantPaymentRow
+                {
+                    PaymentId = p.Id,
+                    PaymentDate = p.PaymentDate,
+                    Amount = p.Amount,
+                    Reference = p.Reference,
+                    BillTitle = p.TenantBill!.Title,
+                    BillDate = p.TenantBill!.BillDate,
+                    BuildingName = p.TenantBill!.Flat!.Building!.Name,
+                    FlatNumber = p.TenantBill!.Flat!.FlatNumber
+                })
+                .ToListAsync();
+
+            return View(items);
+        }
+
+        // -------- Notices (building announcements) --------
+        [HttpGet]
         public async Task<IActionResult> Notices()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
+            var me = await _users.GetUserAsync(User);
+            if (me?.BuildingId == null)
+                return View("TenantSetupRequired", "Your account isn’t linked to a building yet.");
 
-            var tenant = await _context.Tenants
-                .Include(t => t.Flat)
-                .FirstOrDefaultAsync(t => t.UserId == user.Id);
-
-            if (tenant?.Flat?.BuildingId == null)
-                return View("TenantSetupRequired", "Your account isn’t linked to a flat/building yet.");
-
-            var buildingId = tenant.Flat.BuildingId;
-
-            // If you have IsPublished/IsActive, add: && a.IsPublished
-            var notices = await _context.Announcements
+            var notices = await _db.Announcements
                 .AsNoTracking()
-                .Where(a =>
-                    a.BuildingId == buildingId
-                    || a.BuildingId == null // treat null as global
-                                            // || a.IsGlobal == true // uncomment if you have this flag instead of null BuildingId
-                )
+                .Where(a => a.BuildingId == me.BuildingId || a.BuildingId == null)
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
             return View(notices);
         }
 
-        // --- TENANT MAINTENANCE TICKETS (LIST MINE) ---
+        // -------- Tickets (mine) --------
+        [HttpGet]
         public async Task<IActionResult> Tickets()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
+            var me = await _users.GetUserAsync(User);
+            if (me == null) return Forbid();
 
-            var tenant = await _context.Tenants
-                .Include(t => t.Flat)
-                .FirstOrDefaultAsync(t => t.UserId == user.Id);
+            var assignment = await _db.TenantAssignments
+                .Include(a => a.Flat)
+                .Where(a => a.TenantUserId == me.Id)
+                .OrderByDescending(a => a.StartDate)
+                .FirstOrDefaultAsync();
 
-            if (tenant?.Flat?.BuildingId == null)
-                return View("TenantSetupRequired", "Your account isn’t linked to a flat/building yet.");
+            if (assignment?.Flat == null)
+                return View("TenantSetupRequired", "Your account isn’t linked to a flat yet.");
 
-            var myUserId = user.Id;
-            var myFlatId = tenant.FlatId;
-            var buildingId = tenant.Flat.BuildingId;
+            var myUserId = me.Id;
+            var myFlatId = assignment.FlatId;
+            var buildingId = assignment.Flat.BuildingId;
 
-            // Prefer CreatedByUserId; fall back to FlatId if CreatedByUserId column doesn't exist.
-            var items = await _context.MaintenanceTickets
+            var items = await _db.MaintenanceTickets
                 .AsNoTracking()
                 .Where(t =>
-                    t.BuildingId == buildingId
-                    && (
-                        t.CreatedByUserId == myUserId
-                        || (t.CreatedByUserId == null && t.FlatId == myFlatId)
-                    )
-                )
-                .OrderBy(t => t.Status)
-                .ThenByDescending(t => t.CreatedAt)
+                    t.BuildingId == buildingId &&
+                    (t.CreatedByUserId == myUserId || (t.CreatedByUserId == null && t.FlatId == myFlatId)))
+                .OrderBy(t => t.Status).ThenByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
             return View(items);
         }
 
-        // --- OPEN NEW MAINTENANCE TICKET (TENANT) ---
+        // -------- New Ticket --------
         [HttpGet]
         public IActionResult NewTicket() => View(new MaintenanceTicket());
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> NewTicket(MaintenanceTicket model)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
+            var me = await _users.GetUserAsync(User);
+            if (me == null) return Forbid();
 
-            var tenant = await _context.Tenants
-                .Include(t => t.Flat)
-                .FirstOrDefaultAsync(t => t.UserId == user.Id);
+            var assignment = await _db.TenantAssignments
+                .Include(a => a.Flat)
+                .Where(a => a.TenantUserId == me.Id)
+                .OrderByDescending(a => a.StartDate)
+                .FirstOrDefaultAsync();
 
-            if (tenant?.Flat?.BuildingId == null)
-                return View("TenantSetupRequired", "Your account isn’t linked to a flat/building yet.");
+            if (assignment?.Flat == null)
+                return View("TenantSetupRequired", "Your account isn’t linked to a flat yet.");
 
             if (!ModelState.IsValid) return View(model);
 
             model.Id = Guid.NewGuid();
-            model.BuildingId = tenant.Flat.BuildingId;
-            model.FlatId = tenant.FlatId;            // <-- helps fallback filter
-            model.CreatedByUserId = user.Id;         // <-- key for “only my tickets”
+            model.BuildingId = assignment.Flat.BuildingId;
+            model.FlatId = assignment.FlatId;
+            model.CreatedByUserId = me.Id;
             model.Status = "Open";
             model.CreatedAt = DateTime.UtcNow;
 
-            _context.MaintenanceTickets.Add(model);
-            await _context.SaveChangesAsync();
+            _db.MaintenanceTickets.Add(model);
+            await _db.SaveChangesAsync();
 
             TempData["Ok"] = "Ticket created successfully.";
             return RedirectToAction(nameof(Tickets));
         }
 
-        // --- TENANT VISITORS (ENTRY LOGS FOR MY FLAT) ---
+        // -------- Visitors (entry logs for my flat) --------
+        [HttpGet]
         public async Task<IActionResult> Visitors(DateTime? from = null, DateTime? to = null)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
+            var me = await _users.GetUserAsync(User);
+            if (me == null) return Forbid();
 
-            var tenant = await _context.Tenants
-                .Include(t => t.Flat)
-                .FirstOrDefaultAsync(t => t.UserId == user.Id);
+            var assignment = await _db.TenantAssignments
+                .Include(a => a.Flat)
+                .Where(a => a.TenantUserId == me.Id)
+                .OrderByDescending(a => a.StartDate)
+                .FirstOrDefaultAsync();
 
-            if (tenant?.Flat == null)
+            if (assignment?.Flat == null)
                 return View("TenantSetupRequired", "Your account isn’t linked to a flat yet.");
 
-            var flatId = tenant.FlatId;
-            var buildingId = tenant.Flat.BuildingId;
+            var flatId = assignment.FlatId;
+            var buildingId = assignment.Flat.BuildingId;
 
-            var q = _context.EntryLogs.AsNoTracking()
+            var q = _db.EntryLogs.AsNoTracking()
                 .Where(el => el.FlatId == flatId && el.BuildingId == buildingId);
 
             if (from.HasValue) q = q.Where(el => el.EntryTime >= from.Value);
@@ -198,22 +278,5 @@ namespace ApartmentManagementSystem.Controllers
             var items = await q.OrderByDescending(el => el.EntryTime).ToListAsync();
             return View(items);
         }
-
-        // GET: /TenantPortal/Bills
-        //public async Task<IActionResult> Bills()
-        //{
-        //    var user = await _userManager.GetUserAsync(User);
-        //    var tenant = await _context.Tenants.Include(t => t.Flat)
-        //                                       .FirstOrDefaultAsync(t => t.UserId == user.Id);
-        //    if (tenant?.Flat == null)
-        //        return View("TenantSetupRequired", "Your account isn’t linked to a flat yet.");
-
-        //    var items = await _context.TenantBills
-        //        .Where(b => b.Id == tenant.Id)
-        //        .OrderByDescending(b => b.).ThenByDescending(b => b.Month)
-        //        .ToListAsync();
-
-        //    return View(items);
-        //}
     }
 }
