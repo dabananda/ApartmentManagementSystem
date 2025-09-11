@@ -136,7 +136,7 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="OwnerBilling" asp-action="Index" asp-route-buildingId="@buildingId">
-                                    <i class="bi bi-coin"></i>
+                                    <i class="bi bi-coin me-1"></i>
                                     Owner Bills
                                 </a>
                             </li>
@@ -199,36 +199,42 @@
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-controller="Admin" asp-action="CreateUser">
+                                    <i class="bi bi-person-plus me-1"></i>
                                     Create Tenant
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-controller="TenantAssignment" asp-action="MyTenants">
+                                    <i class="bi bi-people me-1"></i>
                                     My Tenants
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-controller="Owner" asp-action="OwnedFlats">
+                                    <i class="bi bi-house-door me-1"></i>
                                     My Flats
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-controller="TenantAssignment" asp-action="Assign">
+                                    <i class="bi bi-person-plus-fill me-1"></i>
                                     Assign Tenant to Flat
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-controller="FlatBillingProfile" asp-action="Index">
+                                    <i class="bi bi-file-text me-1"></i>
                                     Flat Billing Profiles
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-controller="TenantRent" asp-action="List">
+                                    <i class="bi bi-cash-stack me-1"></i>
                                     Tenant Rent
                                 </a>
                             </li>
@@ -304,7 +310,7 @@
                         <li class="nav-item" id="logout-section-2">
                             <form id="logoutForm" class="form-inline nav-link" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
                                 <button id="logout" type="submit" class="btn px-0">
-                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>
                                     Logout
                                 </button>
                             </form>
