@@ -10,28 +10,25 @@ namespace ApartmentManagementSystem.Models
         [Required] public Guid FlatId { get; set; }
         [ForeignKey(nameof(FlatId))] public Flat? Flat { get; set; }
 
-        [Required] public Guid TenantId { get; set; }
-        [ForeignKey(nameof(TenantId))] public Tenant? Tenant { get; set; }
+        [Required] public string TenantUserId { get; set; } = default!;
+        [ForeignKey(nameof(TenantUserId))] public ApplicationUser? TenantUser { get; set; }
 
-        [Range(2000, 3000)] public int Year { get; set; }
-        [Range(1, 12)] public int Month { get; set; }
+        [Required, StringLength(80)]
+        public string Title { get; set; } = "Monthly Rent";
 
-        [Column(TypeName = "decimal(18,2)")] public decimal RentAmount { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal ElectricityAmount { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal GasAmount { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal WaterAmount { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal CommonBillAmount { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal ServiceChargeAmount { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal OtherAmount { get; set; }
+        [DataType(DataType.Date)]
+        public DateTime BillDate { get; set; } = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-        [Column(TypeName = "decimal(18,2)")] public decimal TotalAmount { get; set; }
-        [Column(TypeName = "decimal(18,2)")] public decimal PaidAmount { get; set; }
-        [StringLength(16)] public string Status { get; set; } = "Unpaid"; // Unpaid|PartiallyPaid|Paid
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Amount { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime DueDate { get; set; }
-
-        // NEW: optimistic concurrency token
+        // optimistic concurrency (you had rowversion; keep if present)
         [Timestamp] public byte[]? RowVersion { get; set; }
+
+        public ICollection<TenantPayment> Payments { get; set; } = new List<TenantPayment>();
+
+        [NotMapped] public decimal Paid => Payments?.Sum(p => p.Amount) ?? 0m;
+        [NotMapped] public decimal Due => Amount - Paid;
+        [NotMapped] public bool IsPaid => Due <= 0;
     }
 }

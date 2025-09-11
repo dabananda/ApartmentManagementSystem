@@ -3,10 +3,11 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
-
 @{
-    var currentUser = await UserManager.GetUserAsync(User);
-    var buildingId = currentUser?.BuildingId;
+    var buildingId = User?.FindFirst("BuildingId")?.Value;
+    bool isOwner = User.IsInRole("Owner");
+    bool isPresident = User.IsInRole("President");
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
 }
 
 <!DOCTYPE html>
@@ -102,6 +103,31 @@
                                 </a>
                             </li>
                         }
+                        @if (isPresident || isSuperAdmin)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="presidentMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Building Billing
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="presidentMenu">
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="CommonBill" asp-action="Index"
+                                           asp-route-buildingId="@(buildingId)">
+                                            Common Bills
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="OwnerBilling" asp-action="Index"
+                                           asp-route-buildingId="@(buildingId)">
+                                            Owner Bills Summary
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+
                         @if (User.IsInRole("President"))
                         {
                             <p class="ms-2"><strong>President Dasboard</strong></p>
@@ -190,6 +216,43 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Admin" asp-action="CreateUser">
+                                    Create Tenant
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="TenantAssignment" asp-action="MyTenants">
+                                    My Tenants
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Owner" asp-action="OwnedFlats">
+                                    My Flats
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="TenantAssignment" asp-action="Assign">
+                                    Assign Tenant to Flat
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="FlatBillingProfile" asp-action="Index">
+                                    Flat Billing Profiles
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="TenantRent" asp-action="List">
+                                    Tenant Rent
+                                </a>
+                            </li>
+
+                            @* <li class="nav-item">
                                 <a class="nav-link" asp-controller="Owner" asp-action="MyFlats">
                                     <i class="fa-solid fa-home me-1"></i>
                                     My Flats
@@ -200,7 +263,7 @@
                                     <i class="fas fa-users me-1"></i>
                                     My Tenants
                                 </a>
-                            </li>
+                            </li> *@
                             <hr />
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="EntryLog" asp-action="Index">

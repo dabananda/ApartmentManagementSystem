@@ -1,0 +1,18 @@
+﻿@model List<ApartmentManagementSystem.Models.ApplicationUser>
+@{
+    ViewData["Title"] = "Tenants";
+}
+<h2>Tenants</h2>
+@* <a asp-action="Create" class="btn btn-sm btn-primary mb-2">Create Tenant</a> *@
+<table class="table table-striped">
+    <thead><tr><th>Name</th><th>Email</th></tr></thead>
+    <tbody>
+        @foreach (var t in Model)
+        {
+            <tr>
+                <td>@(string.IsNullOrWhiteSpace(t.Fullname) ? t.UserName : t.Fullname)</td>
+                <td>@t.Email</td>
+            </tr>
+        }
+    </tbody>
+</table>

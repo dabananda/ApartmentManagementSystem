@@ -1,0 +1,27 @@
+﻿@model ApartmentManagementSystem.ViewModels.CreateTenantVM
+@{
+    ViewData["Title"] = "Create Tenant";
+}
+<h2>Create Tenant</h2>
+<form method="post">
+    <div class="mb-2">
+        <label class="form-label">Full name</label>
+        <input asp-for="Fullname" class="form-control" />
+        <span asp-validation-for="Fullname" class="text-danger"></span>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Email</label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Password</label>
+        <input asp-for="Password" class="form-control" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <button class="btn btn-primary">Create</button>
+    <a asp-action="List" class="btn btn-outline-secondary">Back</a>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

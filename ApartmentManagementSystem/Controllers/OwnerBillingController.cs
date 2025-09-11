@@ -406,21 +406,28 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _users.GetUserAsync(User);
             if (User.IsInRole("President") && me?.BuildingId != p.Bill.BuildingId) return Forbid();
 
+            var payment = await _db.TenantPayments
+                .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)!.ThenInclude(f => f.Building)
+                .Include(p => p.TenantBill)!.ThenInclude(b => b.TenantUser)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (payment == null) return NotFound();
+
             var vm = new ReceiptViewModel
             {
-                PaymentId = p.Payment.Id,
-                ReceiptNo = p.Payment.Id.ToString("N")[..8].ToUpperInvariant(),
-                OwnerName = p.Owner.Fullname ?? p.Owner.UserName ?? "(no name)",
-                OwnerEmail = p.Owner.Email ?? "",
-                BillTitle = p.Bill.Name,
-                BillDate = p.Bill.BillDate,
-                Amount = p.Payment.Amount,
-                Reference = p.Payment.Reference,
-                PaidOn = p.Payment.PaymentDate,
-                BuildingId = p.Bill.BuildingId
+                Id = payment.Id,
+                ReceiptNo = "RC-" + payment.Id.ToString().Substring(0, 8).ToUpper(),
+                PaidOn = payment.PaymentDate,
+                OwnerName = payment.TenantBill!.TenantUser!.Fullname ?? payment.TenantBill!.TenantUser!.UserName!,
+                OwnerEmail = payment.TenantBill!.TenantUser!.Email,
+                BillTitle = payment.TenantBill.Title,
+                BillDate = payment.TenantBill.BillDate,
+                Amount = payment.Amount,
+                Reference = payment.Reference,
+                BuildingName = payment.TenantBill!.Flat!.Building!.Name,
+                FlatNumber = payment.TenantBill!.Flat!.FlatNumber
             };
-
-            return View(vm);
+            return View("~/Views/Shared/Receipt.cshtml", vm);
         }
 
         private string AbsoluteUrl(string action, object? routeValues = null)

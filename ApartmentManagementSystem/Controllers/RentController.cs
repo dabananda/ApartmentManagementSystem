@@ -72,44 +72,44 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // POST: Rent/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PaymentDate,Amount,Notes,TenantId")] Rent rent)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            var tenant = await _context.Tenants
-                                        .Include(t => t.Flat)
-                                        .FirstOrDefaultAsync(t => t.Id == rent.TenantId);
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Create([Bind("PaymentDate,Amount,Notes,TenantId")] Rent rent)
+        //{
+        //    var user = await _userManager.GetUserAsync(User);
+        //    var tenant = await _context.Tenants
+        //                                .Include(t => t.Flat)
+        //                                .FirstOrDefaultAsync(t => t.Id == rent.TenantId);
 
-            // Security check: Verify the owner of the tenant's flat
-            if (tenant == null || tenant.Flat == null || (tenant.Flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin"))) // Added tenant.Flat null check
-            {
-                return Forbid();
-            }
+        //    // Security check: Verify the owner of the tenant's flat
+        //    if (tenant == null || tenant.Flat == null || (tenant.Flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin"))) // Added tenant.Flat null check
+        //    {
+        //        return Forbid();
+        //    }
 
-            if (ModelState.IsValid)
-            {
-                _context.Add(rent);
-                await _context.SaveChangesAsync();
+        //    if (ModelState.IsValid)
+        //    {
+        //        _context.Add(rent);
+        //        await _context.SaveChangesAsync();
 
-                if (rent.TenantBillId.HasValue)
-                {
-                    var bill = await _context.TenantBills.FindAsync(rent.TenantBillId.Value);
-                    if (bill != null)
-                    {
-                        bill.PaidAmount += rent.Amount;
-                        bill.Status = bill.PaidAmount <= 0 ? "Unpaid" :
-                                      bill.PaidAmount < bill.TotalAmount ? "PartiallyPaid" : "Paid";
-                        await _context.SaveChangesAsync();
-                    }
-                }
-                return RedirectToAction(nameof(Index), new { tenantId = rent.TenantId });
-            }
+        //        if (rent.TenantBillId.HasValue)
+        //        {
+        //            var bill = await _context.TenantBills.FindAsync(rent.TenantBillId.Value);
+        //            if (bill != null)
+        //            {
+        //                bill.PaidAmount += rent.Amount;
+        //                bill.Status = bill.PaidAmount <= 0 ? "Unpaid" :
+        //                              bill.PaidAmount < bill.TotalAmount ? "PartiallyPaid" : "Paid";
+        //                await _context.SaveChangesAsync();
+        //            }
+        //        }
+        //        return RedirectToAction(nameof(Index), new { tenantId = rent.TenantId });
+        //    }
 
-            ViewData["TenantName"] = tenant.Fullname;
-            ViewData["TenantId"] = rent.TenantId;
-            return View(rent);
-        }
+        //    ViewData["TenantName"] = tenant.Fullname;
+        //    ViewData["TenantId"] = rent.TenantId;
+        //    return View(rent);
+        //}
 
         // GET: rent/details/{Guid}
         public async Task<IActionResult> Details(Guid id)

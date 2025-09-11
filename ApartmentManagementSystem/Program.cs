@@ -29,9 +29,9 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInManager>();
 builder.Services.AddTransient<IBuildingCodeGenerator, BuildingCodeGenerator>();
 builder.Services.AddTransient<IEmailSender, EmailSender>();
-builder.Services.AddHostedService<MonthlyBillGenerator>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
+builder.Services.AddHostedService<TenantMonthlyBillGenerator>();
 
 var app = builder.Build();
 

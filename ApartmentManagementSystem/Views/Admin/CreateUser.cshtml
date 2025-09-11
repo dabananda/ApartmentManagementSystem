@@ -3,6 +3,12 @@
     ViewData["Title"] = "Create User";
     var buildings = ViewBag.Buildings as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
     var roles = ViewBag.Roles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+
+    var isOwner = User.IsInRole("Owner");
+    // If Owner, only allow "Tenant"
+    var filteredRoles = isOwner
+        ? roles.Where(r => string.Equals(r.Value, "Tenant", StringComparison.OrdinalIgnoreCase)).ToList()
+        : roles;
 }
 
 <h2 class="mb-3">Create User</h2>
@@ -48,8 +54,21 @@
 
     <div class="col-md-6">
         <label asp-for="Role" class="form-label"></label>
-        <select asp-for="Role" class="form-select" asp-items="roles"></select>
-        <small class="text-muted d-block">Selecting <strong>President</strong> will also grant <strong>Owner</strong> automatically.</small>
+
+        @if (isOwner)
+        {
+            <!-- Owner: lock role to Tenant -->
+            <input type="hidden" asp-for="Role" value="Tenant" />
+            <input class="form-control" value="Tenant" readonly />
+            <small class="text-muted d-block">As an Owner, you can create <strong>Tenant</strong> users only.</small>
+        }
+        else
+        {
+            <!-- Admin/President/etc: show full roles list -->
+            <select asp-for="Role" class="form-select" asp-items="filteredRoles"></select>
+            <small class="text-muted d-block">Selecting <strong>President</strong> will also grant <strong>Owner</strong> automatically.</small>
+        }
+
         <span asp-validation-for="Role" class="text-danger"></span>
     </div>
 

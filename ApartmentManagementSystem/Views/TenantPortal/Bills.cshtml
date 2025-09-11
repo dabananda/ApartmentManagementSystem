@@ -21,7 +21,7 @@ else
                     <th>Breakdown</th>
                 </tr>
             </thead>
-            <tbody>
+            @* <tbody>
                 @foreach (var b in Model)
                 {
                     <tr>
@@ -36,7 +36,7 @@ else
                         <td>Rent @b.RentAmount, Elec @b.ElectricityAmount, Gas @b.GasAmount, Water @b.WaterAmount, Common @b.CommonBillAmount, Service @b.ServiceChargeAmount, Other @b.OtherAmount</td>
                     </tr>
                 }
-            </tbody>
+            </tbody> *@
         </table>
     </div>
 }

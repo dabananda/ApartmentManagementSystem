@@ -1,0 +1,31 @@
+﻿@model ApartmentManagementSystem.Models.FlatBillingProfile
+@{
+    ViewData["Title"] = "Edit Billing Profile";
+}
+<h2>Edit Billing Profile</h2>
+<form method="post">
+    <input type="hidden" asp-for="FlatId" />
+    <div class="mb-2">
+        <label class="form-label">Title</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Monthly Amount</label>
+        <input asp-for="MonthlyAmount" class="form-control" />
+        <span asp-validation-for="MonthlyAmount" class="text-danger"></span>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Due Day (1-31)</label>
+        <input asp-for="DueDayOfMonth" class="form-control" />
+    </div>
+    <div class="form-check mb-2">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label class="form-check-label" asp-for="IsActive">Active</label>
+    </div>
+    <button class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
