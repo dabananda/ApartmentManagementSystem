@@ -196,12 +196,6 @@ dotnet ef database update
 
 ---
 
-## 📄 License
-
-Add a license of your choice (MIT recommended) at the repo root as `LICENSE`.
-
----
-
 ## 🙌 Contributing
 
 PRs are welcome! Please open an issue to discuss major changes.
