@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner,SuperAdmin")]
+    [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class OwnerController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -229,7 +229,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(myTenants);
         }
 
-        [Authorize(Roles = "Owner,President,SuperAdmin")]
+        // GET: Owner/OwnedFlats
         public async Task<IActionResult> OwnedFlats(string? ownerId = null)
         {
             var me = await _userManager.GetUserAsync(User);

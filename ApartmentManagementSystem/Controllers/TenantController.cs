@@ -4,11 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "President, Owner,SuperAdmin")]
+    [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class TenantController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -60,8 +59,7 @@ namespace ApartmentManagementSystem.Controllers
             return View();
         }
 
-        // Replace the tenant creation logic in TenantController.Create POST method
-
+        // POST: Tenant/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Fullname,Email,PhoneNumber,IsActive,FlatId")] Tenant tenant)

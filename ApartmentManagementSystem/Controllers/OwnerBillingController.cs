@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "President,SuperAdmin")]
+    [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class OwnerBillingController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -383,7 +383,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { ownerId });
         }
 
-        [Authorize(Roles = "President,SuperAdmin")]
+        // GET: /OwnerBilling/Receipt/{id}
         public async Task<IActionResult> Receipt(Guid id)
         {
             var p = await _db.ExpenseAllocationPayments
@@ -483,7 +483,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = "President,SuperAdmin")]
         public async Task<IActionResult> EmailReceipt(Guid id)
         {
             var pay = await _db.ExpenseAllocationPayments.FindAsync(id);

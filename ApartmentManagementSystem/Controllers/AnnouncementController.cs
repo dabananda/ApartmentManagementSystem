@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using ApartmentManagementSystem.Data;
+﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -10,8 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    // Presidents only
-    [Authorize(Roles = "President")]
+    [Authorize(Roles = Roles.President)]
     public class AnnouncementController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -25,7 +21,6 @@ namespace ApartmentManagementSystem.Controllers
 
         // GET: /Announcement
         // Shows only this President's building announcements
-        [HttpGet]
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -43,7 +38,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: /Announcement/Create
-        [HttpGet]
         public IActionResult Create() => View(new Announcement());
 
         // POST: /Announcement/Create

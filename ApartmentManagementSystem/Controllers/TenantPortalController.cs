@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Tenant")]
+    [Authorize(Roles = Roles.Tenant)]
     public class TenantPortalController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -20,8 +20,7 @@ namespace ApartmentManagementSystem.Controllers
             _users = users;
         }
 
-        // -------- Dashboard --------
-        [HttpGet]
+        // GET: /TenantPortal/Dashboard
         public async Task<IActionResult> Dashboard()
         {
             var me = await _users.GetUserAsync(User);
@@ -113,8 +112,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // -------- Bills (all) --------
-        [HttpGet]
+        // GET: /TenantPortal/Bills
         public async Task<IActionResult> Bills()
         {
             var me = await _users.GetUserAsync(User);
@@ -140,8 +138,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // -------- Payments (all) --------
-        [HttpGet]
+        // GET: /TenantPortal/Payments
         public async Task<IActionResult> Payments()
         {
             var me = await _users.GetUserAsync(User);
@@ -167,8 +164,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // -------- Notices (building announcements) --------
-        [HttpGet]
+        // GET: /TenantPortal/Notices
         public async Task<IActionResult> Notices()
         {
             var me = await _users.GetUserAsync(User);
@@ -184,8 +180,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(notices);
         }
 
-        // -------- Tickets (mine) --------
-        [HttpGet]
+        // GET: /TenantPortal/Tickets
         public async Task<IActionResult> Tickets()
         {
             var me = await _users.GetUserAsync(User);
@@ -215,10 +210,10 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // -------- New Ticket --------
-        [HttpGet]
+        // GET: /TenantPortal/NewTicket
         public IActionResult NewTicket() => View(new MaintenanceTicket());
 
+        // POST: /TenantPortal/NewTicket
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> NewTicket(MaintenanceTicket model)
         {
@@ -250,8 +245,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Tickets));
         }
 
-        // -------- Visitors (entry logs for my flat) --------
-        [HttpGet]
+        // GET: /TenantPortal/Visitors
         public async Task<IActionResult> Visitors(DateTime? from = null, DateTime? to = null)
         {
             var me = await _users.GetUserAsync(User);

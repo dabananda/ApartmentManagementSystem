@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner,SuperAdmin,President")]
+    [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class FlatBillingProfileController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -63,7 +63,6 @@ namespace ApartmentManagementSystem.Controllers
         // POST: /FlatBillingProfile/Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Owner,President,SuperAdmin")]
         public async Task<IActionResult> Edit(FlatBillingProfile vm)
         {
             if (!ModelState.IsValid)

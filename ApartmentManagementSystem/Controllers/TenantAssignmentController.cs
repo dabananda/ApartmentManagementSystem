@@ -5,11 +5,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using static ApartmentManagementSystem.ViewModels.OwnerFlatsViewModel;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner,SuperAdmin,President")]
+    [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class TenantAssignmentController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -43,7 +42,6 @@ namespace ApartmentManagementSystem.Controllers
         // POST: /TenantAssignment/Assign
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Owner,President,SuperAdmin")]
         public async Task<IActionResult> Assign(AssignTenantVM vm)
         {
             if (!ModelState.IsValid)
@@ -121,7 +119,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: /TenantAssignment/MyTenants
-        [Authorize(Roles = "Owner,President,SuperAdmin")]
         public async Task<IActionResult> MyFlats()
         {
             var me = await _users.GetUserAsync(User);

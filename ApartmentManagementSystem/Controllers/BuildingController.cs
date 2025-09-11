@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "SuperAdmin, President")]
+    [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class BuildingController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -27,7 +27,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Building Index with filtering, pagination, and aggregations
-        [HttpGet]
         public async Task<IActionResult> Index([FromQuery] BuildingIndexFilterViewModel filter)
         {
             // Base query + search
@@ -273,7 +272,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Building/MyBuildings
-        [Authorize(Roles = "President")]
         public async Task<IActionResult> MyBuildings()
         {
             var user = await _userManager.GetUserAsync(User);
