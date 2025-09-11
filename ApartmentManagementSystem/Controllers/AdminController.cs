@@ -41,7 +41,7 @@ namespace ApartmentManagementSystem.Controllers
             if (buildingId.HasValue)
             {
                 // Get ONLY users in Owner role AND in the selected building
-                var ownerUsers = await _userManager.GetUsersInRoleAsync("Owner");
+                var ownerUsers = await _userManager.GetUsersInRoleAsync(Roles.Owner);
                 owners = ownerUsers
                     .Where(u => u.BuildingId == buildingId.Value)
                     .OrderBy(u => u.Fullname)
@@ -78,7 +78,7 @@ namespace ApartmentManagementSystem.Controllers
                 model.Owners = new List<SelectListItem>();
                 if (model.BuildingId.HasValue)
                 {
-                    var ownerUsers = await _userManager.GetUsersInRoleAsync("Owner");
+                    var ownerUsers = await _userManager.GetUsersInRoleAsync(Roles.Owner);
                     model.Owners = ownerUsers
                         .Where(u => u.BuildingId == model.BuildingId.Value)
                         .OrderBy(u => u.Fullname)
@@ -163,7 +163,7 @@ namespace ApartmentManagementSystem.Controllers
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> OwnersForBuilding(Guid buildingId)
         {
-            var ownerUsers = await _userManager.GetUsersInRoleAsync("Owner");
+            var ownerUsers = await _userManager.GetUsersInRoleAsync(Roles.Owner);
             var owners = ownerUsers
                 .Where(u => u.BuildingId == buildingId)
                 .OrderBy(u => u.Fullname)

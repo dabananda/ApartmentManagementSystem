@@ -43,7 +43,7 @@ namespace ApartmentManagementSystem.Controllers
             if (me?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
             // Owners -> names
-            var owners = await _db.Flats
+            var owners = await _db.Flats.AsNoTracking()
                 .Include(f => f.Owner)
                 .Where(f => f.BuildingId == buildingId && f.OwnerId != null)
                 .Select(f => new { f.OwnerId, Name = f.Owner!.Fullname })
@@ -51,7 +51,7 @@ namespace ApartmentManagementSystem.Controllers
                 .ToListAsync();
 
             // Flats per owner
-            var flatsCsv = await _db.Flats
+            var flatsCsv = await _db.Flats.AsNoTracking()
                 .Where(f => f.BuildingId == buildingId && f.OwnerId != null)
                 .GroupBy(f => f.OwnerId!)
                 .Select(g => new { OwnerId = g.Key, Csv = string.Join(", ", g.OrderBy(x => x.FlatNumber).Select(x => x.FlatNumber)) })
@@ -59,7 +59,7 @@ namespace ApartmentManagementSystem.Controllers
 
             // Totals per owner
             // 1) Allocated totals per owner
-            var allocAggList = await _db.ExpenseAllocations
+            var allocAggList = await _db.ExpenseAllocations.AsNoTracking()
                 .Include(a => a.CommonBill)
                 .Where(a => a.CommonBill!.BuildingId == buildingId)
                 .GroupBy(a => a.OwnerId)
@@ -72,7 +72,7 @@ namespace ApartmentManagementSystem.Controllers
             var allocAgg = allocAggList.ToDictionary(x => x.OwnerId, x => x.Alloc);
 
             // 2) Paid totals per owner (join payments → allocations to get OwnerId)
-            var paidAggList = await _db.ExpenseAllocationPayments
+            var paidAggList = await _db.ExpenseAllocationPayments.AsNoTracking()
                 .Join(
                     _db.ExpenseAllocations.Include(a => a.CommonBill)
                         .Where(a => a.CommonBill!.BuildingId == buildingId),

@@ -56,15 +56,15 @@ namespace ApartmentManagementSystem.Controllers
             if (target == null || target.BuildingId != me.BuildingId) return Forbid();
 
             // Presidents can approve ONLY as Tenant (Owner is reserved for Presidents)
-            const string finalRole = "Tenant";
+            const string finalRole = Roles.Tenant;
 
             // Remove all “end-state” roles first
-            if (await _users.IsInRoleAsync(target, "Owner"))
-                await _users.RemoveFromRoleAsync(target, "Owner");
-            if (await _users.IsInRoleAsync(target, "Tenant"))
-                await _users.RemoveFromRoleAsync(target, "Tenant");
-            if (await _users.IsInRoleAsync(target, "User"))
-                await _users.RemoveFromRoleAsync(target, "User");
+            if (await _users.IsInRoleAsync(target, Roles.Owner))
+                await _users.RemoveFromRoleAsync(target, Roles.Owner);
+            if (await _users.IsInRoleAsync(target, Roles.Tenant))
+                await _users.RemoveFromRoleAsync(target, Roles.Tenant);
+            if (await _users.IsInRoleAsync(target, Roles.User))
+                await _users.RemoveFromRoleAsync(target, Roles.User);
 
             await _users.AddToRoleAsync(target, finalRole);
 

@@ -26,7 +26,7 @@ namespace ApartmentManagementSystem.Controllers
         {
             var me = await _users.GetUserAsync(User);
 
-            var q = _db.TenantAssignments
+            var q = _db.TenantAssignments.AsNoTracking()
                 .Include(a => a.Flat)
                 .Include(a => a.TenantUser)
                 .Where(a => a.EndDate == null);
@@ -298,14 +298,21 @@ namespace ApartmentManagementSystem.Controllers
             if (list.Count == 0) return;
 
             var rows = new System.Text.StringBuilder();
+            var billIds = list.Select(x => x.TenantBillId).ToList();
+            var bills = await _db.TenantBills
+                 .AsNoTracking()
+                 .Include(x => x.Flat)
+                 .Where(x => billIds.Contains(x.Id))
+                 .ToDictionaryAsync(x => x.Id);
             foreach (var p in list)
             {
-                var b = await _db.TenantBills.Include(x => x.Flat).FirstAsync(x => x.Id == p.TenantBillId);
+                var b = bills[p.TenantBillId];
                 rows.AppendLine($@"<tr>
-                    <td>{b.Title}</td><td>{b.BillDate:yyyy-MM-dd}</td>
-                    <td style=""text-align:right"">{p.Amount:C}</td><td>{(string.IsNullOrWhiteSpace(p.Reference) ? "-" : p.Reference)}</td>
-                </tr>");
+                                     <td>{b.Title}</td><td>{b.BillDate:yyyy-MM-dd}</td>
+                                     <td style=""text-align:right"">{p.Amount:C}</td><td>{(string.IsNullOrWhiteSpace(p.Reference) ? "-" : p.Reference)}</td>
+                                 </tr>");
             }
+
             var total = list.Sum(x => x.Amount);
             var html = $@"
                 <p>Hello {System.Net.WebUtility.HtmlEncode(user.Fullname ?? user.UserName)},</p>
