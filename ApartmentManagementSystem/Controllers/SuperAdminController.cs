@@ -1,6 +1,7 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.ViewModels;
+using ApartmentManagementSystem.ViewModels.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

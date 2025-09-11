@@ -1,4 +1,5 @@
-﻿@model ApartmentManagementSystem.ViewModels.BuildingIndexPageViewModel
+﻿@using ApartmentManagementSystem.ViewModels.Building
+@model BuildingIndexPageViewModel
 @{
     ViewData["Title"] = "Buildings";
     var totalPages = (int)Math.Ceiling((double)Model.Total / Math.Max(1, Model.Filter.PageSize));

@@ -1,4 +1,5 @@
-﻿@model List<ApartmentManagementSystem.ViewModels.OwnerOwnedFlatRow>
+﻿@using ApartmentManagementSystem.ViewModels.Owner
+@model List<OwnerOwnedFlatRow>
 @{
     ViewData["Title"] = "Owned Flats";
     var canManage = User.IsInRole("Owner") || User.IsInRole("President") || User.IsInRole("SuperAdmin");

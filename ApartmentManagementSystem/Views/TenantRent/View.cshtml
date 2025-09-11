@@ -1,5 +1,6 @@
-﻿@model ApartmentManagementSystem.ViewModels.TenantBillsPage
+﻿@model TenantBillsPage
 @using ApartmentManagementSystem.ViewModels
+@using ApartmentManagementSystem.ViewModels.Tenant
 @{
     ViewData["Title"] = "Tenant Rent — " + Model.TenantName;
     var canPay = User.IsInRole("Owner") || User.IsInRole("President") || User.IsInRole("SuperAdmin");

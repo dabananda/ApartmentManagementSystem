@@ -1,4 +1,5 @@
-﻿@model List<ApartmentManagementSystem.ViewModels.OwnerBillingRow>
+﻿@using ApartmentManagementSystem.ViewModels.Owner
+@model List<OwnerBillingRow>
 @{
     ViewData["Title"] = "Owners - Billing Summary";
     var buildingId = (Guid)ViewData["BuildingId"];
