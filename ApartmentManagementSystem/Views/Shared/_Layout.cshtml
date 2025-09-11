@@ -4,7 +4,7 @@
 @inject UserManager<ApplicationUser> UserManager
 
 @{
-    var buildingId = User?.FindFirst("BuildingId")?.Value;
+    var buildingId = UserManager.GetUserAsync(User).Result?.BuildingId;
     bool isOwner = User.IsInRole("Owner");
     bool isPresident = User.IsInRole("President");
     bool isSuperAdmin = User.IsInRole("SuperAdmin");
@@ -52,6 +52,8 @@
                  class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
                 <div class="position-sticky pt-3 sidebar-sticky">
                     <ul class="nav flex-column">
+
+                        @* ---------- SuperAdmin Urls ---------- *@
                         @if (User.IsInRole("SuperAdmin"))
                         {
                             <li class="nav-item">
@@ -103,31 +105,8 @@
                                 </a>
                             </li>
                         }
-                        @if (isPresident || isSuperAdmin)
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="presidentMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Building Billing
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="presidentMenu">
-                                    <li>
-                                        <a class="dropdown-item"
-                                           asp-controller="CommonBill" asp-action="Index"
-                                           asp-route-buildingId="@(buildingId)">
-                                            Common Bills
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item"
-                                           asp-controller="OwnerBilling" asp-action="Index"
-                                           asp-route-buildingId="@(buildingId)">
-                                            Owner Bills Summary
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        }
 
+                        @* ---------- President Urls ---------- *@
                         @if (User.IsInRole("President"))
                         {
                             <p class="ms-2"><strong>President Dasboard</strong></p>
@@ -207,6 +186,8 @@
                             <hr />
                             <p class="ms-2"><strong>Owner Dasboard</strong></p>
                         }
+
+                        @* ---------- Owner Urls ---------- *@
                         @if (User.IsInRole("Owner"))
                         {
                             <li class="nav-item">
@@ -272,6 +253,8 @@
                                 </a>
                             </li>
                         }
+
+                        @* ---------- Tenant Urls ---------- *@
                         @if (User.IsInRole("Tenant"))
                         {
                             <li class="nav-item">
@@ -305,6 +288,8 @@
                                 </a>
                             </li>
                         }
+
+                        @* ---------- Staff Urls ---------- *@
                         @if (User.IsInRole("Staff"))
                         {
                             <p class="ms-2"><strong>Staff</strong></p>
