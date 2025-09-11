@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "SuperAdmin,Owner")]
+    [Authorize(Roles = Roles.OwnerOrSuperAdmin)]
     public class RentController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -19,6 +19,7 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
+        // GET: Rent/Index/{tenantId}
         public async Task<IActionResult> Index(Guid? tenantId)
         {
             if (tenantId == null) return NotFound();

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using ApartmentManagementSystem.Data;
+﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "President,SuperAdmin")]
+    [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class PresidentController : Controller
     {
         private readonly ApplicationDbContext _context;

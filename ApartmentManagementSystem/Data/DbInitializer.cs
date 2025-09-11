@@ -9,10 +9,10 @@ namespace ApartmentManagementSystem.Data
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
+            string superAdminEmail,
             string superAdminPassword)
         {
-            // Roles (added "User" for pending registrants)
-            string[] roleNames = { "SuperAdmin", "President", "Owner", "Tenant", "Staff", "User" };
+            string[] roleNames = { Roles.SuperAdmin, Roles.President, Roles.Owner, Roles.Tenant, Roles.Staff, Roles.User };
             foreach (var roleName in roleNames)
             {
                 if (!await roleManager.RoleExistsAsync(roleName))
@@ -22,12 +22,12 @@ namespace ApartmentManagementSystem.Data
             }
 
             // Seed SuperAdmin
-            if (await userManager.FindByEmailAsync("superadmin@ams.com") == null)
+            if (await userManager.FindByEmailAsync(superAdminEmail) == null)
             {
                 var superAdmin = new ApplicationUser
                 {
-                    UserName = "superadmin@ams.com",
-                    Email = "superadmin@ams.com",
+                    UserName = superAdminEmail,
+                    Email = superAdminEmail,
                     Fullname = "Super Admin",
                     EmailConfirmed = true,
                     IsApproved = true
@@ -36,7 +36,7 @@ namespace ApartmentManagementSystem.Data
                 var result = await userManager.CreateAsync(superAdmin, superAdminPassword);
                 if (result.Succeeded)
                 {
-                    await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+                    await userManager.AddToRoleAsync(superAdmin, Roles.SuperAdmin);
                 }
             }
         }

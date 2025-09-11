@@ -23,10 +23,7 @@ namespace ApartmentManagementSystem.Controllers
             _roleManager = roleManager;
         }
 
-        // -------------------- ASSIGN PRESIDENT --------------------
-
-        [Authorize(Roles = "SuperAdmin")]
-        [HttpGet]
+        [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> AssignPresident(Guid? buildingId)
         {
             // Build buildings dropdown
@@ -66,7 +63,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm); // Views/Admin/AssignPresident.cshtml
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = Roles.SuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignPresident(AssignPresidentViewModel model)
         {
@@ -163,8 +160,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // Return owners for a given building (JSON) — no page reload needed
-        [Authorize(Roles = "SuperAdmin")]
-        [HttpGet]
+        [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> OwnersForBuilding(Guid buildingId)
         {
             var ownerUsers = await _userManager.GetUsersInRoleAsync("Owner");
@@ -182,6 +178,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Admin/Users
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> Users()
         {
             var currentUser = await _userManager.GetUserAsync(User);
@@ -242,8 +239,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Admin/CreateUser
-        [Authorize(Roles = "SuperAdmin,President, Owner")]
-        [HttpGet]
+        [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
         public async Task<IActionResult> CreateUser()
         {
             var me = await _userManager.GetUserAsync(User);
@@ -284,7 +280,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // POST: Admin/CreateUser
-        [Authorize(Roles = "SuperAdmin,President, Owner")]
+        [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateUser(CreateUserViewModel model)
         {
@@ -432,8 +428,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Admin/EditUser/{id}
-        [Authorize(Roles = "SuperAdmin,President")]
-        [HttpGet]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> EditUser(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
@@ -481,7 +476,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // POST: Admin/EditUser
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> EditUser(EditUserViewModel model)
         {
@@ -572,7 +567,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Admin/ApproveOwners
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> ApproveOwners()
         {
             // Find all users who are not assigned a role yet
@@ -585,7 +580,7 @@ namespace ApartmentManagementSystem.Controllers
         // POST: Admin/ApproveOwner/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> ApproveOwner(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -610,8 +605,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Admin/Approvals
-        [Authorize(Roles = "SuperAdmin,President")]
-        [HttpGet]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> Approvals([FromQuery] ApprovalsFilterViewModel filter)
         {
             var me = await _userManager.GetUserAsync(User);
@@ -697,7 +691,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // POST: Admin/ApproveUser
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveUser(string id, string role, [FromServices] IEmailSender mail)
         {
@@ -776,7 +770,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // POST: Admin/BulkApprove
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkApprove(string[] ids, string role, [FromServices] IEmailSender mail)
         {
@@ -843,7 +837,7 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // POST: Admin/ResetUser
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetUser(string id)
         {
@@ -880,10 +874,8 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Approvals), new { BuildingId = user.BuildingId });
         }
 
-        // -------------------- APPROVED USERS MANAGEMENT --------------------
-
         // GET: Admin/Users
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpGet]
         public async Task<IActionResult> Users([FromQuery] ManageUsersFilterViewModel filter)
         {
@@ -977,7 +969,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeRole(string id, string role)
         {
@@ -1037,7 +1029,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users), new { BuildingId = user.BuildingId });
         }
 
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkChangeRole(string[] ids, string role)
         {
@@ -1099,7 +1091,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users));
         }
 
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BlockUser(string id)
         {
@@ -1134,7 +1126,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users), new { BuildingId = user.BuildingId });
         }
 
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkBlock(string[] ids)
         {
@@ -1169,7 +1161,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users));
         }
 
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> UnblockUser(string id)
         {
@@ -1189,7 +1181,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users), new { BuildingId = user.BuildingId });
         }
 
-        [Authorize(Roles = "SuperAdmin,President")]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkUnblock(string[] ids)
         {
@@ -1217,7 +1209,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users));
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = Roles.SuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteUser(string id)
         {
@@ -1239,7 +1231,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users));
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = Roles.SuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkDelete(string[] ids)
         {

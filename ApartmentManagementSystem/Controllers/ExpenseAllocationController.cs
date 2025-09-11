@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "President,SuperAdmin")]
+    [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class ExpenseAllocationController : Controller
     {
         private readonly ApplicationDbContext _context;

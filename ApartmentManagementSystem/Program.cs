@@ -66,13 +66,14 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var configuration = services.GetRequiredService<IConfiguration>();
         var superAdminPassword = configuration["SuperAdminPassword"];
+        var superAdminEmail = configuration["SuperAdminEmail"];
 
         if (string.IsNullOrEmpty(superAdminPassword))
         {
             throw new InvalidOperationException("SuperAdminPassword not found in configuration.");
         }
 
-        DbInitializer.Initialize(context, userManager, roleManager, superAdminPassword).Wait();
+        DbInitializer.Initialize(context, userManager, roleManager, superAdminEmail, superAdminPassword).Wait();
     }
     catch (Exception ex)
     {

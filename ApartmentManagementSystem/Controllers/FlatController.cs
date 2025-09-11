@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
+    [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class FlatController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -35,7 +36,7 @@ namespace ApartmentManagementSystem.Controllers
             return View(flats);
         }
 
-        [Authorize(Roles = "SuperAdmin,President")]
+        // GET: Flat/Index/{buildingId}
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -63,7 +64,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Flat/Create
-        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -77,7 +77,6 @@ namespace ApartmentManagementSystem.Controllers
         // POST: Flat/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Create([Bind("FlatNumber,BuildingId")] Flat flat)
         {
             if (ModelState.IsValid)
@@ -98,7 +97,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Flat/AssignOwner/{flatId}
-        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> AssignOwner(Guid? flatId)
         {
             if (flatId == null) return NotFound();
@@ -139,7 +137,6 @@ namespace ApartmentManagementSystem.Controllers
         // POST: Flat/AssignOwner
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> AssignOwner(AssignOwnerViewModel model)
         {
             if (ModelState.IsValid)
@@ -165,7 +162,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: Flat/Delete/{id}
-        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var flat = await _context.Flats
@@ -188,7 +184,6 @@ namespace ApartmentManagementSystem.Controllers
         // POST: Flat/Delete/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "SuperAdmin,President")]
         public async Task<IActionResult> Delete(Guid id, bool confirmed = false)
         {
             var flat = await _context.Flats

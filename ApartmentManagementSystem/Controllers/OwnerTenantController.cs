@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner,SuperAdmin,President")]
+    [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class OwnerTenantController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -21,12 +21,10 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: /OwnerTenant/Create
-        [Authorize(Roles = "Owner,SuperAdmin,President")]
         public IActionResult Create() => View(new CreateTenantVM());
 
         // POST: /OwnerTenant/Create
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Roles = "Owner,SuperAdmin,President")]
         public async Task<IActionResult> Create(CreateTenantVM vm)
         {
             if (!ModelState.IsValid) return View(vm);
@@ -63,8 +61,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(List));
         }
 
-        // GET: /OwnerTenant/List  -> all TENANT users (for selection/assignment)
-        [Authorize(Roles = "Owner,SuperAdmin,President")]
+        // GET: /OwnerTenant/List
         public async Task<IActionResult> List()
         {
             // only show pure Tenant users

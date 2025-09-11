@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using System.Text;
-using System.Threading.Tasks;
 using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.ViewModels.Reports;
@@ -14,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "President,SuperAdmin")]
+    [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class PresidentReportsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -26,7 +22,7 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // ----------------- Helpers -----------------
+        // Helper to get current user's building (throws if none)
         private async Task<(Guid buildingId, string buildingName)> RequireBuilding()
         {
             var me = await _userManager.GetUserAsync(User);
@@ -38,7 +34,7 @@ namespace ApartmentManagementSystem.Controllers
             return (bId, bName);
         }
 
-        // Try to pick a human-friendly bill title without depending on a specific property name
+        // Try to pick a bill title without depending on a specific property name
         private static string BillTitle(object bill)
         {
             return ReadStringProp(bill, "Title", "Name", "Description", "BillName", "Purpose")

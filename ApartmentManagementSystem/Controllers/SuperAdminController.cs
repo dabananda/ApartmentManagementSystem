@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = Roles.SuperAdmin)]
     public class SuperAdminController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -22,6 +22,7 @@ namespace ApartmentManagementSystem.Controllers
             _roleManager = roleManager;
         }
 
+        // GET: SuperAdmin/Dashboard
         public async Task<IActionResult> Dashboard()
         {
             // Buildings Overview

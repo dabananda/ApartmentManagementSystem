@@ -4,11 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "President, Owner,SuperAdmin")]
+    [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class TenantController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -27,20 +26,70 @@ namespace ApartmentManagementSystem.Controllers
         {
             if (flatId == null) return NotFound();
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
+            var me = await _userManager.GetUserAsync(User);
+            if (me == null) return Forbid();
 
-            var flat = await _context.Flats.Include(f => f.Tenants).FirstOrDefaultAsync(f => f.Id == flatId);
+            // Load the flat (need BuildingId to authorize a President)
+            var flat = await _context.Flats
+                .AsNoTracking()
+                .Include(f => f.Building)
+                .FirstOrDefaultAsync(f => f.Id == flatId);
+            if (flat == null) return NotFound();
 
-            if (flat == null || (flat.OwnerId != user.Id && !User.IsInRole("SuperAdmin")))
-            {
+            var isOwner = flat.OwnerId == me.Id;
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            var isPresidentOfThisBuilding = User.IsInRole("President") && me.BuildingId == flat.BuildingId;
+
+            if (!(isOwner || isSuperAdmin || isPresidentOfThisBuilding))
                 return Forbid();
-            }
 
             ViewData["FlatNumber"] = flat.FlatNumber;
             ViewData["FlatId"] = flat.Id;
 
-            return View(flat.Tenants);
+            // 1) Active assignment-based tenants (source of truth)
+            var assignmentRows = await _context.TenantAssignments.AsNoTracking()
+                .Include(a => a.TenantUser)
+                .Where(a => a.FlatId == flat.Id && a.EndDate == null)
+                .Select(a => new ApartmentManagementSystem.ViewModels.FlatTenantRow
+                {
+                    FlatId = a.FlatId,
+                    FlatNumber = flat.FlatNumber,
+                    TenantUserId = a.TenantUserId,
+                    TenantName = a.TenantUser!.Fullname ?? a.TenantUser.UserName!,
+                    Email = a.TenantUser!.Email!,
+                    PhoneNumber = a.TenantUser!.PhoneNumber,
+                    IsActive = true,
+                    Source = "Assignment"
+                })
+                .ToListAsync();
+
+            var assignedUserIds = assignmentRows
+                .Select(r => r.TenantUserId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToHashSet();
+
+            // 2) Legacy tenants that don’t duplicate current assignments
+            var legacyRows = await _context.Tenants.AsNoTracking()
+                .Where(t => t.FlatId == flat.Id && (t.UserId == null || !assignedUserIds.Contains(t.UserId)))
+                .Select(t => new ApartmentManagementSystem.ViewModels.FlatTenantRow
+                {
+                    FlatId = t.FlatId,
+                    FlatNumber = flat.FlatNumber,
+                    LegacyTenantId = t.Id,
+                    TenantUserId = t.UserId,
+                    TenantName = t.Fullname,
+                    Email = t.Email,
+                    PhoneNumber = t.PhoneNumber,
+                    IsActive = t.IsActive,
+                    Source = "Legacy"
+                })
+                .ToListAsync();
+
+            var rows = assignmentRows.Concat(legacyRows)
+                .OrderBy(r => r.TenantName)
+                .ToList();
+
+            return View(rows);
         }
 
         // GET: Tenant/Create/{flatId}
@@ -60,8 +109,7 @@ namespace ApartmentManagementSystem.Controllers
             return View();
         }
 
-        // Replace the tenant creation logic in TenantController.Create POST method
-
+        // POST: Tenant/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Fullname,Email,PhoneNumber,IsActive,FlatId")] Tenant tenant)
@@ -292,35 +340,64 @@ namespace ApartmentManagementSystem.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Forbid();
+            if (User.IsInRole("President") && user.BuildingId == null) return Forbid();
 
-            // For Presidents, get tenants from their assigned building
-            // For SuperAdmin, this would need a buildingId parameter, but focusing on President use case
-            if (User.IsInRole("President") && user.BuildingId == null)
-            {
-                return Forbid();
-            }
+            var buildingId = user.BuildingId!.Value;
 
-            var buildingId = user.BuildingId.Value;
-
-            // Get the building information
-            var building = await _context.Buildings.FindAsync(buildingId);
+            // Building info
+            var building = await _context.Buildings.AsNoTracking().FirstOrDefaultAsync(b => b.Id == buildingId);
             if (building == null) return NotFound();
 
-            // Get all tenants in flats within the president's building
-            var tenants = await _context.Tenants
-                .Include(t => t.Flat)
-                .ThenInclude(f => f.Owner)
-                .Include(t => t.Flat)
-                .ThenInclude(f => f.Building)
-                .Where(t => t.Flat.BuildingId == buildingId)
-                .OrderBy(t => t.Flat.FlatNumber)
-                .ThenBy(t => t.Fullname)
+            // --- Assignments (source of truth) ---
+            var assignmentRows = await _context.TenantAssignments
+                .Include(a => a.Flat)!.ThenInclude(f => f.Owner)
+                .Include(a => a.TenantUser)
+                .Where(a => a.EndDate == null && a.Flat!.BuildingId == buildingId)
+                .Select(a => new ApartmentManagementSystem.ViewModels.BuildingTenantRow
+                {
+                    FlatId = a.FlatId,
+                    FlatNumber = a.Flat!.FlatNumber,
+                    TenantUserId = a.TenantUserId,
+                    TenantName = a.TenantUser!.Fullname ?? a.TenantUser.UserName!,
+                    Email = a.TenantUser!.Email!,
+                    PhoneNumber = a.TenantUser!.PhoneNumber,
+                    OwnerName = a.Flat!.Owner != null ? (a.Flat.Owner.Fullname ?? a.Flat.Owner.UserName!) : "",
+                    IsActive = true,
+                    Source = "Assignment"
+                })
                 .ToListAsync();
+
+            // Track which flats already covered by assignments (avoid duplicates with legacy)
+            var assignedFlatIds = assignmentRows.Select(r => r.FlatId).ToHashSet();
+
+            // --- Legacy active tenants for flats that have no active assignment yet ---
+            var legacyRows = await _context.Tenants
+                .Include(t => t.Flat)!.ThenInclude(f => f.Owner)
+                .Where(t => t.IsActive && t.Flat!.BuildingId == buildingId && !assignedFlatIds.Contains(t.FlatId))
+                .Select(t => new ApartmentManagementSystem.ViewModels.BuildingTenantRow
+                {
+                    FlatId = t.FlatId,
+                    FlatNumber = t.Flat!.FlatNumber,
+                    TenantUserId = t.UserId ?? "", // may be blank if legacy didn't link to Identity
+                    TenantName = t.Fullname,
+                    Email = t.Email,
+                    PhoneNumber = t.PhoneNumber,
+                    OwnerName = t.Flat!.Owner != null ? (t.Flat.Owner.Fullname ?? t.Flat.Owner.UserName!) : "",
+                    IsActive = t.IsActive,
+                    Source = "Legacy"
+                })
+                .ToListAsync();
+
+            var rows = assignmentRows
+                .Concat(legacyRows)
+                .OrderBy(r => r.FlatNumber)
+                .ThenBy(r => r.TenantName)
+                .ToList();
 
             ViewData["BuildingName"] = building.Name;
             ViewData["BuildingId"] = building.Id;
 
-            return View(tenants);
+            return View(rows);
         }
     }
 }

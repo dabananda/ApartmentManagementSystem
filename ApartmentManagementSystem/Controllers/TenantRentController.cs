@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Owner,SuperAdmin,President")]
+    [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class TenantRentController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -21,7 +21,7 @@ namespace ApartmentManagementSystem.Controllers
             _db = db; _users = users; _email = email;
         }
 
-        // GET: /TenantRent/List  => lists tenants (only owner’s)
+        // GET: /TenantRent/List
         public async Task<IActionResult> List()
         {
             var me = await _users.GetUserAsync(User);
@@ -238,7 +238,6 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // Receipt (reuse your existing receipt pattern, separate view)
-        [Authorize(Roles = "Owner,SuperAdmin,President")]
         public async Task<IActionResult> Receipt(Guid id)
         {
             var p = await _db.TenantPayments
@@ -274,6 +273,7 @@ namespace ApartmentManagementSystem.Controllers
             return View("~/Views/Shared/Receipt.cshtml", vm);
         }
 
+        // POST: /TenantRent/EmailReceipt
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> EmailReceipt(Guid id)
         {
