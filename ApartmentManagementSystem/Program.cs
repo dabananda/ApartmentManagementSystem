@@ -26,6 +26,10 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddScoped<
+    IUserClaimsPrincipalFactory<ApplicationUser>,
+    ApplicationUserClaimsPrincipalFactory>();
+
 builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInManager>();
 builder.Services.AddTransient<IBuildingCodeGenerator, BuildingCodeGenerator>();
 builder.Services.AddTransient<IEmailSender, EmailSender>();
