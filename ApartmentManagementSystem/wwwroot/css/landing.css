@@ -62,3 +62,19 @@
         transform: translateX(-50%);
     }
 }
+
+.badge-tile {
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+    .badge-tile:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;
+    }
+/* optional: equalize heights on very narrow screens */
+@media (max-width: 575.98px) {
+    .badge-tile {
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
+    }
+}

@@ -25,16 +25,37 @@
                     <li class="nav-item"><a class="nav-link" href="#testimonials">Reviews</a></li>
                     <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
                     <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
-                    <li class="nav-item me-2">
-                        <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">
-                            Login
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">
-                            Register
-                        </a>
-                    </li>
+                    
+                    <!-- Conditional Login/Logout/Dashborad -->
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item ms-2">
+                            <form asp-area="Identity" asp-page="/Account/Logout"
+                                  asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                                <button type="submit" class="nav-link">
+                                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                                </button>
+                            </form>
+                        </li>
+                        <li class="nav-item ms-lg-2">
+                            <a class="btn btn-primary" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item me-2">
+                            <a class="btn btn-outline-light" asp-area="Identity" asp-page="/Account/Login">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary" asp-area="Identity" asp-page="/Account/Register">
+                                <i class="bi bi-person-plus me-1"></i> Register
+                            </a>
+                        </li>
+                    }
                 </ul>
             </div>
         </div>

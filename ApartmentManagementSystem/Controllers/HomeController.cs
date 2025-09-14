@@ -21,14 +21,28 @@ namespace ApartmentManagementSystem.Controllers
         [AllowAnonymous]
         public IActionResult Index()
         {
-            if (User.Identity?.IsAuthenticated == true)
-            {
-                if (User.IsInRole("SuperAdmin")) return RedirectToAction("Dashboard", "SuperAdmin");
-                if (User.IsInRole("President")) return RedirectToAction("Dashboard", "President");
-                if (User.IsInRole("Owner")) return RedirectToAction("Dashboard", "Owner");
-                if (User.IsInRole("Tenant")) return RedirectToAction("Dashboard", "TenantPortal");
-            }
+            // Logged in users redirect to dashboard
+            //if (User.Identity?.IsAuthenticated == true)
+            //{
+            //    if (User.IsInRole("SuperAdmin")) return RedirectToAction("Dashboard", "SuperAdmin");
+            //    if (User.IsInRole("President")) return RedirectToAction("Dashboard", "President");
+            //    if (User.IsInRole("Owner")) return RedirectToAction("Dashboard", "Owner");
+            //    if (User.IsInRole("Tenant")) return RedirectToAction("Dashboard", "TenantPortal");
+            //}
             return View(new ContactViewModel());
+        }
+
+        [Authorize]
+        [HttpGet("/dashboard")]
+        public IActionResult Dashboard()
+        {
+            if (User.IsInRole("SuperAdmin")) return RedirectToAction("Dashboard", "SuperAdmin");
+            if (User.IsInRole("President")) return RedirectToAction("Dashboard", "President");
+            if (User.IsInRole("Owner")) return RedirectToAction("Dashboard", "Owner");
+            if (User.IsInRole("Tenant")) return RedirectToAction("Dashboard", "TenantPortal");
+
+            // fallback: if no role matched, just go to home
+            return RedirectToAction("Index", "Home");
         }
 
         [AllowAnonymous, HttpPost, ValidateAntiForgeryToken]
