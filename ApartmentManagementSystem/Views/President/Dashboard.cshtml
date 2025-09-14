@@ -1,152 +1,205 @@
-﻿@using ApartmentManagementSystem.ViewModels.President
-@using Microsoft.AspNetCore.Identity
-@model PresidentDashboardViewModel
+﻿@using Microsoft.AspNetCore.Identity
+@model ApartmentManagementSystem.ViewModels.President.PresidentDashboardViewModel
 @inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "President Dashboard";
+    var currency = "BDT";
+    var totalFlats = Model.TotalFlats;
+    var occupied = Model.OccupiedFlats;
+    var occRate = totalFlats > 0 ? (int)Math.Round((decimal)occupied * 100m / totalFlats) : 0;
     var currentUser = await UserManager.GetUserAsync(User);
     var buildingId = currentUser?.BuildingId;
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h4 mb-0">President Dashboard — @Model.BuildingName</h2>
-        <div class="btn-group">
-            <!-- Quick Actions -->
+<div class="container-xxl py-3">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-1">Dashboard — <span class="text-primary">@Model.BuildingName</span></h1>
+            <div class="text-muted small">Overview of billing, payments, occupancy and recent activity</div>
+        </div>
+        <div class="d-flex gap-2">
             <a asp-controller="CommonBill" asp-action="Create" asp-route-buildingId="@buildingId" class="btn btn-primary">
-                <i class="fa-solid fa-file-invoice-dollar"></i> Generate Bill
+                <i class="bi bi-plus-lg me-1"></i> New Common Bill
             </a>
-            <a asp-controller="ExpensePayment" asp-action="Create" asp-route-buildingId="@buildingId" class="btn btn-success">
-                <i class="fa-solid fa-money-check-dollar"></i> Record Payment
-            </a>
-            <a asp-controller="Flat" asp-action="Create" asp-route-buildingId="@buildingId" class="btn btn-info">
-                <i class="fa-regular fa-house"></i> Add Flat
-            </a>
-            <a asp-controller="Flat" asp-action="AllFlats" class="btn btn-warning">
-                <i class="fas fa-user-plus"></i> Assign Owner
+            <a asp-controller="Announcement" asp-action="Create" class="btn btn-outline-secondary">
+                <i class="bi bi-megaphone me-1"></i> New Announcement
             </a>
         </div>
     </div>
 
-    <!-- Row 1: Financial + Occupancy -->
-    <div class="row mb-3">
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow">
-                <div class="card-header"><strong>Financial Overview</strong></div>
+    @if (TempData["DashboardNotice"] is string note && !string.IsNullOrWhiteSpace(note))
+    {
+        <div class="alert alert-warning d-flex align-items-start" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div>@note</div>
+        </div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Total Common Bills</div>
+                    <div class="display-6 fw-semibold">@Model.TotalBills</div>
+                    <div class="text-primary opacity-75"><i class="bi bi-receipt fs-2"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Collected (All Time)</div>
+                    <div class="display-6 fw-semibold">@currency @Model.TotalCollected.ToString("N2")</div>
+                    <div class="text-success mt-1"><i class="bi bi-arrow-down-left-circle me-1"></i> Inflow</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Payments (All Time)</div>
+                    <div class="display-6 fw-semibold">@currency @Model.TotalPayments.ToString("N2")</div>
+                    <div class="text-danger mt-1"><i class="bi bi-arrow-up-right-circle me-1"></i> Outflow</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Flats</div>
+                    <div class="display-6 fw-semibold">@Model.TotalFlats</div>
+                    <div class="text-muted mt-1"><i class="bi bi-building me-1"></i> Units in building</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="text-muted small">Occupancy</div>
+                        <div class="small text-muted">@occupied / @totalFlats</div>
+                    </div>
+                    <div class="progress" style="height:10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width:@occRate%;" aria-valuenow="@occRate" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="mt-2 fw-semibold">@occRate% occupied</div>
+                    <div class="text-muted small">Active tenant assignments across flats</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="row text-center">
-                        <div class="col-6 mb-3">
-                            <div class="h6 text-muted">Bills Issued</div>
-                            <div class="h4">@Model.TotalBills.ToString("C")</div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="h6 text-muted">Collected</div>
-                            <div class="h4">@Model.TotalCollected.ToString("C")</div>
+                        <div class="col-6 border-end">
+                            <div class="text-muted small">Entries Today</div>
+                            <div class="display-6 fw-semibold">@Model.TodayEntries</div>
                         </div>
                         <div class="col-6">
-                            <div class="h6 text-muted">Payments Made</div>
-                            <div class="h4">@Model.TotalPayments.ToString("C")</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="h6 text-muted">Balance</div>
-                            <div class="h4 @(Model.Balance >= 0 ? "text-success" : "text-danger")">
-                                @Model.Balance.ToString("C")
-                            </div>
+                            <div class="text-muted small">Entries (Last 7 Days)</div>
+                            <div class="display-6 fw-semibold">@Model.Last7dEntries</div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow">
-                <div class="card-header"><strong>Occupancy & Flats</strong></div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <div><span class="h5 mb-0">@Model.TotalFlats</span> total flats</div>
-                        <div>
-                            @{
-                                var pct = Math.Round((decimal)Model.OccupiedFlats / Math.Max(Model.TotalFlats, 1) * 100, 1);
-                            }
-                            @pct% occupied
-                        </div>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar" role="progressbar"
-                             style="width:@(Math.Round((decimal)Model.OccupiedFlats / Math.Max(Model.TotalFlats, 1) * 100, 1))%"></div>
-                    </div>
-                    <div class="mt-2 text-muted">
-                        <span class="me-3">Occupied: <strong>@Model.OccupiedFlats</strong></span>
-                        <span>Vacant: <strong>@Model.VacantFlats</strong></span>
-                    </div>
+                    <div class="text-muted small mt-2"><i class="bi bi-person-walking me-1"></i> Visitor logs include visitors, delivery, contractors, etc.</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Row 2: Entry Logs + Maintenance/Announcements -->
-    <div class="row mb-3">
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong>Entry Logs Summary</strong>
-                    <a asp-controller="EntryLog" asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+    <!-- Recent Activity -->
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="fw-semibold">Recent Activity</div>
+                    <div class="text-muted small">Last 25 items</div>
                 </div>
-                <div class="card-body">
-                    <div class="d-flex gap-4 mb-3">
-                        <div>
-                            <div class="text-muted">Today</div>
-                            <div class="h5">@Model.TodayEntries</div>
-                        </div>
-                        <div>
-                            <div class="text-muted">Last 7 days</div>
-                            <div class="h5">@Model.Last7dEntries</div>
-                        </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 180px;">Date/Time</th>
+                                    <th style="width: 160px;">Type</th>
+                                    <th>Description</th>
+                                    <th class="text-end" style="width: 160px;">Amount</th>
+                                    <th style="width: 90px;">Dir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.RecentTransactions != null && Model.RecentTransactions.Any())
+                                {
+                                    foreach (var t in Model.RecentTransactions)
+                                    {
+                                        var typeBadge = t.Type switch
+                                        {
+                                            "OwnerPayment" => "bg-success",
+                                            "ExpensePayment" => "bg-danger",
+                                            "CommonBillCreated" => "bg-primary",
+                                            "EntryLog" => "bg-secondary",
+                                            _ => "bg-secondary"
+                                        };
+                                        var dirBadge = t.Direction == "In" ? "badge bg-success-subtle text-success" :
+                                        t.Direction == "Out" ? "badge bg-danger-subtle text-danger" :
+                                        "badge bg-secondary-subtle text-secondary";
+                                        <tr>
+                                            <td>@t.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td><span class="badge @typeBadge">@t.Type</span></td>
+                                            <td>@t.Description</td>
+                                            <td class="text-end">
+                                                @if (t.Amount.HasValue)
+                                                {
+                                                    @($"{t.Currency ?? currency} {t.Amount.Value:N2}")
+                                                }
+                                            </td>
+                                            <td><span class="@dirBadge">@t.Direction</span></td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            No recent activity to show.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
-                    <ul class="list-group list-group-flush">
-                        @foreach (var kv in Model.EntryByCategory.OrderByDescending(x => x.Value).Take(5))
-                        {
-                            <li class="list-group-item d-flex justify-content-between">
-                                <span>@kv.Key</span>
-                                <span class="badge bg-secondary">@kv.Value</span>
-                            </li>
-                        }
-                        @if (!Model.EntryByCategory.Any())
-                        {
-                            <li class="list-group-item"><small class="text-muted">No entries yet</small></li>
-                        }
-                    </ul>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong>Maintenance & Announcements</strong>
-                    <div>
-                        <a asp-controller="Announcement" asp-action="Create" class="btn btn-sm btn-warning">New Announcement</a>
-                        <a asp-controller="Maintenance" asp-action="Create" class="btn btn-sm btn-secondary">New Ticket</a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <h6 class="text-muted">Recent Announcements</h6>
-                    <ul class="mb-3">
-                        @foreach (var a in Model.RecentAnnouncements.DefaultIfEmpty("—"))
-                        {
-                            <li>@a</li>
-                        }
-                    </ul>
-                    <h6 class="text-muted">Open Maintenance</h6>
-                    <ul>
-                        @foreach (var m in Model.OpenMaintenance.DefaultIfEmpty("—"))
-                        {
-                            <li>@m</li>
-                        }
-                    </ul>
+                <div class="card-footer bg-white d-flex justify-content-end">
+                    <a asp-controller="President" asp-action="Transactions" class="btn btn-outline-secondary btn-sm">
+                        View all activity
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
+
+@section HeadStyles {
+    <style>
+        .progress {
+            background: #eef2f6;
+        }
+
+        .progress-bar {
+            transition: width .4s ease;
+        }
+
+        .card .display-6 {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+        }
+
+        .table > :not(caption) > * > * {
+            vertical-align: middle;
+        }
+    </style>
+}
