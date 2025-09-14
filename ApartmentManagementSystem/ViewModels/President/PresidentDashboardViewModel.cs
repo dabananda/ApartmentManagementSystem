@@ -24,5 +24,6 @@
         // Maintenance & announcements (placeholder lists)
         public List<string> RecentAnnouncements { get; set; } = new();
         public List<string> OpenMaintenance { get; set; } = new();
+        public List<TransactionRowViewModel> RecentTransactions { get; set; } = new();
     }
 }
