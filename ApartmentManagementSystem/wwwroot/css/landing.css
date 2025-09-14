@@ -1,0 +1,64 @@
+﻿.hero {
+    background: radial-gradient(1200px 400px at 20% -10%, rgba(13,110,253,.15), transparent), radial-gradient(1000px 300px at 100% 0%, rgba(13,110,253,.12), transparent);
+}
+
+.glass {
+    backdrop-filter: blur(6px);
+    background: rgba(255,255,255,.75);
+    border: 1px solid rgba(0,0,0,.06);
+}
+
+.logo-grid img {
+    max-height: 40px;
+    opacity: .7;
+}
+
+.hero.bg-gradient {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.hero h1 {
+    line-height: 1.2;
+}
+
+.hero img {
+    transition: transform .3s ease;
+}
+
+    .hero img:hover {
+        transform: scale(1.05);
+    }
+
+/* Subtle card hover */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform .2s ease;
+}
+/* Improve accordion look */
+.accordion-button:not(.collapsed) {
+    background: #f8f9fa;
+}
+/* Make carousel arrows more visible on light images */
+.carousel-control-prev-icon, .carousel-control-next-icon {
+    filter: invert(1) grayscale(1);
+}
+
+.testimonials-marquee {
+    display: flex;
+    animation: marquee 30s linear infinite;
+    width: max-content;
+}
+
+    .testimonials-marquee:hover {
+        animation-play-state: paused;
+    }
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0%);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
