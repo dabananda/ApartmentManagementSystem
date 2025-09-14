@@ -1,8 +1,614 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model ApartmentManagementSystem.ViewModels.Others.ContactViewModel
+
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Modern Living, Managed";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+@if (TempData["ContactStatus"] as string == "sent")
+{
+    <div class="container mt-4">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            Thanks! Your message has been sent. We’ll get back to you shortly.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+}
+@if (TempData["ContactStatus"] as string == "error")
+{
+    <div class="container mt-4">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Please fix the errors in the contact form and try again.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+}
+
+<!-- HERO -->
+<section class="hero py-5 bg-gradient">
+    <div class="container">
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-7">
+                <h1 class="display-4 fw-bold mb-3">
+                    Apartment Management System
+                </h1>
+                <p class="lead mb-4 text-muted">
+                    Streamline building operations with an all-in-one platform: billing, payments, tenants, visitors, and maintenance —
+                    tailored dashboards for Super Admins, Presidents, Owners, and Tenants.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <a class="btn btn-primary btn-lg px-4" href="/dashboard">
+                            <i class="bi bi-speedometer2 me-1"></i> Go to Dashboard
+                        </a>
+                        @* <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
+                              asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                            <button type="submit" class="btn btn-outline-secondary btn-lg px-4">
+                                <i class="bi bi-box-arrow-right me-1"></i> Logout
+                            </button>
+                        </form> *@
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary btn-lg px-4" asp-area="Identity" asp-page="/Account/Login">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        </a>
+                        <a class="btn btn-outline-secondary btn-lg px-4" asp-area="Identity" asp-page="/Account/Register">
+                            <i class="bi bi-person-plus me-1"></i> Register
+                        </a>
+                        <a class="btn btn-link text-decoration-none" href="#features">Explore Features →</a>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-4 mt-4 text-secondary small">
+                    <div><i class="bi bi-shield-check me-1 text-success"></i> Secure Access</div>
+                    <div><i class="bi bi-speedometer2 me-1 text-primary"></i> Fast & Reliable</div>
+                    <div><i class="bi bi-cloud-arrow-up me-1 text-info"></i> Cloud Ready</div>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center">
+                <div class="rounded-4 shadow p-3 bg-white d-inline-block">
+                    <img src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757825056/ams/64e28744-c8f4-48c3-959b-2a25f30920b8.png"
+                         alt="AMS Preview" class="img-fluid rounded-3" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="row text-center mt-5 g-3">
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-cash-coin fs-2 text-success mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Payments</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-shield-lock fs-2 text-primary mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Security</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-graph-up-arrow fs-2 text-info mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Reporting</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-gear-wide-connected fs-2 text-warning mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Admin Control</h6>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trust badges (Row 2) -->
+        <div class="row text-center mt-3 g-3">
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-people fs-2 text-secondary mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Tenants</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-tools fs-2 text-danger mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Maintenance</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-clipboard-data fs-2 text-success mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Transparency</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
+                    <i class="bi bi-speedometer2 fs-2 text-primary mb-2"></i>
+                    <h6 class="fw-semibold mb-0">Dashboards</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-4">Powerful Features</h2>
+        <p class="text-center text-muted mb-5">
+            Everything you need to run your apartment associations smoothly.
+        </p>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h5"><i class="bi bi-cash-coin me-2"></i> Common Billing</h3>
+                        <p class="text-muted">Create and split common expenses across units automatically with audit trails.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>Allocate by unit or percentage</li>
+                            <li>One-click due generation</li>
+                            <li>CSV export</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h5"><i class="bi bi-people me-2"></i> Tenants & Owners</h3>
+                        <p class="text-muted">Assign tenants to flats, track rent and arrears, and maintain owner rosters.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>Smart search & filters</li>
+                            <li>Owner billing profiles</li>
+                            <li>Move-in/out history</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h5"><i class="bi bi-tools me-2"></i> Maintenance</h3>
+                        <p class="text-muted">Track maintenance tickets, vendors, and expenses with clear status updates.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>Lifecycle statuses</li>
+                            <li>Photo/file attachments</li>
+                            <li>Vendor ledger</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h5"><i class="bi bi-graph-up-arrow me-2"></i> Dashboards</h3>
+                        <p class="text-muted">Role-based dashboards highlight receivables, occupancy and activity.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>KPIs by role</li>
+                            <li>Trends & insights</li>
+                            <li>Drill-downs to records</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h5"><i class="bi bi-box-arrow-in-right me-2"></i> Entry Logs</h3>
+                        <p class="text-muted">Keep a secure log of visitors and entry activity for compliance and safety.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>Searchable history</li>
+                            <li>Unit/visitor mapping</li>
+                            <li>Exportable data</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h5"><i class="bi bi-lock me-2"></i> Security & Roles</h3>
+                        <p class="text-muted">Fine-grained roles: Super Admin, President, Owner, Tenant with least privilege.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>ASP.NET Core Identity</li>
+                            <li>Claims-based access</li>
+                            <li>Audit-friendly patterns</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- BENEFITS -->
+<section id="benefits" class="py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-4">Benefits That Matter</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="p-4 h-100 rounded-3 border">
+                    <h3 class="h5"><i class="bi bi-stopwatch me-2"></i> Save Time</h3>
+                    <p class="text-muted mb-0">Automate repetitive billing and reporting tasks so committees can focus on residents.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 h-100 rounded-3 border">
+                    <h3 class="h5"><i class="bi bi-clipboard-data me-2"></i> Transparent Records</h3>
+                    <p class="text-muted mb-0">Clear ledgers, receipts, and histories reduce disputes and increase trust.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 h-100 rounded-3 border">
+                    <h3 class="h5"><i class="bi bi-shield-lock me-2"></i> Secure by Design</h3>
+                    <p class="text-muted mb-0">Modern auth, limited access, and best-practice patterns baked in.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ROLE-SPECIFIC VALUE -->
+<section id="roles" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-4">Built for Every Role</h2>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 text-uppercase text-muted">Super Admin</h3>
+                        <p class="mb-2">Global oversight, user approvals, building setup.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>Manage users & roles</li>
+                            <li>Create buildings & flats</li>
+                            <li>Audit entries</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 text-uppercase text-muted">President</h3>
+                        <p class="mb-2">Run the building: bills, owners, tenants, reports.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>Common bills</li>
+                            <li>Owner billing</li>
+                            <li>Financial reports</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 text-uppercase text-muted">Owner</h3>
+                        <p class="mb-2">Assign tenants, track rent, view dues.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>My flats</li>
+                            <li>Tenant assignment</li>
+                            <li>Rent tracking</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 text-uppercase text-muted">Tenant</h3>
+                        <p class="mb-2">View dues, payment history, notices.</p>
+                        <ul class="small text-muted mb-0">
+                            <li>Self-service portal</li>
+                            <li>Receipts & history</li>
+                            <li>Announcements</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SCREENSHOTS / CAROUSEL (placeholder images) -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-4">A Look Inside</h2>
+        <div id="demoCarousel" class="carousel slide rounded-4 overflow-hidden" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img class="d-block w-75 mx-auto" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757825356/ams/15507d2d-0d1f-4ce8-b205-336ac3891dda.png" alt="Dashboard">
+                </div>
+                <div class="carousel-item">
+                    <img class="d-block w-75 mx-auto" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757825056/ams/64e28744-c8f4-48c3-959b-2a25f30920b8.png" alt="Billing">
+                </div>
+                <div class="carousel-item">
+                    <img class="d-block w-75 mx-auto" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757825360/ams/5911a3dc-78cb-47a1-bc53-1e7e307d3046.png" alt="Tenants">
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#demoCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#demoCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5">What Our Clients Say</h2>
+
+        <div class="overflow-hidden">
+            <div class="d-flex gap-4 testimonials-marquee">
+                <!-- Card 1 -->
+                <div class="card shadow-sm flex-shrink-0" style="width: 300px;">
+                    <div class="card-body">
+                        <p class="mb-3">“AMS cut our billing time from days to hours. Owners love the clarity.”</p>
+                        <div class="text-warning mb-2">
+                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star"></i>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle fs-4"></i>
+                            <div>
+                                <div class="fw-semibold">Ayesha K.</div>
+                                <div class="text-muted small">President, Lakeview Residences</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="card shadow-sm flex-shrink-0" style="width: 300px;">
+                    <div class="card-body">
+                        <p class="mb-3">“Transparent records reduced disputes to almost zero. Best decision we made.”</p>
+                        <div class="text-warning mb-2">
+                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle fs-4"></i>
+                            <div>
+                                <div class="fw-semibold">Mahmud R.</div>
+                                <div class="text-muted small">Owner, Green Park</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="card shadow-sm flex-shrink-0" style="width: 300px;">
+                    <div class="card-body">
+                        <p class="mb-3">“Easy to use and fast. The dashboards tell me exactly what needs attention.”</p>
+                        <div class="text-warning mb-2">
+                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle fs-4"></i>
+                            <div>
+                                <div class="fw-semibold">Rifat S.</div>
+                                <div class="text-muted small">Super Admin, North Horizons</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="card shadow-sm flex-shrink-0" style="width: 300px;">
+                    <div class="card-body">
+                        <p class="mb-3">“Our tenants love the self-service portal. It reduced calls and emails massively.”</p>
+                        <div class="text-warning mb-2">
+                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star"></i>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle fs-4"></i>
+                            <div>
+                                <div class="fw-semibold">Sadia T.</div>
+                                <div class="text-muted small">Tenant, Silver Oaks</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="card shadow-sm flex-shrink-0" style="width: 300px;">
+                    <div class="card-body">
+                        <p class="mb-3">“Financial reports are crystal clear. Our annual audits are so much smoother.”</p>
+                        <div class="text-warning mb-2">
+                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star"></i>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle fs-4"></i>
+                            <div>
+                                <div class="fw-semibold">Imran H.</div>
+                                <div class="text-muted small">President, City Heights</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- You can add more cards here -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <h2 class="text-center fw-bold mb-4">Frequently Asked Questions</h2>
+                <div class="accordion" id="faqAcc">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="q1">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#a1">Can I disable public registration?</button>
+                        </h2>
+                        <div id="a1" class="accordion-collapse collapse show" data-bs-parent="#faqAcc">
+                            <div class="accordion-body">Yes. Hide the Register button and restrict sign-ups to Super Admin approvals only.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="q2">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a2">Does AMS work for multiple buildings?</button>
+                        </h2>
+                        <div id="a2" class="accordion-collapse collapse" data-bs-parent="#faqAcc">
+                            <div class="accordion-body">Yes. Super Admin can create multiple buildings, units and assign Presidents.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="q3">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a3">Is my data secure?</button>
+                        </h2>
+                        <div id="a3" class="accordion-collapse collapse" data-bs-parent="#faqAcc">
+                            <div class="accordion-body">AMS uses ASP.NET Core Identity, claims-based access and follows best practices.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ABOUT US -->
+<section id="about" class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">About the Developer Team</h2>
+            <p class="text-muted mb-0">Two full-stack engineers who built AMS with performance, security, and real-world workflows in mind.</p>
+        </div>
+
+        <div class="row g-4 align-items-stretch">
+            <!-- Dev 1 -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-start gap-3">
+                            <img class="rounded-circle shadow-sm img-thumbnail" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757822748/portfolio-files/dabananda_mitra_vtjull.png"
+                                 alt="Developer 1" width="160" height="160" />
+                            <div>
+                                <h3 class="h4 mb-1">Dabananda Mitra</h3>
+                                <div class="text-muted mb-2">Software Engineer • ASP.NET Core & Frontend</div>
+                                <p class="mb-3 text-secondary">
+                                    Focused on clean architecture, secure authentication, authorization and delightful UI. Led identity, role/claim model
+                                    and core billing flows.
+                                </p>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a class="btn btn-outline-dark btn-sm" href="mailto:imdmitra@gmail.com"><i class="bi bi-envelope me-1"></i>Email</a>
+                                    <a class="btn btn-outline-dark btn-sm" href="https://github.com/dabananda" target="_blank" rel="noopener"><i class="bi bi-github me-1"></i>GitHub</a>
+                                    <a class="btn btn-outline-dark btn-sm" href="https://www.linkedin.com/in/dabananda/" target="_blank" rel="noopener"><i class="bi bi-linkedin me-1"></i>LinkedIn</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @* <div class="card-footer bg-white border-0 pt-0 px-4 pb-4">
+                        <a class="btn btn-dark" asp-area="Identity" asp-page="/Account/Login">Try the App</a>
+                    </div> *@
+                </div>
+            </div>
+
+            <!-- Dev 2 -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-start gap-3">
+                            <img class="rounded-circle shadow-sm img-thumbnail" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757821974/suraiya_bilkis_oayhqq.png"
+                                 alt="Suraiya Bilkis" width="160" height="160" />
+                            <div>
+                                <h3 class="h4 mb-1">Suraiya Bilkis</h3>
+                                <div class="text-muted mb-2">Software Engineer • Data & Reporting</div>
+                                <p class="mb-3 text-secondary">
+                                    Specializes in data modeling, reports and performance. Implemented dashboards, exports, maintenance and visitor modules.
+                                </p>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a class="btn btn-outline-dark btn-sm" href="mailto:kadermd246@gmail.com"><i class="bi bi-envelope me-1"></i>Email</a>
+                                    <a class="btn btn-outline-dark btn-sm" href="https://github.com/Suraiya6240" target="_blank" rel="noopener"><i class="bi bi-github me-1"></i>GitHub</a>
+                                    <a class="btn btn-outline-dark btn-sm" href="#" target="_blank" rel="noopener"><i class="bi bi-linkedin me-1"></i>LinkedIn</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @* <div class="card-footer bg-white border-0 pt-0 px-4 pb-4">
+                        <a class="btn btn-outline-dark" href="#contact"><i class="bi bi-envelope me-1"></i>Contact Us</a>
+                    </div> *@
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Contact form -->
+            <div class="col-lg-6">
+                <h2 class="fw-bold mb-2">Get in Touch</h2>
+                <p class="text-muted">Questions, feedback, or requests? Send a message and we’ll reply soon.</p>
+                <form asp-action="Contact" method="post" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label">Your Name</label>
+                        <input asp-for="Name" class="form-control" required />
+                        <span class="text-danger" asp-validation-for="Name"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control" required />
+                        <span class="text-danger" asp-validation-for="Email"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Subject" class="form-label">Subject</label>
+                        <input asp-for="Subject" class="form-control" required />
+                        <span class="text-danger" asp-validation-for="Subject"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Message" class="form-label">Message</label>
+                        <textarea asp-for="Message" rows="5" class="form-control" required></textarea>
+                        <span class="text-danger" asp-validation-for="Message"></span>
+                    </div>
+                    <button class="btn btn-primary btn-lg" type="submit">
+                        <i class="bi bi-send me-1"></i> Send Message
+                    </button>
+                </form>
+            </div>
+
+            <!-- Google Map Location -->
+            <div class="col-lg-6">
+                <div class="p-4 bg-light rounded-3 h-100 border">
+                    <h3 class="h5">Contact Details</h3>
+                    <ul class="list-unstyled text-muted">
+                        <li class="mb-2"><i class="bi bi-envelope me-2"></i> imdmitra@gmail.com</li>
+                        <li class="mb-2"><i class="bi bi-whatsapp me-2"></i> +8801304080014</li>
+                        <li class="mb-2"><i class="bi bi-geo-alt me-2"></i> Mirpur 13, Dhaka, Bangladesh</li>
+                        @* <li class="mb-2"><i class="bi bi-clock me-2"></i> Sun – Thurs · 9am – 5pm</li> *@
+                    </ul>
+                    <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1825.1552417194903!2d90.38184812928654!3d23.807555940720786!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c7285f7e6a75%3A0x14ddf7d3104a5602!2sInstitute%20of%20Science%20Trade%20%26%20Technology%20(ISTT)!5e0!3m2!1sen!2sbd!4v1757790071870!5m2!1sen!2sbd"
+                                title="Map" loading="lazy"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Bootstrap client-side validation styling
+        (function () {
+            'use strict';
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}
