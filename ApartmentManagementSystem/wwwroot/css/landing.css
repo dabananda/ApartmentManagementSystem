@@ -1,20 +1,71 @@
 ﻿.hero {
-    background: radial-gradient(1200px 400px at 20% -10%, rgba(13,110,253,.15), transparent), radial-gradient(1000px 300px at 100% 0%, rgba(13,110,253,.12), transparent);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 100%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(21, 183, 158, 0.1) 0%, transparent 70%);
+    animation: heroFloat 6s ease-in-out infinite;
+}
+
+@keyframes heroFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(1deg); }
+}
+
+.hero-image-container {
+    position: relative;
+}
+
+.floating-card {
+    position: relative;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.floating-card::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    background: linear-gradient(45deg, rgba(21, 183, 158, 0.1), rgba(59, 130, 246, 0.1));
+    border-radius: 24px;
+    z-index: -1;
+    animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
 }
 
 .glass {
-    backdrop-filter: blur(6px);
-    background: rgba(255,255,255,.75);
-    border: 1px solid rgba(0,0,0,.06);
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,.9);
+    border: 1px solid rgba(255,255,255,.2);
 }
 
 .logo-grid img {
     max-height: 40px;
     opacity: .7;
+    transition: opacity 0.3s ease;
 }
 
-.hero.bg-gradient {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+.logo-grid img:hover {
+    opacity: 1;
 }
 
 .hero h1 {
@@ -25,56 +76,220 @@
     transition: transform .3s ease;
 }
 
-    .hero img:hover {
-        transform: scale(1.05);
-    }
+.hero img:hover {
+    transform: scale(1.02);
+}
+
+/* Enhanced Badge Tiles */
+.badge-tile {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.badge-tile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(21, 183, 158, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.badge-tile:hover::before {
+    left: 100%;
+}
+
+.badge-tile:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 30px rgba(21, 183, 158, 0.2);
+    border-color: rgba(21, 183, 158, 0.3);
+}
+
+.badge-tile .icon-wrapper {
+    position: relative;
+    z-index: 1;
+}
+
+.modern-hover {
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(21, 183, 158, 0.05), rgba(59, 130, 246, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modern-hover:hover::after {
+    opacity: 1;
+}
 
 /* Subtle card hover */
 .card:hover {
-    transform: translateY(-2px);
-    transition: transform .2s ease;
-}
-/* Improve accordion look */
-.accordion-button:not(.collapsed) {
-    background: #f8f9fa;
-}
-/* Make carousel arrows more visible on light images */
-.carousel-control-prev-icon, .carousel-control-next-icon {
-    filter: invert(1) grayscale(1);
+    transform: translateY(-4px);
+    transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
+/* Improve accordion look */
+.accordion-button:not(.collapsed) {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    color: var(--text-primary);
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(21, 183, 158, 0.25);
+    border-color: #15b79e;
+}
+
+/* Make carousel arrows more visible on light images */
+.carousel-control-prev-icon, .carousel-control-next-icon {
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.5));
+    width: 2rem;
+    height: 2rem;
+}
+
+.carousel-control-prev, .carousel-control-next {
+    width: 8%;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.carousel-control-prev:hover, .carousel-control-next:hover {
+    opacity: 1;
+}
+
+/* Enhanced testimonials marquee */
 .testimonials-marquee {
     display: flex;
-    animation: marquee 30s linear infinite;
+    animation: marquee 40s linear infinite;
     width: max-content;
 }
 
-    .testimonials-marquee:hover {
-        animation-play-state: paused;
-    }
+.testimonials-marquee:hover {
+    animation-play-state: paused;
+}
 
 @keyframes marquee {
-    0% {
-        transform: translateX(0%);
-    }
-
-    100% {
-        transform: translateX(-50%);
-    }
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
 }
 
-.badge-tile {
-    transition: transform .2s ease, box-shadow .2s ease;
-}
-
-    .badge-tile:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;
-    }
-/* optional: equalize heights on very narrow screens */
+/* Responsive enhancements */
 @media (max-width: 575.98px) {
     .badge-tile {
-        padding-top: 1.25rem;
-        padding-bottom: 1.25rem;
+        padding: 1.5rem 1rem !important;
     }
+    
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+    
+    .floating-card::before {
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+    }
+}
+
+/* Feature section enhancements */
+#features .card {
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    transition: all 0.3s ease;
+}
+
+#features .card:hover {
+    border-color: rgba(21, 183, 158, 0.3);
+    box-shadow: 0 8px 25px rgba(21, 183, 158, 0.1);
+}
+
+/* CTA sections */
+.btn-primary {
+    background: linear-gradient(135deg, #15b79e, #10a085);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #10a085, #0d8b75);
+    transform: translateY(-2px);
+}
+
+/* Footer enhancements */
+footer {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+/* Section spacing improvements */
+section {
+    position: relative;
+}
+
+section:nth-child(even) {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* Enhanced animations for content reveal */
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+}
+
+.animate-on-scroll.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Loading states for interactive elements */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid rgba(21, 183, 158, 0.3);
+    border-top: 2px solid #15b79e;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

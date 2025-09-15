@@ -25,106 +25,133 @@
 }
 
 <!-- HERO -->
-<section class="hero py-5 bg-gradient">
+<section class="hero py-5">
     <div class="container">
         <div class="row align-items-center gy-5">
             <div class="col-lg-7">
-                <h1 class="display-4 fw-bold mb-3">
-                    Apartment Management System
+                <div class="mb-4">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                        <i class="fas fa-rocket me-2"></i>
+                        Modern Building Management
+                    </span>
+                </div>
+                <h1 class="display-4 fw-bold mb-4">
+                    Apartment Management
+                    <span class="text-primary">System</span>
                 </h1>
                 <p class="lead mb-4 text-muted">
                     Streamline building operations with an all-in-one platform: billing, payments, tenants, visitors, and maintenance —
                     tailored dashboards for Super Admins, Presidents, Owners, and Tenants.
                 </p>
-                <div class="d-flex flex-wrap gap-3">
+                <div class="d-flex flex-wrap gap-3 mb-4">
                     @if (User?.Identity?.IsAuthenticated == true)
                     {
-                        <a class="btn btn-primary btn-lg px-4" href="/dashboard">
-                            <i class="bi bi-speedometer2 me-1"></i> Go to Dashboard
+                        <a class="btn btn-primary btn-lg px-4 shadow-sm" href="/dashboard">
+                            <i class="fas fa-tachometer-alt me-2"></i> Go to Dashboard
                         </a>
-                        @* <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
-                              asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                            <button type="submit" class="btn btn-outline-secondary btn-lg px-4">
-                                <i class="bi bi-box-arrow-right me-1"></i> Logout
-                            </button>
-                        </form> *@
                     }
                     else
                     {
-                        <a class="btn btn-primary btn-lg px-4" asp-area="Identity" asp-page="/Account/Login">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        <a class="btn btn-primary btn-lg px-4 shadow-sm" asp-area="Identity" asp-page="/Account/Login">
+                            <i class="fas fa-sign-in-alt me-2"></i> Login
                         </a>
-                        <a class="btn btn-outline-secondary btn-lg px-4" asp-area="Identity" asp-page="/Account/Register">
-                            <i class="bi bi-person-plus me-1"></i> Register
+                        <a class="btn btn-outline-primary btn-lg px-4" asp-area="Identity" asp-page="/Account/Register">
+                            <i class="fas fa-user-plus me-2"></i> Register
                         </a>
-                        <a class="btn btn-link text-decoration-none" href="#features">Explore Features →</a>
+                        <a class="btn btn-link text-decoration-none fw-medium" href="#features">
+                            Explore Features <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
                     }
                 </div>
-                <div class="d-flex align-items-center gap-4 mt-4 text-secondary small">
-                    <div><i class="bi bi-shield-check me-1 text-success"></i> Secure Access</div>
-                    <div><i class="bi bi-speedometer2 me-1 text-primary"></i> Fast & Reliable</div>
-                    <div><i class="bi bi-cloud-arrow-up me-1 text-info"></i> Cloud Ready</div>
+                <div class="d-flex align-items-center gap-4 text-secondary small">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-shield-check me-2 text-success"></i> Secure Access
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-bolt me-2 text-warning"></i> Fast & Reliable
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-cloud me-2 text-info"></i> Cloud Ready
+                    </div>
                 </div>
             </div>
             <div class="col-lg-5 text-center">
-                <div class="rounded-4 shadow p-3 bg-white d-inline-block">
-                    <img src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757825056/ams/64e28744-c8f4-48c3-959b-2a25f30920b8.png"
-                         alt="AMS Preview" class="img-fluid rounded-3" />
+                <div class="hero-image-container">
+                    <div class="floating-card">
+                        <img src="https://res.cloudinary.com/djz3p8sux/image/upload/v1757825056/ams/64e28744-c8f4-48c3-959b-2a25f30920b8.png"
+                             alt="AMS Preview" class="img-fluid rounded-4 shadow-lg" />
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Trust badges -->
-        <div class="row text-center mt-5 g-3">
+        <div class="row text-center mt-5 g-4">
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-cash-coin fs-2 text-success mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-credit-card fs-2 text-success"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Payments</h6>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-shield-lock fs-2 text-primary mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-shield-alt fs-2 text-primary"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Security</h6>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-graph-up-arrow fs-2 text-info mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-chart-line fs-2 text-info"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Reporting</h6>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-gear-wide-connected fs-2 text-warning mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-cogs fs-2 text-warning"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Admin Control</h6>
                 </div>
             </div>
         </div>
 
-        <!-- Trust badges (Row 2) -->
-        <div class="row text-center mt-3 g-3">
+        <!-- Additional badges row -->
+        <div class="row text-center mt-4 g-4">
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-people fs-2 text-secondary mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-users fs-2 text-secondary"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Tenants</h6>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-tools fs-2 text-danger mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-tools fs-2 text-danger"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Maintenance</h6>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-clipboard-data fs-2 text-success mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-eye fs-2 text-success"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Transparency</h6>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-white shadow-sm h-100 badge-tile">
-                    <i class="bi bi-speedometer2 fs-2 text-primary mb-2"></i>
+                <div class="badge-tile p-4 rounded-4 bg-white shadow-sm h-100 modern-hover">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-tachometer-alt fs-2 text-primary"></i>
+                    </div>
                     <h6 class="fw-semibold mb-0">Dashboards</h6>
                 </div>
             </div>
