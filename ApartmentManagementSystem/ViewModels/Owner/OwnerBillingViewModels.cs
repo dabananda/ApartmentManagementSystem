@@ -53,5 +53,7 @@ namespace ApartmentManagementSystem.ViewModels.Owner
         public decimal Amount { get; set; }
         [DataType(DataType.Date)] public DateTime PaymentDate { get; set; } = DateTime.Today;
         [StringLength(100)] public string? Reference { get; set; }
+
+        [StringLength(80)] public string? IdempotencyKey { get; set; } // New
     }
 }

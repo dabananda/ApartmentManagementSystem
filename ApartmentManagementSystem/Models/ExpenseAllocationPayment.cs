@@ -29,5 +29,16 @@ namespace ApartmentManagementSystem.Models
 
         [Required]
         public string OwnerId { get; set; } = default!;
+
+        // ---- New: same idempotency and gateway hooks as tenant payments ----
+        [StringLength(80)]
+        public string? IdempotencyKey { get; set; }
+
+        public PaymentGateway Gateway { get; set; } = PaymentGateway.None;
+
+        [StringLength(120)]
+        public string? ExternalRef { get; set; }
+
+        public PaymentStatus Status { get; set; } = PaymentStatus.Succeeded;
     }
 }
