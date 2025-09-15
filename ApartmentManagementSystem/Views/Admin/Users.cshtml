@@ -6,159 +6,239 @@
     var current = Math.Max(1, Model.Filter.Page);
 }
 
-<div class="d-flex justify-content-between">
-    <h2 class="mb-4">Manage Users</h2>
-    <div>
-        <a class="btn btn-primary mb-3" asp-controller="Admin" asp-action="CreateUser">
-            <i class="fa-solid fa-user-plus me-1"></i>
-            Create User
-        </a>
-    </div>
-</div>
-
-<!-- FILTERS -->
-<form method="get" asp-controller="Admin" asp-action="Users" class="row justify-content-between mb-3">
-    <div class="col-md-3">
-        <div class="input-group mb-3">
-            <span class="input-group-text" id="basic-addon1">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <input class="form-control" name="Query" placeholder="Search by name, email or phone" value="@Model.Filter.Query">
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <h2 class="h3 mb-2 d-flex align-items-center">
+                <i class="fas fa-users text-primary me-3"></i>
+                Manage Users
+            </h2>
+            <p class="text-muted mb-0">
+                Total: <span class="fw-semibold text-primary">@Model.Total</span> users
+                @if (Model.Filter.Query?.Length > 0 || Model.Filter.Role != "All" || Model.Filter.BuildingId.HasValue)
+                {
+                    <span class="text-muted">
+                        (filtered)
+                    </span>
+                }
+            </p>
+        </div>
+        <div>
+            <a class="btn btn-primary shadow-sm" asp-controller="Admin" asp-action="CreateUser">
+                <i class="fas fa-user-plus me-2"></i>
+                Create User
+            </a>
         </div>
     </div>
 
-    <div class="col-md-3">
-        <select class="form-select" name="BuildingId">
-            <option value="">All Buildings</option>
-            @foreach (var b in Model.Buildings)
-            {
-                var selected = (Model.Filter.BuildingId.HasValue && Model.Filter.BuildingId.Value.ToString() == b.Value);
-                if (selected)
-                {
-                    <option value="@b.Value" selected="selected">@b.Text</option>
-                }
-                else
-                {
-                    <option value="@b.Value">@b.Text</option>
-                }
-            }
-        </select>
-    </div>
+    <!-- Filters Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" asp-controller="Admin" asp-action="Users" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-medium text-muted">Search Users</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input class="form-control" name="Query" placeholder="Search by name, email or phone" value="@Model.Filter.Query" />
+                    </div>
+                </div>
 
-    <div class="col-md-2">
-        <select class="form-select" name="Role">
-            @{
-                var roles = new[] { "All", "President", "Owner", "Tenant", "Staff" };
-            }
-            @foreach (var r in roles)
-            {
-                if (string.Equals(Model.Filter.Role, r, StringComparison.OrdinalIgnoreCase))
-                {
-                    <option value="@r" selected="selected">@r</option>
-                }
-                else
-                {
-                    <option value="@r">@r</option>
-                }
-            }
-        </select>
-    </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-medium text-muted">Building</label>
+                    <select class="form-select" name="BuildingId">
+                        <option value="">All Buildings</option>
+                        @foreach (var b in Model.Buildings)
+                        {
+                            var selected = (Model.Filter.BuildingId.HasValue && Model.Filter.BuildingId.Value.ToString() == b.Value);
+                            <option value="@b.Value" @(selected ? "selected" : "")>@b.Text</option>
+                        }
+                    </select>
+                </div>
 
-    @* <div class="col-md-2 d-flex align-items-center">
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="LockedOnly" value="true" @(Model.Filter.LockedOnly ? "checked=\"checked\"" : "") />
-            <label class="form-check-label">Locked only</label>
+                <div class="col-md-2">
+                    <label class="form-label small fw-medium text-muted">Role</label>
+                    <select class="form-select" name="Role">
+                        @{
+                            var roles = new[] { "All", "President", "Owner", "Tenant", "Staff" };
+                        }
+                        @foreach (var r in roles)
+                        {
+                            var isSelected = string.Equals(Model.Filter.Role, r, StringComparison.OrdinalIgnoreCase);
+                            <option value="@r" @(isSelected ? "selected" : "")>@r</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-medium text-muted">Page Size</label>
+                    <select class="form-select" name="PageSize">
+                        @{
+                            var sizes = new[] { 10, 20, 50, 100 };
+                        }
+                        @foreach (var ps in sizes)
+                        {
+                            var isSelected = Model.Filter.PageSize == ps;
+                            <option value="@ps" @(isSelected ? "selected" : "")>@ps</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-filter me-1"></i>
+                        Filter
+                    </button>
+                </div>
+            </form>
+
+            @if (Model.Filter.Query?.Length > 0 || Model.Filter.Role != "All" || Model.Filter.BuildingId.HasValue)
+            {
+                <div class="mt-3 pt-3 border-top">
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted me-2">Active filters:</span>
+                        @if (Model.Filter.Query?.Length > 0)
+                        {
+                            <span class="badge bg-primary bg-opacity-10 text-primary me-2">
+                                Search: "@Model.Filter.Query"
+                            </span>
+                        }
+                        @if (Model.Filter.Role != "All")
+                        {
+                            <span class="badge bg-info bg-opacity-10 text-info me-2">
+                                Role: @Model.Filter.Role
+                            </span>
+                        }
+                        @if (Model.Filter.BuildingId.HasValue)
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success me-2">
+                                Building: @Model.Buildings.First(b => b.Value == Model.Filter.BuildingId.ToString()).Text
+                            </span>
+                        }
+                        <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-outline-secondary ms-auto">
+                            <i class="fas fa-times me-1"></i>
+                            Clear Filters
+                        </a>
+                    </div>
+                </div>
+            }
         </div>
-    </div> *@
-
-    <div class="col-md-2">
-        <select class="form-select" name="PageSize">
-            @{
-                var sizes = new[] { 10, 20, 50, 100 };
-            }
-            @foreach (var ps in sizes)
-            {
-                if (Model.Filter.PageSize == ps)
-                {
-                    <option value="@ps" selected="selected">@ps / page</option>
-                }
-                else
-                {
-                    <option value="@ps">@ps / page</option>
-                }
-            }
-        </select>
     </div>
 
-    <div class="col-md-2">
-        <button class="btn btn-primary" type="submit">Filter</button>
-        <a class="btn btn-outline-secondary" asp-controller="Admin" asp-action="Users">Clear</a>
-    </div>
-</form>
+    <!-- Flash Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-<!-- FLASH -->
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
+    @if (!Model.Users.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-users fs-1 text-muted"></i>
+                </div>
+                <h5 class="text-muted">No Users Found</h5>
+                <p class="text-muted mb-4">
+                    @if (Model.Filter.Query?.Length > 0 || Model.Filter.Role != "All" || Model.Filter.BuildingId.HasValue)
+                    {
+                        <span>No users match your current filters. Try adjusting your search criteria.</span>
+                    }
+                    else
+                    {
+                        <span>No approved users exist in the system yet.</span>
+                    }
+                </p>
+                <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Create First User
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Users Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 d-flex align-items-center">
+                    <i class="fas fa-table me-2 text-primary"></i>
+                    Users List
+                </h5>
+                <span class="badge bg-primary bg-opacity-10 text-primary">
+                    @Model.Users.Count() of @Model.Total
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Bulk Actions -->
+                <form id="bulkForm" method="post">
+                    @Html.AntiForgeryToken()
 
-@if (!Model.Users.Any())
-{
-    <div class="alert alert-info">No approved users found.</div>
-}
-else
-{
-    <!-- SINGLE OUTER FORM (bulk actions). Row buttons override with formaction. -->
-    <form id="bulkForm" method="post">
-        @Html.AntiForgeryToken()
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="text-muted small align-self-center me-2">Bulk actions:</span>
+                            <!-- Bulk role changes -->
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("BulkChangeRole", "Admin")"
+                                    name="role" value="Owner"
+                                    class="btn btn-success btn-sm">
+                                <i class="fas fa-user-tag me-1"></i>
+                                Set as Owner
+                            </button>
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("BulkChangeRole", "Admin")"
+                                    name="role" value="Tenant"
+                                    class="btn btn-primary btn-sm">
+                                <i class="fas fa-user-tag me-1"></i>
+                                Set as Tenant
+                            </button>
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("BulkChangeRole", "Admin")"
+                                    name="role" value="Staff"
+                                    class="btn btn-secondary btn-sm">
+                                <i class="fas fa-user-tag me-1"></i>
+                                Set as Staff
+                            </button>
 
-        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-            <div class="d-flex flex-wrap gap-2">
-                <!-- Bulk role changes -->
-                <button type="submit"
-                        formmethod="post"
-                        formaction="@Url.Action("BulkChangeRole", "Admin")"
-                        name="role" value="Owner"
-                        class="btn btn-success btn-sm">
-                    Set selected as Owner
-                </button>
-                <button type="submit"
-                        formmethod="post"
-                        formaction="@Url.Action("BulkChangeRole", "Admin")"
-                        name="role" value="Tenant"
-                        class="btn btn-primary btn-sm">
-                    Set selected as Tenant
-                </button>
-                <button type="submit"
-                        formmethod="post"
-                        formaction="@Url.Action("BulkChangeRole", "Admin")"
-                        name="role" value="Staff"
-                        class="btn btn-secondary btn-sm">
-                    Set selected as Staff
-                </button>
+                            <!-- Bulk lock/unlock -->
+                            <div class="vr mx-2"></div>
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("BulkBlock", "Admin")"
+                                    class="btn btn-warning btn-sm">
+                                <i class="fas fa-lock me-1"></i>
+                                Block
+                            </button>
+                            <button type="submit"
+                                    formmethod="post"
+                                    formaction="@Url.Action("BulkUnblock", "Admin")"
+                                    class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-unlock me-1"></i>
+                                Unblock
+                            </button>
 
-                <!-- Bulk lock/unlock -->
-                <button type="submit"
-                        formmethod="post"
-                        formaction="@Url.Action("BulkBlock", "Admin")"
-                        class="btn btn-warning btn-sm">
-                    Block selected
-                </button>
-                <button type="submit"
-                        formmethod="post"
-                        formaction="@Url.Action("BulkUnblock", "Admin")"
-                        class="btn btn-outline-warning btn-sm">
-                    Unblock selected
-                </button>
-
-                <!-- Bulk delete (SuperAdmin only) -->
-                @if (User.IsInRole("SuperAdmin"))
-                {
-                    <button type="submit"
+                            <!-- Bulk delete (SuperAdmin only) -->
+                            @if (User.IsInRole("SuperAdmin"))
+                            {
+                                <div class="vr mx-2"></div>
+                                <button type="submit"
                             formmethod="post"
                             formaction="@Url.Action("BulkDelete", "Admin")"
                             class="btn btn-outline-danger btn-sm"
