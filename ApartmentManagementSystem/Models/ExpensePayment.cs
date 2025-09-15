@@ -30,5 +30,9 @@ namespace ApartmentManagementSystem.Models
         public Guid BuildingId { get; set; }
         [ForeignKey("BuildingId")]
         public virtual Building? Building { get; set; }
+
+        // NEW
+        [Required]
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

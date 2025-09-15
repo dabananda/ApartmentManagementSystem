@@ -1,6 +1,5 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels;
 using ApartmentManagementSystem.ViewModels.President;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,7 +15,8 @@ namespace ApartmentManagementSystem.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<PresidentController> _logger;
 
-        public PresidentController(ApplicationDbContext context,
+        public PresidentController(
+            ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             ILogger<PresidentController> logger)
         {
@@ -28,112 +28,85 @@ namespace ApartmentManagementSystem.Controllers
         // GET: /President/Dashboard
         public async Task<IActionResult> Dashboard()
         {
-            // Resolve building from claim
             var claim = User.FindFirst("building_id")?.Value;
             if (!Guid.TryParse(claim, out var buildingId))
             {
                 TempData["DashboardNotice"] = "Your account isn’t linked to a building yet. Please contact a Super Admin.";
-                return View(new PresidentDashboardViewModel
-                {
-                    BuildingName = "(no building)",
-                    TotalBills = 0,
-                    TotalCollected = 0m,
-                    TotalPayments = 0m,
-                    TotalFlats = 0,
-                    OccupiedFlats = 0,
-                    TodayEntries = 0,
-                    Last7dEntries = 0,
-                    RecentTransactions = new List<TransactionRowViewModel>()
-                });
+                return View(new PresidentDashboardViewModel());
             }
 
-            // Header
-            var buildingName = await _context.Buildings
-                .AsNoTracking()
+            // Header info
+            var buildingName = await _context.Buildings.AsNoTracking()
                 .Where(b => b.Id == buildingId)
                 .Select(b => b.Name)
                 .FirstOrDefaultAsync() ?? "(Building)";
 
-            // === Totals (SEQUENTIAL AWAITS — no DbContext concurrency) ===
+            var totalBills = await _context.CommonBills.AsNoTracking()
+                .CountAsync(b => b.BuildingId == buildingId);
 
-            var totalBills = await _context.CommonBills
-                .AsNoTracking()
-                .Where(b => b.BuildingId == buildingId)
-                .CountAsync();
-
-            // sum nullable to avoid DefaultIfEmpty join issue
-            var totalCollectedNullable = await (
+            var totalCollected = await (
                 from p in _context.ExpenseAllocationPayments.AsNoTracking()
                 join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
                 where b.BuildingId == buildingId
                 select (decimal?)p.Amount
-            ).SumAsync();
-            var totalCollected = totalCollectedNullable ?? 0m;
+            ).SumAsync() ?? 0m;
 
-            var totalPaymentsNullable = await _context.ExpensePayments
-                .AsNoTracking()
+            var totalPayments = await _context.ExpensePayments.AsNoTracking()
                 .Where(p => p.BuildingId == buildingId)
                 .Select(p => (decimal?)p.Amount)
-                .SumAsync();
-            var totalPayments = totalPaymentsNullable ?? 0m;
+                .SumAsync() ?? 0m;
 
-            var totalFlats = await _context.Flats
-                .AsNoTracking()
-                .Where(f => f.BuildingId == buildingId)
-                .CountAsync();
+            var totalFlats = await _context.Flats.AsNoTracking()
+                .CountAsync(f => f.BuildingId == buildingId);
 
-            // TenantAssignments has no BuildingId: scope via Flat.BuildingId
-            var occupiedFlats = await _context.TenantAssignments
-                .AsNoTracking()
+            var occupiedFlats = await _context.TenantAssignments.AsNoTracking()
                 .Include(a => a.Flat)
                 .Where(a => a.EndDate == null && a.Flat!.BuildingId == buildingId)
                 .Select(a => a.FlatId)
                 .Distinct()
                 .CountAsync();
 
-            var todayDate = DateTime.UtcNow.Date;
-            var todayEntries = await _context.EntryLogs
-                .AsNoTracking()
-                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date == todayDate)
+            var todayUtc = DateTime.UtcNow.Date;
+            var last7dUtc = todayUtc.AddDays(-6);
+
+            var todayEntries = await _context.EntryLogs.AsNoTracking()
+                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date == todayUtc)
                 .CountAsync();
 
-            var last7dDate = DateTime.UtcNow.Date.AddDays(-6);
-            var last7dEntries = await _context.EntryLogs
-                .AsNoTracking()
-                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date >= last7dDate)
+            var last7dEntries = await _context.EntryLogs.AsNoTracking()
+                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date >= last7dUtc)
                 .CountAsync();
 
-            // === Recent Transactions (SEQUENTIAL) ===
-
-            var recentOwnerPayments = await _context.ExpenseAllocationPayments
-                .AsNoTracking()
-                .Join(_context.CommonBills.AsNoTracking().Where(b => b.BuildingId == buildingId),
-                      p => p.CommonBillId, b => b.Id, (p, b) => new { p, b })
-                .OrderByDescending(x => x.p.PaymentDate)
-                .Select(x => new TransactionRowViewModel
+            // ===== Recent Activity (as previously fixed) =====
+            var recentOwnerPayments = await (
+                from p in _context.ExpenseAllocationPayments.AsNoTracking()
+                join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
+                join u in _context.Users.AsNoTracking() on p.OwnerId equals u.Id
+                where b.BuildingId == buildingId
+                orderby p.CreatedAtUtc descending
+                select new TransactionRowViewModel
                 {
-                    OccurredAt = x.p.PaymentDate,
+                    OccurredAt = p.CreatedAtUtc,
                     Type = "OwnerPayment",
-                    Description = $"Owner payment for bill “{x.b.Name}”.",
-                    Amount = x.p.Amount,
+                    Description = $"Owner {(u.Fullname ?? u.UserName)} paid for bill “{b.Name}”.",
+                    Amount = p.Amount,
                     Currency = "BDT",
                     Direction = "In"
                 })
                 .Take(60)
                 .ToListAsync();
 
-            var recentExpensePayments = await _context.ExpensePayments
-                .AsNoTracking()
+            var recentExpensePayments = await _context.ExpensePayments.AsNoTracking()
                 .Where(p => p.BuildingId == buildingId)
                 .Include(p => p.CommonBill)
-                .OrderByDescending(p => p.PaymentDate)
+                .OrderByDescending(p => p.CreatedAtUtc)
                 .Select(p => new TransactionRowViewModel
                 {
-                    OccurredAt = p.PaymentDate,
+                    OccurredAt = p.CreatedAtUtc,
                     Type = "ExpensePayment",
                     Description = p.CommonBill != null
-                                    ? $"Payment made for bill “{p.CommonBill.Name}”."
-                                    : "Expense payment recorded.",
+                        ? $"Payment made for bill “{p.CommonBill.Name}”."
+                        : "Expense payment recorded.",
                     Amount = p.Amount,
                     Currency = "BDT",
                     Direction = "Out"
@@ -141,13 +114,12 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(60)
                 .ToListAsync();
 
-            var recentBills = await _context.CommonBills
-                .AsNoTracking()
+            var recentBills = await _context.CommonBills.AsNoTracking()
                 .Where(b => b.BuildingId == buildingId)
-                .OrderByDescending(b => b.BillDate)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .Select(b => new TransactionRowViewModel
                 {
-                    OccurredAt = b.BillDate,
+                    OccurredAt = b.CreatedAtUtc,
                     Type = "CommonBillCreated",
                     Description = $"Common bill created: “{b.Name}”.",
                     Amount = b.TotalAmount,
@@ -157,13 +129,12 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(60)
                 .ToListAsync();
 
-            var recentEntryLogs = await _context.EntryLogs
-                .AsNoTracking()
+            var recentEntryLogs = await _context.EntryLogs.AsNoTracking()
                 .Where(el => el.BuildingId == buildingId)
                 .OrderByDescending(el => el.EntryTime)
                 .Select(el => new TransactionRowViewModel
                 {
-                    OccurredAt = el.EntryTime,
+                    OccurredAt = DateTime.SpecifyKind(el.EntryTime, DateTimeKind.Local).ToUniversalTime(),
                     Type = "EntryLog",
                     Description = $"{el.EntryType} — {el.Fullname}",
                     Amount = null,
@@ -181,6 +152,120 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(25)
                 .ToList();
 
+            // ===== Charts =====
+
+            // Range: last 12 calendar months ending this month (UTC)
+            var firstOfThisMonthUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var startMonthUtc = firstOfThisMonthUtc.AddMonths(-11);
+
+            // Prepare month slots
+            var labels = new List<string>(12);
+            var inSeries = new List<decimal>(new decimal[12]);   // owner payments
+            var outSeries = new List<decimal>(new decimal[12]);  // expense payments
+
+            for (int i = 0; i < 12; i++)
+            {
+                var m = startMonthUtc.AddMonths(i);
+                labels.Add($"{m:yyyy-MM}");
+            }
+
+            // Money IN by month
+            var ownerInByMonth = await (
+                from p in _context.ExpenseAllocationPayments.AsNoTracking()
+                join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
+                where b.BuildingId == buildingId && p.CreatedAtUtc >= startMonthUtc
+                group p by new { p.CreatedAtUtc.Year, p.CreatedAtUtc.Month } into g
+                select new { g.Key.Year, g.Key.Month, Amount = g.Sum(x => x.Amount) }
+            ).ToListAsync();
+
+            foreach (var row in ownerInByMonth)
+            {
+                var idx = ((row.Year * 12) + (row.Month - 1)) - ((startMonthUtc.Year * 12) + (startMonthUtc.Month - 1));
+                if (idx >= 0 && idx < 12) inSeries[idx] = row.Amount;
+            }
+
+            // Money OUT by month
+            var outByMonth = await _context.ExpensePayments.AsNoTracking()
+                .Where(p => p.BuildingId == buildingId && p.CreatedAtUtc >= startMonthUtc)
+                .GroupBy(p => new { p.CreatedAtUtc.Year, p.CreatedAtUtc.Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(x => x.Amount) })
+                .ToListAsync();
+
+            foreach (var row in outByMonth)
+            {
+                var idx = ((row.Year * 12) + (row.Month - 1)) - ((startMonthUtc.Year * 12) + (startMonthUtc.Month - 1));
+                if (idx >= 0 && idx < 12) outSeries[idx] = row.Amount;
+            }
+
+            // Aging buckets (owners’ outstanding dues) — compute outstanding per allocation
+            var allocations = await _context.ExpenseAllocations.AsNoTracking()
+                .Include(a => a.CommonBill)
+                .Where(a => a.CommonBill!.BuildingId == buildingId)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.OwnerId,
+                    a.AmountDue,
+                    BillDate = a.CommonBill!.BillDate
+                })
+                .ToListAsync();
+
+            // sum paid per allocation in one pass
+            var paidPerAlloc = await _context.ExpenseAllocationPayments.AsNoTracking()
+                .Join(_context.CommonBills.AsNoTracking(),
+                      p => p.CommonBillId, b => b.Id,
+                      (p, b) => new { p.ExpenseAllocationId, p.Amount, b.BuildingId })
+                .Where(x => x.BuildingId == buildingId)
+                .GroupBy(x => x.ExpenseAllocationId)
+                .Select(g => new { ExpenseAllocationId = g.Key, Paid = g.Sum(x => x.Amount) })
+                .ToDictionaryAsync(x => x.ExpenseAllocationId, x => x.Paid);
+
+            decimal d0_30 = 0, d31_60 = 0, d61_90 = 0, d90plus = 0;
+            var ownerDueMap = new Dictionary<string, decimal>(StringComparer.Ordinal);
+
+            var todayLocal = DateTime.Today; // aging by business day; your bill dates are Date only
+
+            foreach (var a in allocations)
+            {
+                var paid = paidPerAlloc.TryGetValue(a.Id, out var v) ? v : 0m;
+                var outstanding = a.AmountDue - paid;
+                if (outstanding <= 0m) continue;
+
+                var days = (todayLocal - a.BillDate.Date).TotalDays;
+
+                if (days <= 30) d0_30 += outstanding;
+                else if (days <= 60) d31_60 += outstanding;
+                else if (days <= 90) d61_90 += outstanding;
+                else d90plus += outstanding;
+
+                if (!ownerDueMap.TryGetValue(a.OwnerId, out var cur))
+                    ownerDueMap[a.OwnerId] = outstanding;
+                else
+                    ownerDueMap[a.OwnerId] = cur + outstanding;
+            }
+
+            // Top owners by due (limit 7)
+            var topOwners = ownerDueMap
+                .OrderByDescending(kv => kv.Value)
+                .Take(7)
+                .ToList();
+
+            var ownerIds = topOwners.Select(kv => kv.Key).ToList();
+            var ownerNames = await _context.Users.AsNoTracking()
+                .Where(u => ownerIds.Contains(u.Id))
+                .Select(u => new { u.Id, Name = (u.Fullname ?? u.UserName)! })
+                .ToListAsync();
+            var ownerNameMap = ownerNames.ToDictionary(x => x.Id, x => x.Name);
+
+            var topLabels = new List<string>();
+            var topValues = new List<decimal>();
+            foreach (var kv in topOwners)
+            {
+                topLabels.Add(ownerNameMap.TryGetValue(kv.Key, out var nm) ? nm : kv.Key);
+                topValues.Add(kv.Value);
+            }
+
+            // Build VM
             var vm = new PresidentDashboardViewModel
             {
                 BuildingName = buildingName,
@@ -191,7 +276,25 @@ namespace ApartmentManagementSystem.Controllers
                 OccupiedFlats = occupiedFlats,
                 TodayEntries = todayEntries,
                 Last7dEntries = last7dEntries,
-                RecentTransactions = recentTransactions
+                RecentTransactions = recentTransactions,
+                Cashflow = new CashflowChartVM
+                {
+                    Labels = labels,
+                    In = inSeries,
+                    Out = outSeries
+                },
+                Aging = new AgingBucketsVM
+                {
+                    D0_30 = d0_30,
+                    D31_60 = d31_60,
+                    D61_90 = d61_90,
+                    D90Plus = d90plus
+                },
+                TopOwners = new TopOwnersVM
+                {
+                    Labels = topLabels,
+                    Values = topValues
+                }
             };
 
             return View(vm);

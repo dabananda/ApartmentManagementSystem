@@ -1,4 +1,5 @@
-﻿@using Microsoft.AspNetCore.Identity
+﻿@using System.Text.Json
+@using Microsoft.AspNetCore.Identity
 @model ApartmentManagementSystem.ViewModels.President.PresidentDashboardViewModel
 @inject UserManager<ApplicationUser> UserManager
 
@@ -111,7 +112,38 @@
         </div>
     </div>
 
-    <!-- Recent Activity -->
+    <!-- ===== Charts Row ===== -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Cashflow (last 12 months)</div>
+                <div class="card-body">
+                    <div class="chart-wrap"><canvas id="cfChart"></canvas></div>
+                    <div class="small text-muted mt-2">In = Owners’ payments · Out = Expense payments</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Aging buckets (outstanding)</div>
+                <div class="card-body">
+                    <div class="chart-wrap--sm"><canvas id="agingChart"></canvas></div>
+                    <div class="small text-muted mt-2">Outstanding owner dues by bucket</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">Top owners by due</div>
+                <div class="card-body">
+                    <div class="chart-wrap--sm"><canvas id="topOwnersChart"></canvas></div>
+                    <div class="small text-muted mt-2">Who owes the most right now</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Recent Activity (your improved table) ===== -->
     <div class="row g-3 mb-3">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -119,12 +151,12 @@
                     <div class="fw-semibold">Recent Activity</div>
                     <div class="text-muted small">Last 25 items</div>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0 pb-2">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table id="recentTable" class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 180px;">Date/Time</th>
+                                    <th style="width: 200px;">Date/Time</th>
                                     <th style="width: 160px;">Type</th>
                                     <th>Description</th>
                                     <th class="text-end" style="width: 160px;">Amount</th>
@@ -147,11 +179,14 @@
                                         var dirBadge = t.Direction == "In" ? "badge bg-success-subtle text-success" :
                                         t.Direction == "Out" ? "badge bg-danger-subtle text-danger" :
                                         "badge bg-secondary-subtle text-secondary";
-                                        <tr>
-                                            <td>@t.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                            <td><span class="badge @typeBadge">@t.Type</span></td>
-                                            <td>@t.Description</td>
-                                            <td class="text-end">
+                                        var iso = t.OccurredAt.ToUniversalTime().ToString("O"); // ISO UTC
+                                                                                                <tr>
+                                                                                                    <td data-order="@iso">
+                                                                                                        <time class="js-when" datetime="@iso" data-iso="@iso"></time>
+                                                                                                    </td>
+                                                                                                    <td><span class="badge @typeBadge">@t.Type</span></td>
+                                                                                                    <td>@t.Description</td>
+                                                                                                    <td class="text-end">
                                                 @if (t.Amount.HasValue)
                                                 {
                                                     @($"{t.Currency ?? currency} {t.Amount.Value:N2}")
@@ -173,19 +208,37 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white d-flex justify-content-end">
-                    <a asp-controller="President" asp-action="Transactions" class="btn btn-outline-secondary btn-sm">
-                        View all activity
-                    </a>
-                </div>
             </div>
         </div>
     </div>
-
 </div>
 
 @section HeadStyles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.1.5/datatables.min.css" />
+
     <style>
+        .chart-wrap {
+            position: relative;
+            height: 260px;
+        }
+
+        .chart-wrap--sm {
+            position: relative;
+            height: 220px;
+        }
+        @@media (max-width: 576px) {
+            .chart-wrap
+
+        {
+            height: 220px;
+        }
+
+        .chart-wrap--sm {
+            height: 200px;
+        }
+
+        }
+
         .progress {
             background: #eef2f6;
         }
@@ -202,4 +255,104 @@
             vertical-align: middle;
         }
     </style>
+
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/bs5/dt-2.1.5/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <script>
+        // ===== Time rendering (Asia/Dhaka) =====
+        function fmtDhaka(iso) {
+            try {
+                const dt = new Date(iso); // UTC
+                const opts = {
+                    timeZone: 'Asia/Dhaka',
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                };
+                const parts = new Intl.DateTimeFormat('en-GB', opts).formatToParts(dt);
+                const dict = Object.fromEntries(parts.map(p => [p.type, p.value]));
+                return `${dict.year}-${dict.month}-${dict.day} ${dict.hour}:${dict.minute}`;
+            } catch { return iso; }
+        }
+
+        // ===== DataTables =====
+        $(function () {
+            document.querySelectorAll('time.js-when').forEach(t => {
+                const iso = t.getAttribute('data-iso');
+                t.textContent = fmtDhaka(iso);
+            });
+
+            $('#recentTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                stateSave: true
+            });
+        });
+
+        // ===== Charts =====
+        (function(){
+            const cf = @Html.Raw(JsonSerializer.Serialize(Model.Cashflow));
+            const aging = @Html.Raw(JsonSerializer.Serialize(Model.Aging));
+            const top = @Html.Raw(JsonSerializer.Serialize(Model.TopOwners));
+
+            // Cashflow (line)
+            const ctx1 = document.getElementById('cfChart');
+            if (ctx1 && cf && cf.Labels && cf.Labels.length) {
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: cf.Labels,
+                        datasets: [
+                            { label: 'In', data: cf.In, tension: 0.25 },
+                            { label: 'Out', data: cf.Out, tension: 0.25 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            // Aging (doughnut)
+            const ctx2 = document.getElementById('agingChart');
+            if (ctx2) {
+                const vals = [aging.D0_30, aging.D31_60, aging.D61_90, aging.D90Plus];
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['0–30', '31–60', '61–90', '90+'],
+                        datasets: [{ data: vals }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // Top owners (horizontal bar)
+            const ctx3 = document.getElementById('topOwnersChart');
+            if (ctx3 && top && top.Labels && top.Labels.length) {
+                new Chart(ctx3, {
+                    type: 'bar',
+                    data: {
+                        labels: top.Labels,
+                        datasets: [{ label: 'Outstanding', data: top.Values }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { x: { beginAtZero: true } }
+                    }
+                });
+            }
+        })();
+    </script>
 }

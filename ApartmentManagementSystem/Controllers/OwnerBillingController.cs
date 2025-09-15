@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace ApartmentManagementSystem.Controllers
 {
@@ -197,60 +198,94 @@ namespace ApartmentManagementSystem.Controllers
 
             var bill = await _db.CommonBills.AsNoTracking().FirstOrDefaultAsync(b => b.Id == vm.CommonBillId);
             if (bill == null) return NotFound();
-
             if (User.IsInRole("President") && me.BuildingId != bill.BuildingId) return Forbid();
 
-            var allocs = await _db.ExpenseAllocations
-                .Include(a => a.Payments)
-                .Where(a => a.CommonBillId == vm.CommonBillId && a.OwnerId == vm.OwnerId)
-                .ToListAsync();
-            if (allocs.Count == 0) return NotFound("No allocation found for this owner & bill.");
-
-            var totalDue = allocs.Sum(a => a.AmountDue - a.Payments.Sum(p => p.Amount));
-            if (vm.Amount > totalDue)
+            // Idempotency: short-circuit if already processed
+            if (!string.IsNullOrWhiteSpace(vm.IdempotencyKey))
             {
-                TempData["Error"] = $"Amount exceeds due. Maximum payable is {totalDue:C}.";
-                return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
-            }
-
-            var created = new List<ExpenseAllocationPayment>(); // <-- collect new payments
-
-            var remaining = vm.Amount;
-            foreach (var a in allocs.OrderBy(x => x.Id))
-            {
-                if (remaining <= 0) break;
-                var already = a.Payments.Sum(p => p.Amount);
-                var due = a.AmountDue - already;
-                var take = Math.Min(due, remaining);
-                if (take > 0)
+                var exists = await _db.ExpenseAllocationPayments
+                    .AsNoTracking()
+                    .AnyAsync(p => p.IdempotencyKey == vm.IdempotencyKey);
+                if (exists)
                 {
-                    var entity = new ExpenseAllocationPayment
-                    {
-                        ExpenseAllocationId = a.Id,
-                        Amount = take,
-                        PaymentDate = vm.PaymentDate,
-                        Reference = vm.Reference,
-                        CommonBillId = vm.CommonBillId,
-                        OwnerId = vm.OwnerId
-                    };
-                    await _db.ExpenseAllocationPayments.AddAsync(entity);
-                    created.Add(entity); // <-- track it
-
-                    if (take == due)
-                    {
-                        a.IsPaid = true;
-                        a.PaymentDate = vm.PaymentDate;
-                    }
-                    remaining -= take;
+                    TempData["Success"] = "Payment recorded.";
+                    return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
                 }
             }
 
-            await _db.SaveChangesAsync();
+            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
-            // ✅ send email automatically
+            var allocs = await _db.ExpenseAllocations
+                .Include(a => a.CommonBill)
+                .Where(a => a.CommonBillId == vm.CommonBillId && a.OwnerId == vm.OwnerId)
+                .OrderBy(a => a.Id)
+                .ToListAsync();
+            if (allocs.Count == 0) return NotFound("No allocation found for this owner & bill.");
+
+            var totalDueNow = 0m;
+            foreach (var a in allocs)
+            {
+                var paid = await _db.ExpenseAllocationPayments
+                    .Where(p => p.ExpenseAllocationId == a.Id)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+                totalDueNow += Math.Max(0, a.AmountDue - paid);
+            }
+
+            if (totalDueNow <= 0)
+            {
+                await tx.RollbackAsync();
+                TempData["Error"] = "No due for this owner on the selected bill.";
+                return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
+            }
+
+            var remaining = Math.Min(vm.Amount, totalDueNow);
+            var created = new List<ExpenseAllocationPayment>();
+
+            foreach (var a in allocs)
+            {
+                if (remaining <= 0) break;
+
+                var paid = await _db.ExpenseAllocationPayments
+                    .Where(p => p.ExpenseAllocationId == a.Id)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+                var due = a.AmountDue - paid;
+                if (due <= 0) continue;
+
+                var take = Math.Min(due, remaining);
+                var entity = new ExpenseAllocationPayment
+                {
+                    ExpenseAllocationId = a.Id,
+                    Amount = take,
+                    PaymentDate = vm.PaymentDate,
+                    Reference = vm.Reference,
+                    CommonBillId = vm.CommonBillId,
+                    OwnerId = vm.OwnerId,
+                    IdempotencyKey = string.IsNullOrWhiteSpace(vm.IdempotencyKey) ? null : vm.IdempotencyKey,
+                    Gateway = string.IsNullOrWhiteSpace(vm.IdempotencyKey) ? PaymentGateway.None : PaymentGateway.Stripe,
+                    Status = PaymentStatus.Succeeded
+                };
+                await _db.ExpenseAllocationPayments.AddAsync(entity);
+                created.Add(entity);
+
+                // keep legacy flags for compatibility
+                if (take == due)
+                {
+                    a.IsPaid = true;
+                    a.PaymentDate = vm.PaymentDate;
+                }
+
+                remaining -= take;
+            }
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+
             await SendPaymentEmailAsync(vm.OwnerId, created);
 
-            TempData["Success"] = "Payment recorded.";
+            TempData["Success"] = (vm.Amount > totalDueNow)
+                ? $"Payment recorded (clamped to {totalDueNow:C})."
+                : "Payment recorded.";
             return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
         }
 
@@ -263,8 +298,9 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _users.GetUserAsync(User);
             if (me == null) return Forbid();
 
+            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
             var q = _db.ExpenseAllocations
-                .Include(a => a.Payments)
                 .Include(a => a.CommonBill)
                 .Where(a => a.OwnerId == ownerId);
 
@@ -274,23 +310,21 @@ namespace ApartmentManagementSystem.Controllers
             var allocs = await q.ToListAsync();
             if (allocs.Count == 0)
             {
+                await tx.RollbackAsync();
                 TempData["Error"] = "No bills found for this owner.";
                 return RedirectToAction(nameof(View), new { ownerId });
             }
 
-            var totalDue = allocs.Sum(a => a.AmountDue - a.Payments.Sum(p => p.Amount));
-            if (totalDue <= 0)
-            {
-                TempData["Error"] = "Nothing due to pay.";
-                return RedirectToAction(nameof(View), new { ownerId });
-            }
-
-            var created = new List<ExpenseAllocationPayment>(); // <-- collect new payments
+            var created = new List<ExpenseAllocationPayment>();
             var today = DateTime.Today;
 
             foreach (var a in allocs.OrderBy(x => x.CommonBill!.BillDate).ThenBy(x => x.Id))
             {
-                var due = a.AmountDue - a.Payments.Sum(p => p.Amount);
+                var paid = await _db.ExpenseAllocationPayments
+                    .Where(p => p.ExpenseAllocationId == a.Id)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+                var due = a.AmountDue - paid;
                 if (due <= 0) continue;
 
                 var entity = new ExpenseAllocationPayment
@@ -300,25 +334,34 @@ namespace ApartmentManagementSystem.Controllers
                     PaymentDate = today,
                     Reference = "PayAll",
                     CommonBillId = a.CommonBillId,
-                    OwnerId = ownerId
+                    OwnerId = ownerId,
+                    Status = PaymentStatus.Succeeded
                 };
                 await _db.ExpenseAllocationPayments.AddAsync(entity);
-                created.Add(entity); // <-- track it
+                created.Add(entity);
 
                 a.IsPaid = true;
                 a.PaymentDate = today;
             }
 
-            await _db.SaveChangesAsync();
+            if (created.Count == 0)
+            {
+                await tx.RollbackAsync();
+                TempData["Error"] = "Nothing due to pay.";
+                return RedirectToAction(nameof(View), new { ownerId });
+            }
 
-            // ✅ send email automatically
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+
             await SendPaymentEmailAsync(ownerId, created);
 
-            TempData["Success"] = $"All outstanding dues paid ({totalDue:C}).";
+            var total = created.Sum(x => x.Amount);
+            TempData["Success"] = $"All outstanding dues paid ({total:C}).";
             return RedirectToAction(nameof(View), new { ownerId });
         }
 
-        // POST: /OwnerBilling/FullPay
+        // POST: /OwnerBilling/FullPay  (one bill → full)
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> FullPay(string ownerId, Guid commonBillId)
         {
@@ -328,8 +371,9 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _users.GetUserAsync(User);
             if (me == null) return Forbid();
 
+            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
             var q = _db.ExpenseAllocations
-                .Include(a => a.Payments)
                 .Include(a => a.CommonBill)
                 .Where(a => a.OwnerId == ownerId && a.CommonBillId == commonBillId);
 
@@ -339,24 +383,36 @@ namespace ApartmentManagementSystem.Controllers
             var allocs = await q.ToListAsync();
             if (allocs.Count == 0)
             {
+                await tx.RollbackAsync();
                 TempData["Error"] = "No allocations found for this owner and bill.";
                 return RedirectToAction(nameof(View), new { ownerId });
             }
 
-            var totalDue = allocs.Sum(a => a.AmountDue - a.Payments.Sum(p => p.Amount));
-            if (totalDue <= 0)
+            decimal totalDueNow = 0m;
+            foreach (var a in allocs)
             {
+                var paid = await _db.ExpenseAllocationPayments
+                    .Where(p => p.ExpenseAllocationId == a.Id)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+                totalDueNow += Math.Max(0, a.AmountDue - paid);
+            }
+            if (totalDueNow <= 0)
+            {
+                await tx.RollbackAsync();
                 TempData["Error"] = "This bill has no due amount.";
                 return RedirectToAction(nameof(View), new { ownerId });
             }
 
-            var created = new List<ExpenseAllocationPayment>(); // <-- collect new payments
+            var created = new List<ExpenseAllocationPayment>();
             var today = DateTime.Today;
 
             foreach (var a in allocs.OrderBy(x => x.Id))
             {
-                var already = a.Payments.Sum(p => p.Amount);
-                var due = a.AmountDue - already;
+                var paid = await _db.ExpenseAllocationPayments
+                    .Where(p => p.ExpenseAllocationId == a.Id)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+                var due = a.AmountDue - paid;
                 if (due <= 0) continue;
 
                 var entity = new ExpenseAllocationPayment
@@ -366,18 +422,19 @@ namespace ApartmentManagementSystem.Controllers
                     PaymentDate = today,
                     Reference = "FullPay",
                     CommonBillId = a.CommonBillId,
-                    OwnerId = ownerId
+                    OwnerId = ownerId,
+                    Status = PaymentStatus.Succeeded
                 };
                 await _db.ExpenseAllocationPayments.AddAsync(entity);
-                created.Add(entity); // <-- track it
+                created.Add(entity);
 
                 a.IsPaid = true;
                 a.PaymentDate = today;
             }
 
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
 
-            // ✅ send email automatically
             await SendPaymentEmailAsync(ownerId, created);
 
             TempData["Success"] = "Bill fully paid.";
@@ -385,48 +442,36 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         // GET: /OwnerBilling/Receipt/{id}
+        // BUGFIX: This previously tried to load TenantPayment by id; now correctly uses ExpenseAllocationPayment.
         public async Task<IActionResult> Receipt(Guid id)
         {
-            var p = await _db.ExpenseAllocationPayments
+            var pay = await _db.ExpenseAllocationPayments
                 .Where(x => x.Id == id)
                 .Join(_db.ExpenseAllocations.Include(a => a.CommonBill).Include(a => a.Owner),
-                      pay => pay.ExpenseAllocationId,
-                      alloc => alloc.Id,
-                      (pay, alloc) => new
-                      {
-                          Payment = pay,
-                          Allocation = alloc,
-                          Bill = alloc.CommonBill!,
-                          Owner = alloc.Owner!
-                      })
+                      p => p.ExpenseAllocationId,
+                      a => a.Id,
+                      (p, a) => new { Payment = p, Allocation = a, Bill = a.CommonBill!, Owner = a.Owner! })
                 .FirstOrDefaultAsync();
 
-            if (p == null) return NotFound();
+            if (pay == null) return NotFound();
 
             // Building scoping for President
             var me = await _users.GetUserAsync(User);
-            if (User.IsInRole("President") && me?.BuildingId != p.Bill.BuildingId) return Forbid();
-
-            var payment = await _db.TenantPayments
-                .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)!.ThenInclude(f => f.Building)
-                .Include(p => p.TenantBill)!.ThenInclude(b => b.TenantUser)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (payment == null) return NotFound();
+            if (User.IsInRole("President") && me?.BuildingId != pay.Bill.BuildingId) return Forbid();
 
             var vm = new ReceiptViewModel
             {
-                Id = payment.Id,
-                ReceiptNo = "RC-" + payment.Id.ToString().Substring(0, 8).ToUpper(),
-                PaidOn = payment.PaymentDate,
-                OwnerName = payment.TenantBill!.TenantUser!.Fullname ?? payment.TenantBill!.TenantUser!.UserName!,
-                OwnerEmail = payment.TenantBill!.TenantUser!.Email,
-                BillTitle = payment.TenantBill.Title,
-                BillDate = payment.TenantBill.BillDate,
-                Amount = payment.Amount,
-                Reference = payment.Reference,
-                BuildingName = payment.TenantBill!.Flat!.Building!.Name,
-                FlatNumber = payment.TenantBill!.Flat!.FlatNumber
+                Id = pay.Payment.Id,
+                ReceiptNo = "RC-" + pay.Payment.Id.ToString().Substring(0, 8).ToUpper(),
+                PaidOn = pay.Payment.PaymentDate,
+                OwnerName = pay.Owner.Fullname ?? pay.Owner.UserName!,
+                OwnerEmail = pay.Owner.Email,
+                BillTitle = pay.Bill.Name,
+                BillDate = pay.Bill.BillDate,
+                Amount = pay.Payment.Amount,
+                Reference = pay.Payment.Reference,
+                BuildingName = pay.Bill.Building?.Name ?? "(building)",
+                FlatNumber = "-" // not applicable here
             };
             return View("~/Views/Shared/Receipt.cshtml", vm);
         }
@@ -447,7 +492,6 @@ namespace ApartmentManagementSystem.Controllers
             var list = payments.ToList();
             if (list.Count == 0) return;
 
-            // Build a small HTML receipt list
             var rows = new System.Text.StringBuilder();
             foreach (var p in list)
             {

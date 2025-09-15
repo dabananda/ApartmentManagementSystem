@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace ApartmentManagementSystem.Controllers
 {
@@ -48,7 +49,6 @@ namespace ApartmentManagementSystem.Controllers
                     TenantUserId = g.Key.TenantUserId!,
                     Name = (g.Key.Fullname ?? g.Key.UserName)!,
                     Email = g.Key.Email!,
-                    // If a tenant somehow spans multiple flats/buildings, just pick any (they should be the same for Owner scope)
                     BuildingId = g.Max(x => x.Flat!.BuildingId)
                 })
                 .OrderBy(r => r.Name)
@@ -62,15 +62,12 @@ namespace ApartmentManagementSystem.Controllers
         {
             var me = await _users.GetUserAsync(User);
 
-            // ensure tenant belongs to one of owner's flats
             var allowed = await _db.TenantAssignments
                 .Include(a => a.Flat)
                 .AnyAsync(a => a.TenantUserId == tenantUserId &&
                                (!User.IsInRole("Owner") || a.Flat!.OwnerId == me!.Id));
-
             if (!allowed) return Forbid();
 
-            // 🔁 Ensure current month's bills exist (on-demand)
             await EnsureCurrentMonthBillsForTenantAsync(tenantUserId);
 
             var bills = await _db.TenantBills
@@ -79,7 +76,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(b => b.TenantUserId == tenantUserId)
                 .OrderByDescending(b => b.BillDate)
                 .ToListAsync();
-
             if (bills.Count == 0) return NotFound("No bills.");
 
             var tenant = await _users.FindByIdAsync(tenantUserId);
@@ -100,7 +96,6 @@ namespace ApartmentManagementSystem.Controllers
                 }).ToList()
             };
 
-            // history
             var history = await _db.TenantPayments
                 .Include(p => p.TenantBill)
                 .Where(p => p.TenantBill!.TenantUserId == tenantUserId)
@@ -125,49 +120,97 @@ namespace ApartmentManagementSystem.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var bill = await _db.TenantBills.Include(b => b.Payments).Include(b => b.Flat).FirstOrDefaultAsync(b => b.Id == vm.TenantBillId);
+            // SERIALIZABLE to prevent over-pay race with concurrent inserts
+            await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
+            var bill = await _db.TenantBills
+                .Include(b => b.Flat)
+                .FirstOrDefaultAsync(b => b.Id == vm.TenantBillId);
             if (bill == null) return NotFound();
 
-            // owner can only collect for their flats
             var me = await _users.GetUserAsync(User);
             if (User.IsInRole("Owner") && bill.Flat!.OwnerId != me!.Id) return Forbid();
 
-            var due = bill.Amount - bill.Payments.Sum(p => p.Amount);
-            if (vm.Amount > due)
+            // Idempotency: if provided and already processed, consider success
+            if (!string.IsNullOrWhiteSpace(vm.IdempotencyKey))
             {
-                TempData["Error"] = $"Amount exceeds due. Maximum payable is {due:C}.";
+                var existing = await _db.TenantPayments
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.IdempotencyKey == vm.IdempotencyKey);
+                if (existing != null)
+                {
+                    await tx.CommitAsync();
+                    TempData["Success"] = "Payment recorded.";
+                    return RedirectToAction(nameof(View), new { tenantUserId = bill.TenantUserId });
+                }
+            }
+
+            // Due NOW (inside tx)
+            var paidNow = await _db.TenantPayments
+                .Where(p => p.TenantBillId == bill.Id)
+                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+            var dueNow = bill.Amount - paidNow;
+            if (dueNow <= 0)
+            {
+                await tx.RollbackAsync();
+                TempData["Error"] = "No due on this bill.";
+                return RedirectToAction(nameof(View), new { tenantUserId = bill.TenantUserId });
+            }
+
+            var take = Math.Min(vm.Amount, dueNow);
+            if (take <= 0)
+            {
+                await tx.RollbackAsync();
+                TempData["Error"] = "Nothing to pay.";
                 return RedirectToAction(nameof(View), new { tenantUserId = bill.TenantUserId });
             }
 
             var entity = new TenantPayment
             {
                 TenantBillId = bill.Id,
-                Amount = vm.Amount,
+                Amount = take,
                 PaymentDate = vm.PaymentDate,
-                Reference = vm.Reference
+                Reference = vm.Reference,
+                IdempotencyKey = string.IsNullOrWhiteSpace(vm.IdempotencyKey) ? null : vm.IdempotencyKey,
+                Gateway = string.IsNullOrWhiteSpace(vm.IdempotencyKey) ? PaymentGateway.None : PaymentGateway.Stripe,
+                Status = PaymentStatus.Succeeded
             };
+
             await _db.TenantPayments.AddAsync(entity);
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
 
             await SendTenantPaymentEmail(bill.TenantUserId, new[] { entity });
 
-            TempData["Success"] = "Payment recorded.";
+            TempData["Success"] = take < vm.Amount
+                ? $"Payment recorded (clamped to {take:C} to avoid overpay)."
+                : "Payment recorded.";
             return RedirectToAction(nameof(View), new { tenantUserId = bill.TenantUserId });
         }
 
-        // POST: /TenantRent/FullPay
+        // POST: /TenantRent/FullPay (pay remaining for one bill)
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> FullPay(Guid billId)
         {
-            var bill = await _db.TenantBills.Include(b => b.Payments).Include(b => b.Flat).FirstOrDefaultAsync(b => b.Id == billId);
+            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+            var bill = await _db.TenantBills
+                .Include(b => b.Flat)
+                .FirstOrDefaultAsync(b => b.Id == billId);
             if (bill == null) return NotFound();
 
             var me = await _users.GetUserAsync(User);
             if (User.IsInRole("Owner") && bill.Flat!.OwnerId != me!.Id) return Forbid();
 
-            var due = bill.Amount - bill.Payments.Sum(p => p.Amount);
-            if (due <= 0)
+            var paidNow = await _db.TenantPayments
+                .Where(p => p.TenantBillId == bill.Id)
+                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+            var dueNow = bill.Amount - paidNow;
+            if (dueNow <= 0)
             {
+                await tx.RollbackAsync();
                 TempData["Error"] = "No due on this bill.";
                 return RedirectToAction(nameof(View), new { tenantUserId = bill.TenantUserId });
             }
@@ -175,12 +218,15 @@ namespace ApartmentManagementSystem.Controllers
             var entity = new TenantPayment
             {
                 TenantBillId = bill.Id,
-                Amount = due,
+                Amount = dueNow,
                 PaymentDate = DateTime.Today,
-                Reference = "FullPay"
+                Reference = "FullPay",
+                Status = PaymentStatus.Succeeded
             };
+
             await _db.TenantPayments.AddAsync(entity);
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
 
             await SendTenantPaymentEmail(bill.TenantUserId, new[] { entity });
 
@@ -194,8 +240,9 @@ namespace ApartmentManagementSystem.Controllers
         {
             var me = await _users.GetUserAsync(User);
 
+            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
             var bills = await _db.TenantBills
-                .Include(b => b.Payments)
                 .Include(b => b.Flat)
                 .Where(b => b.TenantUserId == tenantUserId &&
                             (!User.IsInRole("Owner") || b.Flat!.OwnerId == me!.Id))
@@ -204,6 +251,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (bills.Count == 0)
             {
+                await tx.RollbackAsync();
                 TempData["Error"] = "No bills found.";
                 return RedirectToAction(nameof(List));
             }
@@ -211,7 +259,11 @@ namespace ApartmentManagementSystem.Controllers
             var created = new List<TenantPayment>();
             foreach (var b in bills)
             {
-                var due = b.Amount - b.Payments.Sum(p => p.Amount);
+                var paidNow = await _db.TenantPayments
+                    .Where(p => p.TenantBillId == b.Id)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+                var due = b.Amount - paidNow;
                 if (due <= 0) continue;
 
                 var e = new TenantPayment
@@ -219,7 +271,8 @@ namespace ApartmentManagementSystem.Controllers
                     TenantBillId = b.Id,
                     Amount = due,
                     PaymentDate = DateTime.Today,
-                    Reference = "PayAll"
+                    Reference = "PayAll",
+                    Status = PaymentStatus.Succeeded
                 };
                 await _db.TenantPayments.AddAsync(e);
                 created.Add(e);
@@ -227,11 +280,14 @@ namespace ApartmentManagementSystem.Controllers
 
             if (created.Count == 0)
             {
+                await tx.RollbackAsync();
                 TempData["Error"] = "Nothing due to pay.";
                 return RedirectToAction(nameof(View), new { tenantUserId });
             }
 
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+
             await SendTenantPaymentEmail(tenantUserId, created);
 
             TempData["Success"] = "All outstanding dues paid.";
@@ -333,7 +389,6 @@ namespace ApartmentManagementSystem.Controllers
             var today = DateTime.Today;
             var firstOfMonth = new DateTime(today.Year, today.Month, 1);
 
-            // Find active assignments for this tenant (flat + active profile)
             var activeAssignments = await _db.TenantAssignments
                 .Include(a => a.Flat)
                 .Where(a => a.TenantUserId == tenantUserId &&
@@ -350,7 +405,6 @@ namespace ApartmentManagementSystem.Controllers
 
             if (profiles.Count == 0) return 0;
 
-            // Bills that already exist for this month (avoid duplicates)
             var existingBills = await _db.TenantBills
                 .Where(b => b.TenantUserId == tenantUserId && b.BillDate == firstOfMonth)
                 .Select(b => new { b.FlatId })
@@ -360,16 +414,14 @@ namespace ApartmentManagementSystem.Controllers
             int created = 0;
             foreach (var prof in profiles)
             {
-                // Only generate if assignment started on/before this month
                 var assignment = activeAssignments
                     .Where(a => a.FlatId == prof.FlatId)
                     .OrderByDescending(a => a.StartDate)
                     .FirstOrDefault();
-
                 if (assignment == null) continue;
 
                 var startMonth = new DateTime(assignment.StartDate.Year, assignment.StartDate.Month, 1);
-                if (startMonth > firstOfMonth) continue; // tenant started after this month → no bill yet
+                if (startMonth > firstOfMonth) continue;
 
                 if (existingFlatIds.Contains(prof.FlatId)) continue;
 
