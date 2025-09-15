@@ -1,6 +1,5 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels;
 using ApartmentManagementSystem.ViewModels.President;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -28,7 +27,6 @@ namespace ApartmentManagementSystem.Controllers
         // GET: /President/Dashboard
         public async Task<IActionResult> Dashboard()
         {
-            // Resolve building from claim
             var claim = User.FindFirst("building_id")?.Value;
             if (!Guid.TryParse(claim, out var buildingId))
             {
@@ -54,86 +52,71 @@ namespace ApartmentManagementSystem.Controllers
                 .Select(b => b.Name)
                 .FirstOrDefaultAsync() ?? "(Building)";
 
-            // === Totals (SEQUENTIAL AWAITS — no DbContext concurrency) ===
+            // === Totals ===
+            var totalBills = await _context.CommonBills.AsNoTracking().CountAsync(b => b.BuildingId == buildingId);
 
-            var totalBills = await _context.CommonBills
-                .AsNoTracking()
-                .Where(b => b.BuildingId == buildingId)
-                .CountAsync();
-
-            // sum nullable to avoid DefaultIfEmpty join issue
-            var totalCollectedNullable = await (
+            var totalCollected = await (
                 from p in _context.ExpenseAllocationPayments.AsNoTracking()
                 join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
                 where b.BuildingId == buildingId
                 select (decimal?)p.Amount
-            ).SumAsync();
-            var totalCollected = totalCollectedNullable ?? 0m;
+            ).SumAsync() ?? 0m;
 
-            var totalPaymentsNullable = await _context.ExpensePayments
-                .AsNoTracking()
+            var totalPayments = await _context.ExpensePayments.AsNoTracking()
                 .Where(p => p.BuildingId == buildingId)
                 .Select(p => (decimal?)p.Amount)
-                .SumAsync();
-            var totalPayments = totalPaymentsNullable ?? 0m;
+                .SumAsync() ?? 0m;
 
-            var totalFlats = await _context.Flats
-                .AsNoTracking()
-                .Where(f => f.BuildingId == buildingId)
-                .CountAsync();
-
-            // TenantAssignments has no BuildingId: scope via Flat.BuildingId
-            var occupiedFlats = await _context.TenantAssignments
-                .AsNoTracking()
+            var totalFlats = await _context.Flats.AsNoTracking().CountAsync(f => f.BuildingId == buildingId);
+            var occupiedFlats = await _context.TenantAssignments.AsNoTracking()
                 .Include(a => a.Flat)
                 .Where(a => a.EndDate == null && a.Flat!.BuildingId == buildingId)
                 .Select(a => a.FlatId)
                 .Distinct()
                 .CountAsync();
 
-            var todayDate = DateTime.UtcNow.Date;
-            var todayEntries = await _context.EntryLogs
-                .AsNoTracking()
-                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date == todayDate)
+            var todayUtc = DateTime.UtcNow.Date;
+            var last7dUtc = todayUtc.AddDays(-6);
+
+            var todayEntries = await _context.EntryLogs.AsNoTracking()
+                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date == todayUtc)
                 .CountAsync();
 
-            var last7dDate = DateTime.UtcNow.Date.AddDays(-6);
-            var last7dEntries = await _context.EntryLogs
-                .AsNoTracking()
-                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date >= last7dDate)
+            var last7dEntries = await _context.EntryLogs.AsNoTracking()
+                .Where(e => e.BuildingId == buildingId && e.EntryTime.Date >= last7dUtc)
                 .CountAsync();
 
-            // === Recent Transactions (SEQUENTIAL) ===
+            // === Recent Activity (with precise timestamps & owner names) ===
 
-            var recentOwnerPayments = await _context.ExpenseAllocationPayments
-                .AsNoTracking()
-                .Join(_context.CommonBills.AsNoTracking().Where(b => b.BuildingId == buildingId),
-                      p => p.CommonBillId, b => b.Id, (p, b) => new { p, b })
-                .OrderByDescending(x => x.p.PaymentDate)
-                .Select(x => new TransactionRowViewModel
+            var recentOwnerPayments = await (
+                from p in _context.ExpenseAllocationPayments.AsNoTracking()
+                join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
+                join u in _context.Users.AsNoTracking() on p.OwnerId equals u.Id
+                where b.BuildingId == buildingId
+                orderby p.CreatedAtUtc descending
+                select new TransactionRowViewModel
                 {
-                    OccurredAt = x.p.PaymentDate,
+                    OccurredAt = p.CreatedAtUtc,
                     Type = "OwnerPayment",
-                    Description = $"Owner payment for bill “{x.b.Name}”.",
-                    Amount = x.p.Amount,
+                    Description = $"Owner {(u.Fullname ?? u.UserName)} paid for bill “{b.Name}”.",
+                    Amount = p.Amount,
                     Currency = "BDT",
                     Direction = "In"
                 })
                 .Take(60)
                 .ToListAsync();
 
-            var recentExpensePayments = await _context.ExpensePayments
-                .AsNoTracking()
+            var recentExpensePayments = await _context.ExpensePayments.AsNoTracking()
                 .Where(p => p.BuildingId == buildingId)
                 .Include(p => p.CommonBill)
-                .OrderByDescending(p => p.PaymentDate)
+                .OrderByDescending(p => p.CreatedAtUtc)
                 .Select(p => new TransactionRowViewModel
                 {
-                    OccurredAt = p.PaymentDate,
+                    OccurredAt = p.CreatedAtUtc,
                     Type = "ExpensePayment",
                     Description = p.CommonBill != null
-                                    ? $"Payment made for bill “{p.CommonBill.Name}”."
-                                    : "Expense payment recorded.",
+                        ? $"Payment made for bill “{p.CommonBill.Name}”."
+                        : "Expense payment recorded.",
                     Amount = p.Amount,
                     Currency = "BDT",
                     Direction = "Out"
@@ -141,13 +124,12 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(60)
                 .ToListAsync();
 
-            var recentBills = await _context.CommonBills
-                .AsNoTracking()
+            var recentBills = await _context.CommonBills.AsNoTracking()
                 .Where(b => b.BuildingId == buildingId)
-                .OrderByDescending(b => b.BillDate)
+                .OrderByDescending(b => b.CreatedAtUtc)
                 .Select(b => new TransactionRowViewModel
                 {
-                    OccurredAt = b.BillDate,
+                    OccurredAt = b.CreatedAtUtc,
                     Type = "CommonBillCreated",
                     Description = $"Common bill created: “{b.Name}”.",
                     Amount = b.TotalAmount,
@@ -157,13 +139,13 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(60)
                 .ToListAsync();
 
-            var recentEntryLogs = await _context.EntryLogs
-                .AsNoTracking()
+            var recentEntryLogs = await _context.EntryLogs.AsNoTracking()
                 .Where(el => el.BuildingId == buildingId)
                 .OrderByDescending(el => el.EntryTime)
                 .Select(el => new TransactionRowViewModel
                 {
-                    OccurredAt = el.EntryTime,
+                    // Normalize to UTC for consistent client-side rendering
+                    OccurredAt = DateTime.SpecifyKind(el.EntryTime, DateTimeKind.Local).ToUniversalTime(),
                     Type = "EntryLog",
                     Description = $"{el.EntryType} — {el.Fullname}",
                     Amount = null,
@@ -177,7 +159,7 @@ namespace ApartmentManagementSystem.Controllers
                 .Concat(recentExpensePayments)
                 .Concat(recentBills)
                 .Concat(recentEntryLogs)
-                .OrderByDescending(t => t.OccurredAt)
+                .OrderByDescending(t => t.OccurredAt) // precise to the second now
                 .Take(25)
                 .ToList();
 

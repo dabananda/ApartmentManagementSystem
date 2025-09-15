@@ -119,12 +119,12 @@
                     <div class="fw-semibold">Recent Activity</div>
                     <div class="text-muted small">Last 25 items</div>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0 pb-2">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table id="recentTable" class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 180px;">Date/Time</th>
+                                    <th style="width: 200px;">Date/Time</th>
                                     <th style="width: 160px;">Type</th>
                                     <th>Description</th>
                                     <th class="text-end" style="width: 160px;">Amount</th>
@@ -147,11 +147,14 @@
                                         var dirBadge = t.Direction == "In" ? "badge bg-success-subtle text-success" :
                                         t.Direction == "Out" ? "badge bg-danger-subtle text-danger" :
                                         "badge bg-secondary-subtle text-secondary";
-                                        <tr>
-                                            <td>@t.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                            <td><span class="badge @typeBadge">@t.Type</span></td>
-                                            <td>@t.Description</td>
-                                            <td class="text-end">
+                                        var iso = t.OccurredAt.ToUniversalTime().ToString("O"); // ISO UTC
+                                                                                                <tr>
+                                                                                                    <td data-order="@iso">
+                                                                                                        <time class="js-when" datetime="@iso" data-iso="@iso"></time>
+                                                                                                    </td>
+                                                                                                    <td><span class="badge @typeBadge">@t.Type</span></td>
+                                                                                                    <td>@t.Description</td>
+                                                                                                    <td class="text-end">
                                                 @if (t.Amount.HasValue)
                                                 {
                                                     @($"{t.Currency ?? currency} {t.Amount.Value:N2}")
@@ -173,18 +176,13 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white d-flex justify-content-end">
-                    <a asp-controller="President" asp-action="Transactions" class="btn btn-outline-secondary btn-sm">
-                        View all activity
-                    </a>
-                </div>
             </div>
         </div>
     </div>
-
 </div>
 
 @section HeadStyles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/v/bs5/dt-2.1.5/datatables.min.css" />
     <style>
         .progress {
             background: #eef2f6;
@@ -202,4 +200,43 @@
             vertical-align: middle;
         }
     </style>
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/bs5/dt-2.1.5/datatables.min.js"></script>
+
+    <script>
+        // Format ISO UTC -> Asia/Dhaka local nice string
+        function fmtDhaka(iso) {
+            try {
+                const dt = new Date(iso); // UTC
+                const opts = {
+                    timeZone: 'Asia/Dhaka',
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                };
+                // e.g., 2025-09-15 14:05
+                const parts = new Intl.DateTimeFormat('en-GB', opts).formatToParts(dt);
+                const dict = Object.fromEntries(parts.map(p => [p.type, p.value]));
+                return `${dict.year}-${dict.month}-${dict.day} ${dict.hour}:${dict.minute}`;
+            } catch { return iso; }
+        }
+
+        $(function () {
+            // Render times
+            document.querySelectorAll('time.js-when').forEach(t => {
+                const iso = t.getAttribute('data-iso');
+                t.textContent = fmtDhaka(iso);
+            });
+
+            // DataTables (order by the first column using data-order ISO)
+            $('#recentTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                stateSave: true
+            });
+        });
+    </script>
 }

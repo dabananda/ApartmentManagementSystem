@@ -28,5 +28,9 @@ namespace ApartmentManagementSystem.Models
         public virtual Building? Building { get; set; }
 
         public ICollection<ExpenseAllocation>? Allocations { get; set; } = new List<ExpenseAllocation>();
+
+        // NEW
+        [Required]
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }
