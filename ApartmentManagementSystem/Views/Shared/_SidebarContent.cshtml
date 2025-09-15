@@ -1,0 +1,312 @@
+﻿@* Views/Shared/_SidebarContent.cshtml *@
+@using System.Security.Claims
+
+@{
+    var buildingIdClaim = User.FindFirst("building_id")?.Value;
+    Guid? buildingId = Guid.TryParse(buildingIdClaim, out var gid) ? gid : (Guid?)null;
+
+    bool isOwner = User.IsInRole("Owner");
+    bool isPresident = User.IsInRole("President");
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+}
+
+<nav class="h-100">
+    <ul class="nav flex-column">
+        @* ---------- SuperAdmin Section ---------- *@
+        @if (isSuperAdmin)
+        {
+            <li class="nav-section-title">SuperAdmin Dashboard</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="SuperAdmin" asp-action="Dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Admin" asp-action="Approvals">
+                    <i class="bi bi-person-check"></i>
+                    <span>Pending Users</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Admin" asp-action="Users">
+                    <i class="bi bi-people"></i>
+                    <span>Users</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Admin" asp-action="CreateUser">
+                    <i class="bi bi-person-plus"></i>
+                    <span>Create User</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Admin" asp-action="AssignPresident">
+                    <i class="bi bi-award"></i>
+                    <span>Assign President</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Building" asp-action="Index">
+                    <i class="bi bi-buildings"></i>
+                    <span>Buildings</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Flat" asp-action="AllFlats">
+                    <i class="bi bi-house-door"></i>
+                    <span>Flats</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="EntryLog" asp-action="Index">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Entry Logs</span>
+                </a>
+            </li>
+
+            <div class="nav-divider"></div>
+        }
+
+        @* ---------- President Section ---------- *@
+        @if (isPresident && buildingId != null)
+        {
+            <li class="nav-section-title">President Dashboard</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="President" asp-action="Dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Admin" asp-action="Approvals">
+                    <i class="bi bi-person-check"></i>
+                    <span>Pending Users</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Admin" asp-action="Users">
+                    <i class="bi bi-people"></i>
+                    <span>Users</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Financial Management</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="CommonBill" asp-action="Index" asp-route-buildingId="@buildingId">
+                    <i class="bi bi-receipt"></i>
+                    <span>Common Bills</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="OwnerBilling" asp-action="Index" asp-route-buildingId="@buildingId">
+                    <i class="bi bi-coin"></i>
+                    <span>Owner Bills</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="ExpensePayment" asp-action="Index" asp-route-buildingId="@buildingId">
+                    <i class="bi bi-cash-coin"></i>
+                    <span>Bill Pay</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Property Management</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Flat" asp-action="Index" asp-route-buildingId="@buildingId">
+                    <i class="bi bi-house-door"></i>
+                    <span>Flats</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Tenant" asp-action="BuildingTenants">
+                    <i class="bi bi-people"></i>
+                    <span>Tenants</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Reports & Analytics</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="PresidentReports" asp-action="Financial">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Financial Reports</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="PresidentReports" asp-action="Occupancy">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Occupancy Reports</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="PresidentReports" asp-action="Visitors">
+                    <i class="bi bi-person-lines-fill"></i>
+                    <span>Visitor Reports</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="PresidentReports" asp-action="Maintenance">
+                    <i class="bi bi-tools"></i>
+                    <span>Maintenance Reports</span>
+                </a>
+            </li>
+
+            <div class="nav-divider"></div>
+        }
+        else if (isPresident)
+        {
+            <div class="warning-message">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Your account isn't linked to a building yet. Ask Super Admin to assign one.
+            </div>
+        }
+
+        @* ---------- Owner Section ---------- *@
+        @if (isOwner)
+        {
+            <li class="nav-section-title">Owner Dashboard</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Owner" asp-action="Dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Tenant Management</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Admin" asp-action="CreateUser">
+                    <i class="bi bi-person-plus"></i>
+                    <span>Create Tenant</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantAssignment" asp-action="MyTenants">
+                    <i class="bi bi-people"></i>
+                    <span>My Tenants</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantAssignment" asp-action="Assign">
+                    <i class="bi bi-person-plus-fill"></i>
+                    <span>Assign Tenant</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Property & Billing</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="Owner" asp-action="OwnedFlats">
+                    <i class="bi bi-house-door"></i>
+                    <span>My Flats</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="FlatBillingProfile" asp-action="Index">
+                    <i class="bi bi-file-text"></i>
+                    <span>Billing Profiles</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantRent" asp-action="List">
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Tenant Rent</span>
+                </a>
+            </li>
+
+            <div class="nav-divider"></div>
+        }
+
+        @* ---------- Tenant Section ---------- *@
+        @if (User.IsInRole("Tenant"))
+        {
+            <li class="nav-section-title">Tenant Portal</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantPortal" asp-action="Dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>My Dashboard</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Financial</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantPortal" asp-action="Bills">
+                    <i class="bi bi-receipt"></i>
+                    <span>My Bills</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantPortal" asp-action="Payments">
+                    <i class="bi bi-credit-card"></i>
+                    <span>My Payments</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Services</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantPortal" asp-action="Notices">
+                    <i class="bi bi-megaphone"></i>
+                    <span>Notices</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantPortal" asp-action="Tickets">
+                    <i class="bi bi-tools"></i>
+                    <span>Maintenance</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="TenantPortal" asp-action="Visitors">
+                    <i class="bi bi-people"></i>
+                    <span>Visitors</span>
+                </a>
+            </li>
+
+            <div class="nav-divider"></div>
+        }
+
+        @* ---------- Staff Section ---------- *@
+        @if (User.IsInRole("Staff") || isPresident || isOwner)
+        {
+            <li class="nav-section-title">Staff Operations</li>
+
+            <li class="nav-item">
+                <a class="sidebar-nav-link" asp-controller="EntryLog" asp-action="Index">
+                    <i class="bi bi-person-walking"></i>
+                    <span>Entry Logs</span>
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
