@@ -19,7 +19,7 @@
     <!-- Core styles -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
     <!-- App styles -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
@@ -30,7 +30,7 @@
 </head>
 <body class="bg-light">
     <!-- Modern Top Navbar -->
-    <header class="navbar navbar-expand-lg navbar-dark sticky-top shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <header class="navbar navbar-expand-lg navbar-dark sticky-top shadow-sm navbar-ams">
         <div class="container-fluid px-3">
             <!-- Brand -->
             <a class="navbar-brand fw-bold d-flex align-items-center" asp-controller="Home" asp-action="Index">
@@ -51,14 +51,14 @@
             <!-- Right side nav items -->
             <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
                 <!-- Notifications (optional) -->
-                <div class="nav-item me-3 d-none d-lg-block">
+                @* <div class="nav-item me-3 d-none d-lg-block">
                     <button class="btn btn-link text-white p-2 position-relative">
                         <i class="bi bi-bell fs-5"></i>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em;">
                             3
                         </span>
                     </button>
-                </div>
+                </div> *@
 
                 <!-- Home link -->
                 <div class="nav-item me-2">
@@ -111,6 +111,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/dashboard.js" asp-append-version="true"></script>
 

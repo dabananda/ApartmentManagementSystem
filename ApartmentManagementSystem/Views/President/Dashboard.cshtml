@@ -5,7 +5,7 @@
 
 @{
     ViewData["Title"] = "President Dashboard";
-    var currency = "BDT";
+    var currency = "tk";
     var totalFlats = Model.TotalFlats;
     var occupied = Model.OccupiedFlats;
     var occRate = totalFlats > 0 ? (int)Math.Round((decimal)occupied * 100m / totalFlats) : 0;
@@ -52,7 +52,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Collected (All Time)</div>
-                    <div class="display-6 fw-semibold">@currency @Model.TotalCollected.ToString("N2")</div>
+                    <div class="display-6 fw-semibold">@Model.TotalCollected.ToString("N2") @currency</div>
                     <div class="text-success mt-1"><i class="bi bi-arrow-down-left-circle me-1"></i> Inflow</div>
                 </div>
             </div>
@@ -61,7 +61,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Payments (All Time)</div>
-                    <div class="display-6 fw-semibold">@currency @Model.TotalPayments.ToString("N2")</div>
+                    <div class="display-6 fw-semibold">@Model.TotalPayments.ToString("N2") @currency</div>
                     <div class="text-danger mt-1"><i class="bi bi-arrow-up-right-circle me-1"></i> Outflow</div>
                 </div>
             </div>
