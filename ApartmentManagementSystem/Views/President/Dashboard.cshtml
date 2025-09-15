@@ -13,107 +13,159 @@
     var buildingId = currentUser?.BuildingId;
 }
 
-<div class="container-xxl py-3">
+<div class="container-xxl py-4">
 
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
-            <h1 class="h3 mb-1">Dashboard — <span class="text-primary">@Model.BuildingName</span></h1>
-            <div class="text-muted small">Overview of billing, payments, occupancy and recent activity</div>
+            <h1 class="h2 mb-2 d-flex align-items-center">
+                <i class="fas fa-chart-line text-primary me-3"></i>
+                Dashboard — <span class="text-primary">@Model.BuildingName</span>
+            </h1>
+            <p class="text-muted mb-0">Overview of billing, payments, occupancy and recent activity</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
             <a asp-controller="CommonBill" asp-action="Create" asp-route-buildingId="@buildingId" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> New Common Bill
+                <i class="fas fa-plus me-2"></i> New Common Bill
             </a>
-            <a asp-controller="Announcement" asp-action="Create" class="btn btn-outline-secondary">
-                <i class="bi bi-megaphone me-1"></i> New Announcement
+            <a asp-controller="Announcement" asp-action="Create" class="btn btn-outline-primary">
+                <i class="fas fa-bullhorn me-2"></i> New Announcement
             </a>
         </div>
     </div>
 
     @if (TempData["DashboardNotice"] is string note && !string.IsNullOrWhiteSpace(note))
     {
-        <div class="alert alert-warning d-flex align-items-start" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div class="alert alert-warning d-flex align-items-start mb-4" role="alert">
+            <i class="fas fa-exclamation-triangle me-3 mt-1"></i>
             <div>@note</div>
         </div>
     }
 
-    <div class="row g-3 mb-3">
+    <!-- Key Metrics Row -->
+    <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Total Common Bills</div>
-                    <div class="display-6 fw-semibold">@Model.TotalBills</div>
-                    <div class="text-primary opacity-75"><i class="bi bi-receipt fs-2"></i></div>
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="text-muted small mb-1">Total Common Bills</div>
+                            <div class="display-6 fw-bold">@Model.TotalBills</div>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-file-invoice text-primary fs-4"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Collected (All Time)</div>
-                    <div class="display-6 fw-semibold">@currency @Model.TotalCollected.ToString("N2")</div>
-                    <div class="text-success mt-1"><i class="bi bi-arrow-down-left-circle me-1"></i> Inflow</div>
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="text-muted small mb-1">Collected (All Time)</div>
+                            <div class="display-6 fw-bold text-success">@currency @Model.TotalCollected.ToString("N2")</div>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-arrow-trend-down text-success fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="small text-success"><i class="fas fa-arrow-up me-1"></i> Inflow</div>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Payments (All Time)</div>
-                    <div class="display-6 fw-semibold">@currency @Model.TotalPayments.ToString("N2")</div>
-                    <div class="text-danger mt-1"><i class="bi bi-arrow-up-right-circle me-1"></i> Outflow</div>
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="text-muted small mb-1">Payments (All Time)</div>
+                            <div class="display-6 fw-bold text-danger">@currency @Model.TotalPayments.ToString("N2")</div>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-arrow-trend-up text-danger fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="small text-danger"><i class="fas fa-arrow-down me-1"></i> Outflow</div>
                 </div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Flats</div>
-                    <div class="display-6 fw-semibold">@Model.TotalFlats</div>
-                    <div class="text-muted mt-1"><i class="bi bi-building me-1"></i> Units in building</div>
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="text-muted small mb-1">Total Flats</div>
+                            <div class="display-6 fw-bold">@Model.TotalFlats</div>
+                        </div>
+                        <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-building text-info fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="small text-muted"><i class="fas fa-home me-1"></i> Units in building</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-3 mb-3">
+    <!-- Secondary Metrics Row -->
+    <div class="row g-4 mb-4">
         <div class="col-lg-6">
-            <div class="card shadow-sm h-100">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="text-muted small">Occupancy</div>
-                        <div class="small text-muted">@occupied / @totalFlats</div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                            <i class="fas fa-chart-pie text-primary me-2"></i>
+                            Occupancy Status
+                        </h5>
+                        <span class="badge bg-primary">@occupied / @totalFlats</span>
                     </div>
-                    <div class="progress" style="height:10px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width:@occRate%;" aria-valuenow="@occRate" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress mb-3" style="height:12px;">
+                        <div class="progress-bar" role="progressbar" style="width:@occRate%;" aria-valuenow="@occRate" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                    <div class="mt-2 fw-semibold">@occRate% occupied</div>
-                    <div class="text-muted small">Active tenant assignments across flats</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="h4 mb-0 text-primary">@occRate%</div>
+                            <small class="text-muted">Occupied</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="h4 mb-0 text-muted">@(100-occRate)%</div>
+                            <small class="text-muted">Available</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="card shadow-sm h-100">
+            <div class="card h-100">
                 <div class="card-body">
+                    <h5 class="card-title mb-3 d-flex align-items-center">
+                        <i class="fas fa-walking text-info me-2"></i>
+                        Entry Activity
+                    </h5>
                     <div class="row text-center">
-                        <div class="col-6 border-end">
-                            <div class="text-muted small">Entries Today</div>
-                            <div class="display-6 fw-semibold">@Model.TodayEntries</div>
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="h3 mb-1 text-info">@Model.TodayEntries</div>
+                                <small class="text-muted">Today's Entries</small>
+                            </div>
                         </div>
                         <div class="col-6">
-                            <div class="text-muted small">Entries (Last 7 Days)</div>
-                            <div class="display-6 fw-semibold">@Model.Last7dEntries</div>
+                            <div class="h3 mb-1 text-primary">@Model.Last7dEntries</div>
+                            <small class="text-muted">Last 7 Days</small>
                         </div>
                     </div>
-                    <div class="text-muted small mt-2"><i class="bi bi-person-walking me-1"></i> Visitor logs include visitors, delivery, contractors, etc.</div>
+                    <div class="mt-3 small text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Includes visitors, deliveries, contractors, etc.
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- ===== Charts Row ===== -->
-    <div class="row g-3 mb-3">
+    <div class="row g-4 mb-4">
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">Cashflow (last 12 months)</div>
