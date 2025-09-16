@@ -1209,7 +1209,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users));
         }
 
-        [Authorize(Roles = Roles.SuperAdmin)]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteUser(string id)
         {
@@ -1231,7 +1231,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users));
         }
 
-        [Authorize(Roles = Roles.SuperAdmin)]
+        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkDelete(string[] ids)
         {
