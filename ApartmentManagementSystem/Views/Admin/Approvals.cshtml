@@ -65,14 +65,14 @@
 </form>
 
 <!-- FLASH -->
-@if (TempData["Success"] != null)
+@* @if (TempData["Success"] != null)
 {
     <div class="alert alert-success">@TempData["Success"]</div>
 }
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger">@TempData["Error"]</div>
-}
+} *@
 
 @if (!Model.PendingUsers.Any())
 {
@@ -209,13 +209,44 @@ else
 @section Scripts {
     <script>
         (function () {
+            // Keep select-all
             var chkAll = document.getElementById('chkAll');
-            if (!chkAll) return;
-            chkAll.addEventListener('change', function (e) {
-                var on = e.target.checked;
-                var rows = document.querySelectorAll('.chkRow');
-                for (var i = 0; i < rows.length; i++) rows[i].checked = on;
-            });
+            if (chkAll) {
+                chkAll.addEventListener('change', function (e) {
+                    var on = e.target.checked;
+                    var rows = document.querySelectorAll('.chkRow');
+                    for (var i = 0; i < rows.length; i++) rows[i].checked = on;
+                });
+            }
+
+            if (!window.SwalHelpers) return;
+
+            var bulkReq = {
+                requireSelection: { formId: 'bulkForm', checkboxSelector: '.chkRow', emptyMessage: 'Select at least one user.' }
+            };
+
+            // Bulk approvals by role (buttons typically carry name="role" value="Owner/Tenant/Staff")
+            SwalHelpers.bindConfirm("form#bulkForm button[name='role'][value='Owner']",
+                { title: 'Approve selected as Owner?', icon: 'question', confirmText: 'Approve', ...bulkReq });
+
+            SwalHelpers.bindConfirm("form#bulkForm button[name='role'][value='Tenant']",
+                { title: 'Approve selected as Tenant?', icon: 'question', confirmText: 'Approve', ...bulkReq });
+
+            SwalHelpers.bindConfirm("form#bulkForm button[name='role'][value='Staff']",
+                { title: 'Approve selected as Staff?', icon: 'question', confirmText: 'Approve', ...bulkReq });
+
+            // Per-row approvals & reset
+            SwalHelpers.bindConfirm("button[formaction*='ApproveUser'][formaction*='role=Owner']",
+                { title: 'Approve as Owner?', icon: 'question', confirmText: 'Approve' });
+
+            SwalHelpers.bindConfirm("button[formaction*='ApproveUser'][formaction*='role=Tenant']",
+                { title: 'Approve as Tenant?', icon: 'question', confirmText: 'Approve' });
+
+            SwalHelpers.bindConfirm("button[formaction*='ApproveUser'][formaction*='role=Staff']",
+                { title: 'Approve as Staff?', icon: 'question', confirmText: 'Approve' });
+
+            SwalHelpers.bindConfirm("button[formaction*='ResetUser']",
+                { title: 'Reset this user to pending?', icon: 'warning', confirmText: 'Reset' });
         })();
     </script>
 }

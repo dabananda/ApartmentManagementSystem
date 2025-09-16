@@ -37,3 +37,13 @@
         }
     </tbody>
 </table>
+
+@section Scripts {
+    <script>
+        (function(){
+            if (!window.SwalHelpers) return;
+            SwalHelpers.bindConfirm("form[asp-action='ApproveOwner'] button[type='submit']",
+                { title: 'Approve this user as Owner?', icon: 'question', confirmText: 'Approve' });
+        })();
+    </script>
+}

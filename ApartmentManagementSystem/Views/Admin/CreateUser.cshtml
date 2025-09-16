@@ -81,4 +81,11 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function(){
+            if (!window.SwalHelpers) return;
+            SwalHelpers.bindConfirm("form[asp-action='CreateUser'] button[type='submit']",
+                { title: 'Create this user?', icon: 'question', confirmText: 'Create' });
+        })();
+    </script>
 }

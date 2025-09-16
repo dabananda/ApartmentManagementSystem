@@ -96,15 +96,12 @@
     </div>
 </form>
 
-<!-- FLASH -->
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
+<!-- FLASH (hidden carrier for SweetAlert2 toasts) -->
+@* <div id="flash"
+     data-success="@(TempData["Success"] ?? "")"
+     data-error="@(TempData["Error"] ?? "")"
+     hidden>
+</div> *@
 
 @if (!Model.Users.Any())
 {
@@ -161,8 +158,7 @@ else
                     <button type="submit"
                             formmethod="post"
                             formaction="@Url.Action("BulkDelete", "Admin")"
-                            class="btn btn-outline-danger btn-sm"
-                            onclick="return confirm('Delete selected users? This cannot be undone.');">
+                            class="btn btn-outline-danger btn-sm">
                         Delete selected
                     </button>
                 }
@@ -203,7 +199,6 @@ else
                             }
                             else
                             {
-
                                 <span class="badge bg-secondary">No</span>
                             }
                         </td>
@@ -214,7 +209,6 @@ else
                             }
                             else
                             {
-
                                 <span class="badge bg-success">Active</span>
                             }
                         </td>
@@ -285,8 +279,7 @@ else
                                 <button type="submit"
                                         formmethod="post"
                                         formaction="@Url.Action("DeleteUser", "Admin", new { id = u.Id })"
-                                        class="btn btn-sm btn-outline-danger ms-1"
-                                        onclick="return confirm('Delete this user? This cannot be undone.');">
+                                        class="btn btn-sm btn-outline-danger ms-1">
                                     Delete
                                 </button>
                             }
@@ -325,13 +318,35 @@ else
 @section Scripts {
     <script>
         (function () {
+            // Select-all checkbox (unchanged logic)
             var chkAll = document.getElementById('chkAll');
-            if (!chkAll) return;
-            chkAll.addEventListener('change', function (e) {
-                var on = e.target.checked;
-                var rows = document.querySelectorAll('.chkRow');
-                for (var i = 0; i < rows.length; i++) rows[i].checked = on;
-            });
+            if (chkAll) {
+                chkAll.addEventListener('change', function (e) {
+                    var on = e.target.checked;
+                    var rows = document.querySelectorAll('.chkRow');
+                    for (var i = 0; i < rows.length; i++) rows[i].checked = on;
+                });
+            }
+
+            if (!window.SwalHelpers) return;
+
+            // Bulk actions require at least one selection
+            var bulkReq = {
+                requireSelection: { formId: 'bulkForm', checkboxSelector: '.chkRow', emptyMessage: 'Select at least one user.' }
+            };
+
+            // Bind confirmations using the shared helper
+            SwalHelpers.bindConfirm("button[formaction*='BulkDelete']",
+                { title: 'Delete selected users?', text: 'This action cannot be undone.', icon: 'warning', confirmText: 'Delete', ...bulkReq });
+
+            SwalHelpers.bindConfirm("button[formaction*='DeleteUser']",
+                { title: 'Delete this user?', text: 'This action cannot be undone.', icon: 'warning', confirmText: 'Delete' });
+
+            SwalHelpers.bindConfirm("button[formaction*='BulkBlock']",
+                { title: 'Block selected users?', text: 'They will be unable to sign in.', icon: 'warning', confirmText: 'Block', ...bulkReq });
+
+            SwalHelpers.bindConfirm("button[formaction*='BlockUser']",
+                { title: 'Block this user?', text: 'They will be unable to sign in.', icon: 'warning', confirmText: 'Block' });
         })();
     </script>
 }

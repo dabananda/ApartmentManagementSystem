@@ -81,4 +81,12 @@
             });
         })();
     </script>
+
+    <script>
+        (function(){
+            if (!window.SwalHelpers) return;
+            SwalHelpers.bindConfirm("form[asp-action='AssignPresident'] button[type='submit']",
+                { title: 'Assign selected owner as President?', text: 'This will update roles and approve the user.', icon: 'question', confirmText: 'Assign' });
+        })();
+    </script>
 }
