@@ -14,6 +14,7 @@
             <th class="text-end">Amount</th>
             <th class="text-end">Paid</th>
             <th class="text-end">Due</th>
+            <th class="text-end">Action</th>
         </tr>
     </thead>
     <tbody>
@@ -26,6 +27,20 @@
                 <td class="text-end">@b.Amount.ToString("C")</td>
                 <td class="text-end">@b.Paid.ToString("C")</td>
                 <td class="text-end @(b.Due > 0 ? "text-danger" : "text-success")">@b.Due.ToString("C")</td>
+                <td class="text-end">
+                    @if (b.Due > 0)
+                    {
+                        <form asp-controller="Payments" asp-action="TenantCheckout" method="post" class="d-inline">
+                            <input type="hidden" name="billId" value="@b.BillId" />
+                            <button type="submit" class="btn btn-sm btn-primary">Pay online</button>
+                        </form>
+                    }
+                    else
+                    {
+
+                        <span class="badge bg-success">Paid</span>
+                    }
+                </td>
             </tr>
         }
     </tbody>

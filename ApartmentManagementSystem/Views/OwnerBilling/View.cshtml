@@ -1,9 +1,11 @@
 ﻿@using ApartmentManagementSystem.ViewModels.Owner
 @model OwnerBillsPage
+
 @{
     ViewData["Title"] = "Owner Bills";
-    bool canPay = User.IsInRole("President") || User.IsInRole("SuperAdmin");
+    bool canPay = User.IsInRole("President") || User.IsInRole("SuperAdmin") || User.IsInRole("Owner");
 }
+
 
 <h2 class="mb-1">Owner Billing — @Model.OwnerName</h2>
 
@@ -117,6 +119,13 @@
                                 <input type="hidden" name="ownerId" value="@Model.OwnerId" />
                                 <input type="hidden" name="commonBillId" value="@b.CommonBillId" />
                                 <button type="submit" class="btn btn-sm btn-success" title="Pay the full remaining due">Full Pay</button>
+                            </form>
+
+                            <!-- Online Pay (redirects to payment gateway for this bill) -->
+                            <form asp-controller="Payments" asp-action="OwnerCheckout" method="post" class="d-inline">
+                                <input type="hidden" name="ownerId" value="@Model.OwnerId" />
+                                <input type="hidden" name="commonBillId" value="@b.CommonBillId" />
+                                <button type="submit" class="btn btn-sm btn-primary" title="Pay the full remaining due online">Pay online</button>
                             </form>
                         </div>
                     }
