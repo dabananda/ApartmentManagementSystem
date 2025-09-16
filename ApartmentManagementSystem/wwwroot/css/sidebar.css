@@ -6,7 +6,7 @@
 }
 
 .sidebar-content {
-    padding: 1.5rem 0;
+    padding: 0.5rem 0;
     position: sticky;
     top: 72px;
     max-height: calc(100vh - 72px);
