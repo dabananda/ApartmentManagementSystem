@@ -48,7 +48,7 @@ builder.Services.AddSingleton(sp =>
     return new StripeClient(key);
 });
 
-// optional strongly-typed opts if you prefer binding later
+// Optional: bind StripeOptions for currency, webhook secret, etc.
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
 
 var app = builder.Build();

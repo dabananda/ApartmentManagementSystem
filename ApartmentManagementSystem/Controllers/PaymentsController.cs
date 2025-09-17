@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
-using System.Globalization;
 using System.Text;
 
 namespace ApartmentManagementSystem.Controllers
@@ -39,7 +38,9 @@ namespace ApartmentManagementSystem.Controllers
             _opts = opts.Value; _log = log; _cfg = cfg;
         }
 
-        // TENANT: Pay rent (full or partial). Creates a Stripe Checkout Session and redirects to Stripe.
+        // ------------------------
+        // TENANT CHECKOUT (Stripe)
+        // ------------------------
         [HttpPost("tenant/checkout")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TenantCheckout(Guid billId, decimal? amount = null)
@@ -54,7 +55,6 @@ namespace ApartmentManagementSystem.Controllers
                 .FirstOrDefaultAsync(b => b.Id == billId && b.TenantUserId == me.Id);
             if (bill == null) return NotFound("Bill not found.");
 
-            // compute current due inside SERIALIZABLE tx
             var paidNow = await _db.TenantPayments
                 .Where(p => p.TenantBillId == bill.Id && p.Status == PaymentStatus.Succeeded)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0m;
@@ -75,9 +75,8 @@ namespace ApartmentManagementSystem.Controllers
                 return RedirectToAction("Bills", "TenantPortal");
             }
 
-            await tx.CommitAsync(); // only reading; hold no locks across Stripe call
+            await tx.CommitAsync(); // read-only section done
 
-            // Stripe Checkout Session
             var cents = (long)Math.Round(take * 100m, MidpointRounding.AwayFromZero);
             var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "usd" : _opts.Currency.ToLowerInvariant();
 
@@ -124,11 +123,12 @@ namespace ApartmentManagementSystem.Controllers
             };
 
             var session = await sessionService.CreateAsync(options);
-            // Redirect to Stripe-hosted checkout page
             return Redirect(session.Url);
         }
 
-        // OWNER: Pay common bill allocation (full due)
+        // -----------------------
+        // OWNER CHECKOUT (Stripe)
+        // -----------------------
         [HttpPost("owner/checkout")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OwnerCheckout(Guid commonBillId)
@@ -136,7 +136,6 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _users.GetUserAsync(User);
             if (me == null) return Forbid();
 
-            // Owner can only pay their own allocation; admins can pay any
             var isAdmin = User.IsInRole("President") || User.IsInRole("SuperAdmin");
             var ownerId = isAdmin ? Request.Form["ownerId"].FirstOrDefault() ?? me.Id : me.Id;
 
@@ -147,6 +146,7 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(a => a.CommonBillId == commonBillId && a.OwnerId == ownerId)
                 .FirstOrDefaultAsync();
             if (alloc == null) return NotFound("Allocation not found.");
+
             var paid = await _db.ExpenseAllocationPayments
                 .Where(p => p.CommonBillId == commonBillId && p.OwnerId == ownerId && p.Status == PaymentStatus.Succeeded)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0m;
@@ -210,7 +210,9 @@ namespace ApartmentManagementSystem.Controllers
             return Redirect(session.Url);
         }
 
-        // Simple landing pages
+        // -----------------------
+        // Simple result pages
+        // -----------------------
         [HttpGet("success")]
         public async Task<IActionResult> Success([FromQuery(Name = "session_id")] string sessionId)
         {
@@ -245,7 +247,9 @@ namespace ApartmentManagementSystem.Controllers
         [HttpGet("cancel")]
         public IActionResult Cancel() => View();
 
-        // ---- STRIPE WEBHOOK ----
+        // -----------------------
+        // STRIPE WEBHOOK
+        // -----------------------
         [AllowAnonymous]
         [HttpPost("webhook")]
         public async Task<IActionResult> Webhook()
@@ -268,7 +272,6 @@ namespace ApartmentManagementSystem.Controllers
 
             try
             {
-                // Handle both common flows
                 var t = stripeEvent.Type?.ToLowerInvariant();
 
                 if (t == "payment_intent.succeeded")
@@ -297,14 +300,12 @@ namespace ApartmentManagementSystem.Controllers
 
         private async Task HandleCheckoutSessionCompleted(Stripe.Checkout.Session session)
         {
-            // Only proceed if Stripe says it’s paid
             if (!string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
             {
                 _log.LogInformation("Checkout session not paid. Status: {Status}", session.PaymentStatus);
                 return;
             }
 
-            // Get PaymentIntent ID from session (explicit id or expanded object)
             string? piId = session.PaymentIntentId;
             if (string.IsNullOrWhiteSpace(piId) && session.PaymentIntent != null)
                 piId = session.PaymentIntent.Id;
@@ -315,10 +316,8 @@ namespace ApartmentManagementSystem.Controllers
                 return;
             }
 
-            // Amount from the session (in smallest unit)
             var amount = (session.AmountTotal ?? 0) / 100m;
 
-            // Prefer SESSION metadata; fall back to PaymentIntent metadata if Session lacks our keys
             IDictionary<string, string> meta = session.Metadata ?? new Dictionary<string, string>();
             if (!meta.ContainsKey("kind"))
             {
@@ -327,7 +326,6 @@ namespace ApartmentManagementSystem.Controllers
                 meta = intent.Metadata ?? meta;
                 if (meta.ContainsKey("kind"))
                 {
-                    // Also set the amount from intent if session didn't have it
                     long cents = intent.AmountReceived;
                     if (cents <= 0) cents = intent.Amount;
                     if (amount <= 0) amount = cents / 100m;
@@ -339,18 +337,13 @@ namespace ApartmentManagementSystem.Controllers
 
         private async Task HandlePaymentIntentSucceeded(PaymentIntent intent)
         {
-            // Stripe uses smallest currency unit (e.g., cents)
             long cents = intent.AmountReceived;
             if (cents <= 0) cents = intent.Amount;
             var amountReceived = cents / 100m;
 
             var meta = intent.Metadata ?? new Dictionary<string, string>();
-
-            // Use PaymentIntent.Id as our idempotency/ref key
             await ProcessPaymentFromMetaAsync(meta, amountReceived, intent.Id);
         }
-
-        // --- Receipt emails (reuse existing IEmailSender) ---
 
         private async Task SendTenantPaymentEmail(string tenantUserId, IEnumerable<TenantPayment> payments)
         {
@@ -430,6 +423,7 @@ namespace ApartmentManagementSystem.Controllers
             await _email.SendEmailAsync(user.Email!, "Common bill payment receipt", html);
         }
 
+        // Centralized post-payment reconciliation for both tenant & owner paths
         private async Task ProcessPaymentFromMetaAsync(
             IDictionary<string, string> meta,
             decimal amountReceived,
@@ -438,13 +432,13 @@ namespace ApartmentManagementSystem.Controllers
             if (!meta.TryGetValue("kind", out var kind) || string.IsNullOrWhiteSpace(kind))
                 return;
 
+            // ---- Tenant rent ----
             if (string.Equals(kind, "tenant", StringComparison.OrdinalIgnoreCase) &&
                 meta.TryGetValue("tenantBillId", out var billIdStr) &&
                 Guid.TryParse(billIdStr, out var billId))
             {
                 await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
-                // idempotency: skip if inserted already
                 var exists = await _db.TenantPayments.AnyAsync(p => p.IdempotencyKey == paymentRef);
                 if (exists) { await tx.RollbackAsync(); return; }
 
@@ -479,6 +473,7 @@ namespace ApartmentManagementSystem.Controllers
 
                 await SendTenantPaymentEmail(bill.TenantUserId, new[] { entity });
             }
+            // ---- Owner common bill ----
             else if (string.Equals(kind, "owner", StringComparison.OrdinalIgnoreCase) &&
                      meta.TryGetValue("ownerId", out var ownerId) &&
                      meta.TryGetValue("commonBillId", out var cbStr) &&
