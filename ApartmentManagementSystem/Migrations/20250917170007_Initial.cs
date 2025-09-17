@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ApartmentManagementSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBuildingCode : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -140,7 +140,8 @@ namespace ApartmentManagementSystem.Migrations
                     BillDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Notes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    BuildingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    BuildingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -303,7 +304,8 @@ namespace ApartmentManagementSystem.Migrations
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Notes = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CommonBillId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BuildingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    BuildingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -354,6 +356,28 @@ namespace ApartmentManagementSystem.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "FlatBillingProfiles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FlatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
+                    MonthlyAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DueDayOfMonth = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FlatBillingProfiles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FlatBillingProfiles_Flats_FlatId",
+                        column: x => x.FlatId,
+                        principalTable: "Flats",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OwnerBillingProfiles",
                 columns: table => new
                 {
@@ -380,6 +404,62 @@ namespace ApartmentManagementSystem.Migrations
                         principalTable: "Flats",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TenantAssignments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FlatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenantAssignments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TenantAssignments_AspNetUsers_TenantUserId",
+                        column: x => x.TenantUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TenantAssignments_Flats_FlatId",
+                        column: x => x.FlatId,
+                        principalTable: "Flats",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TenantBills",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FlatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
+                    BillDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenantBills", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TenantBills_AspNetUsers_TenantUserId",
+                        column: x => x.TenantUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TenantBills_Flats_FlatId",
+                        column: x => x.FlatId,
+                        principalTable: "Flats",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -412,43 +492,56 @@ namespace ApartmentManagementSystem.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TenantBills",
+                name: "ExpenseAllocationPayments",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    FlatId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Year = table.Column<int>(type: "int", nullable: false),
-                    Month = table.Column<int>(type: "int", nullable: false),
-                    RentAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ElectricityAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    GasAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    WaterAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    CommonBillAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ServiceChargeAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    OtherAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    PaidAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(16)", maxLength: 16, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                    ExpenseAllocationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Reference = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    CommonBillId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OwnerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IdempotencyKey = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: true),
+                    Gateway = table.Column<int>(type: "int", nullable: false),
+                    ExternalRef = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TenantBills", x => x.Id);
+                    table.PrimaryKey("PK_ExpenseAllocationPayments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TenantBills_Flats_FlatId",
-                        column: x => x.FlatId,
-                        principalTable: "Flats",
+                        name: "FK_ExpenseAllocationPayments_ExpenseAllocations_ExpenseAllocationId",
+                        column: x => x.ExpenseAllocationId,
+                        principalTable: "ExpenseAllocations",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TenantPayments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantBillId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Reference = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    IdempotencyKey = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: true),
+                    Gateway = table.Column<int>(type: "int", nullable: false),
+                    ExternalRef = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenantPayments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TenantBills_Tenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "Tenants",
+                        name: "FK_TenantPayments_TenantBills_TenantBillId",
+                        column: x => x.TenantBillId,
+                        principalTable: "TenantBills",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -556,6 +649,23 @@ namespace ApartmentManagementSystem.Migrations
                 column: "FlatId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ExpenseAllocationPayments_CommonBillId_OwnerId_PaymentDate",
+                table: "ExpenseAllocationPayments",
+                columns: new[] { "CommonBillId", "OwnerId", "PaymentDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExpenseAllocationPayments_ExpenseAllocationId",
+                table: "ExpenseAllocationPayments",
+                column: "ExpenseAllocationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExpenseAllocationPayments_IdempotencyKey",
+                table: "ExpenseAllocationPayments",
+                column: "IdempotencyKey",
+                unique: true,
+                filter: "[IdempotencyKey] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ExpenseAllocations_CommonBillId",
                 table: "ExpenseAllocations",
                 column: "CommonBillId");
@@ -574,6 +684,12 @@ namespace ApartmentManagementSystem.Migrations
                 name: "IX_ExpensePayments_CommonBillId",
                 table: "ExpensePayments",
                 column: "CommonBillId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FlatBillingProfiles_FlatId",
+                table: "FlatBillingProfiles",
+                column: "FlatId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Flats_BuildingId_FlatNumber",
@@ -604,8 +720,7 @@ namespace ApartmentManagementSystem.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_OwnerBillingProfiles_FlatId",
                 table: "OwnerBillingProfiles",
-                column: "FlatId",
-                unique: true);
+                column: "FlatId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Rents_TenantBillId",
@@ -618,15 +733,45 @@ namespace ApartmentManagementSystem.Migrations
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TenantBills_FlatId_Year_Month",
-                table: "TenantBills",
-                columns: new[] { "FlatId", "Year", "Month" },
-                unique: true);
+                name: "IX_TenantAssignments_FlatId_Active",
+                table: "TenantAssignments",
+                column: "FlatId",
+                unique: true,
+                filter: "[EndDate] IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TenantBills_TenantId",
+                name: "IX_TenantAssignments_FlatId_TenantUserId_StartDate",
+                table: "TenantAssignments",
+                columns: new[] { "FlatId", "TenantUserId", "StartDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TenantAssignments_TenantUserId_Active",
+                table: "TenantAssignments",
+                column: "TenantUserId",
+                unique: true,
+                filter: "[EndDate] IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TenantBills_FlatId",
                 table: "TenantBills",
-                column: "TenantId");
+                column: "FlatId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TenantBills_TenantUserId_BillDate",
+                table: "TenantBills",
+                columns: new[] { "TenantUserId", "BillDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TenantPayments_IdempotencyKey",
+                table: "TenantPayments",
+                column: "IdempotencyKey",
+                unique: true,
+                filter: "[IdempotencyKey] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TenantPayments_TenantBillId_PaymentDate",
+                table: "TenantPayments",
+                columns: new[] { "TenantBillId", "PaymentDate" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tenants_FlatId",
@@ -666,10 +811,13 @@ namespace ApartmentManagementSystem.Migrations
                 name: "EntryLogs");
 
             migrationBuilder.DropTable(
-                name: "ExpenseAllocations");
+                name: "ExpenseAllocationPayments");
 
             migrationBuilder.DropTable(
                 name: "ExpensePayments");
+
+            migrationBuilder.DropTable(
+                name: "FlatBillingProfiles");
 
             migrationBuilder.DropTable(
                 name: "MaintenanceTickets");
@@ -681,16 +829,25 @@ namespace ApartmentManagementSystem.Migrations
                 name: "Rents");
 
             migrationBuilder.DropTable(
+                name: "TenantAssignments");
+
+            migrationBuilder.DropTable(
+                name: "TenantPayments");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "CommonBills");
+                name: "ExpenseAllocations");
+
+            migrationBuilder.DropTable(
+                name: "Tenants");
 
             migrationBuilder.DropTable(
                 name: "TenantBills");
 
             migrationBuilder.DropTable(
-                name: "Tenants");
+                name: "CommonBills");
 
             migrationBuilder.DropTable(
                 name: "Flats");

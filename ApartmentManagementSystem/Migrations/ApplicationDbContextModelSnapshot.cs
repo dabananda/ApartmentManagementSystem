@@ -621,7 +621,15 @@ namespace ApartmentManagementSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantUserId");
+                    b.HasIndex("FlatId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TenantAssignments_FlatId_Active")
+                        .HasFilter("[EndDate] IS NULL");
+
+                    b.HasIndex("TenantUserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TenantAssignments_TenantUserId_Active")
+                        .HasFilter("[EndDate] IS NULL");
 
                     b.HasIndex("FlatId", "TenantUserId", "StartDate");
 

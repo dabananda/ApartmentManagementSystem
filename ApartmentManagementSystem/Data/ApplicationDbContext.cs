@@ -181,14 +181,29 @@ namespace ApartmentManagementSystem.Data
 
             // ===== New Tenant Billing (Identity-based) =====
 
-            // TenantAssignment (active one per flat at a time; enforced by app logic)
+            // TenantAssignment — enforce one active per Tenant and per Flat (EndDate IS NULL)
             modelBuilder.Entity<TenantAssignment>(e =>
             {
+                // Optional historical index
                 e.HasIndex(x => new { x.FlatId, x.TenantUserId, x.StartDate });
+
+                // Active assignment: one per Tenant
+                e.HasIndex(x => x.TenantUserId)
+                    .HasFilter("[EndDate] IS NULL")
+                    .IsUnique()
+                    .HasDatabaseName("IX_TenantAssignments_TenantUserId_Active");
+
+                // Active assignment: one per Flat
+                e.HasIndex(x => x.FlatId)
+                    .HasFilter("[EndDate] IS NULL")
+                    .IsUnique()
+                    .HasDatabaseName("IX_TenantAssignments_FlatId_Active");
+
                 e.HasOne(x => x.Flat)
                     .WithMany()
                     .HasForeignKey(x => x.FlatId)
                     .OnDelete(DeleteBehavior.Restrict);
+
                 e.HasOne(x => x.TenantUser)
                     .WithMany()
                     .HasForeignKey(x => x.TenantUserId)

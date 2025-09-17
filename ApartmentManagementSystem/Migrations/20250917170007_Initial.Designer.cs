@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApartmentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250908110253_AddBuildingCode")]
-    partial class AddBuildingCode
+    [Migration("20250917170007_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -184,6 +184,9 @@ namespace ApartmentManagementSystem.Migrations
                     b.Property<Guid>("BuildingId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -255,7 +258,7 @@ namespace ApartmentManagementSystem.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("AmountDue")
-                        .HasColumnType("decimal(18, 2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("CommonBillId")
                         .HasColumnType("uniqueidentifier");
@@ -279,6 +282,62 @@ namespace ApartmentManagementSystem.Migrations
                     b.ToTable("ExpenseAllocations");
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocationPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CommonBillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ExpenseAllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExternalRef")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("Gateway")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpenseAllocationId");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+
+                    b.HasIndex("CommonBillId", "OwnerId", "PaymentDate");
+
+                    b.ToTable("ExpenseAllocationPayments");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.ExpensePayment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -293,6 +352,9 @@ namespace ApartmentManagementSystem.Migrations
 
                     b.Property<Guid>("CommonBillId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -342,6 +404,37 @@ namespace ApartmentManagementSystem.Migrations
                         .IsUnique();
 
                     b.ToTable("Flats");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.FlatBillingProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DueDayOfMonth")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("FlatId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("MonthlyAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FlatId")
+                        .IsUnique();
+
+                    b.ToTable("FlatBillingProfiles");
                 });
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.MaintenanceTicket", b =>
@@ -436,8 +529,7 @@ namespace ApartmentManagementSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FlatId")
-                        .IsUnique();
+                    b.HasIndex("FlatId");
 
                     b.ToTable("OwnerBillingProfiles");
                 });
@@ -449,7 +541,7 @@ namespace ApartmentManagementSystem.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18, 2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
@@ -511,75 +603,122 @@ namespace ApartmentManagementSystem.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.TenantAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FlatId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TenantUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FlatId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TenantAssignments_FlatId_Active")
+                        .HasFilter("[EndDate] IS NULL");
+
+                    b.HasIndex("TenantUserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TenantAssignments_TenantUserId_Active")
+                        .HasFilter("[EndDate] IS NULL");
+
+                    b.HasIndex("FlatId", "TenantUserId", "StartDate");
+
+                    b.ToTable("TenantAssignments");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.TenantBill", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("CommonBillAmount")
+                    b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("BillDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("ElectricityAmount")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("FlatId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("GasAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("Month")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("OtherAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("PaidAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("RentAmount")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<decimal>("ServiceChargeAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Status")
+                    b.Property<string>("TenantUserId")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("WaterAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("Year")
-                        .HasColumnType("int");
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("FlatId");
 
-                    b.HasIndex("FlatId", "Year", "Month")
-                        .IsUnique();
+                    b.HasIndex("TenantUserId", "BillDate");
 
                     b.ToTable("TenantBills");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.TenantPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ExternalRef")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("Gateway")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantBillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+
+                    b.HasIndex("TenantBillId", "PaymentDate");
+
+                    b.ToTable("TenantPayments");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -778,6 +917,17 @@ namespace ApartmentManagementSystem.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocationPayment", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.ExpenseAllocation", "ExpenseAllocation")
+                        .WithMany("Payments")
+                        .HasForeignKey("ExpenseAllocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseAllocation");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.ExpensePayment", b =>
                 {
                     b.HasOne("ApartmentManagementSystem.Models.Building", "Building")
@@ -813,6 +963,17 @@ namespace ApartmentManagementSystem.Migrations
                     b.Navigation("Building");
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.FlatBillingProfile", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Flat");
                 });
 
             modelBuilder.Entity("ApartmentManagementSystem.Models.OwnerBillingProfile", b =>
@@ -862,6 +1023,25 @@ namespace ApartmentManagementSystem.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.TenantAssignment", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.Flat", "Flat")
+                        .WithMany()
+                        .HasForeignKey("FlatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ApartmentManagementSystem.Models.ApplicationUser", "TenantUser")
+                        .WithMany()
+                        .HasForeignKey("TenantUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Flat");
+
+                    b.Navigation("TenantUser");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.TenantBill", b =>
                 {
                     b.HasOne("ApartmentManagementSystem.Models.Flat", "Flat")
@@ -870,15 +1050,26 @@ namespace ApartmentManagementSystem.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ApartmentManagementSystem.Models.Tenant", "Tenant")
+                    b.HasOne("ApartmentManagementSystem.Models.ApplicationUser", "TenantUser")
                         .WithMany()
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("TenantUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Flat");
 
-                    b.Navigation("Tenant");
+                    b.Navigation("TenantUser");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.TenantPayment", b =>
+                {
+                    b.HasOne("ApartmentManagementSystem.Models.TenantBill", "TenantBill")
+                        .WithMany("Payments")
+                        .HasForeignKey("TenantBillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TenantBill");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -953,6 +1144,11 @@ namespace ApartmentManagementSystem.Migrations
                     b.Navigation("Allocations");
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.ExpenseAllocation", b =>
+                {
+                    b.Navigation("Payments");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.Flat", b =>
                 {
                     b.Navigation("Tenants");
@@ -961,6 +1157,11 @@ namespace ApartmentManagementSystem.Migrations
             modelBuilder.Entity("ApartmentManagementSystem.Models.Tenant", b =>
                 {
                     b.Navigation("Rents");
+                });
+
+            modelBuilder.Entity("ApartmentManagementSystem.Models.TenantBill", b =>
+                {
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }
