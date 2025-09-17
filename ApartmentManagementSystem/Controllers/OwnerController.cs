@@ -1,6 +1,5 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels;
 using ApartmentManagementSystem.ViewModels.Owner;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -194,6 +193,82 @@ namespace ApartmentManagementSystem.Controllers
 
             ViewBag.TargetOwnerId = targetOwnerId;
             return View(rows);
+        }
+
+        // GET: Owner/CommonBills
+        [HttpGet]
+        public async Task<IActionResult> CommonBills(string? ownerId = null)
+        {
+            var me = await _userManager.GetUserAsync(User);
+            if (me == null) return Forbid();
+
+            // Owner can only see their own bills; President/SA may pass ownerId
+            var targetOwnerId = User.IsInRole("Owner") ? me.Id : (ownerId ?? me.Id);
+
+            // All allocations for this owner; if President, scope to their building
+            var q = _context.ExpenseAllocations
+                .Include(a => a.CommonBill)
+                .Include(a => a.Payments)
+                .Where(a => a.OwnerId == targetOwnerId);
+
+            if (User.IsInRole("President") && me.BuildingId != null)
+                q = q.Where(a => a.CommonBill!.BuildingId == me.BuildingId);
+
+            var allocations = await q.AsNoTracking().ToListAsync();
+            if (allocations.Count == 0)
+                return View(new OwnerBillsPage
+                {
+                    OwnerId = targetOwnerId,
+                    OwnerName = me.Fullname ?? me.UserName ?? "(owner)",
+                    Bills = new(),
+                    BuildingId = allocations.FirstOrDefault()?.CommonBill?.BuildingId ?? Guid.Empty,
+                    History = new()
+                });
+
+            var buildingId = allocations.First().CommonBill!.BuildingId;
+            var owner = await _userManager.FindByIdAsync(targetOwnerId);
+
+            var items = allocations
+                .OrderByDescending(a => a.CommonBill!.BillDate)
+                .Select(a => new OwnerBillItem
+                {
+                    CommonBillId = a.CommonBillId,
+                    Title = a.CommonBill!.Name,
+                    BillDate = a.CommonBill!.BillDate,
+                    Allocated = a.AmountDue,
+                    Paid = a.Payments.Sum(p => p.Amount)
+                })
+                .ToList();
+
+            // Payment history (same style you use in OwnerBillingController.View)
+            var history = await _context.ExpenseAllocationPayments
+                .Join(_context.ExpenseAllocations.Include(a => a.CommonBill),
+                      p => p.ExpenseAllocationId,
+                      a => a.Id,
+                      (p, a) => new { p, a })
+                .Where(z => z.a.OwnerId == targetOwnerId && z.a.CommonBill!.BuildingId == buildingId)
+                .OrderByDescending(z => z.p.PaymentDate).ThenByDescending(z => z.a.CommonBill!.BillDate)
+                .Select(z => new OwnerPaymentRecord
+                {
+                    PaymentId = z.p.Id,
+                    PaymentDate = z.p.PaymentDate,
+                    BillTitle = z.a.CommonBill!.Name,
+                    BillDate = z.a.CommonBill!.BillDate,
+                    Amount = z.p.Amount,
+                    Reference = z.p.Reference
+                })
+                .ToListAsync();
+
+            var page = new OwnerBillsPage
+            {
+                OwnerId = targetOwnerId,
+                OwnerName = owner?.Fullname ?? owner?.UserName ?? "(owner)",
+                BuildingId = buildingId,
+                Bills = items,
+                History = history
+            };
+
+            return View(page);
         }
     }
 }
