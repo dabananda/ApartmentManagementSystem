@@ -119,7 +119,7 @@
                 <div class="card-header fw-semibold">Cashflow (last 12 months)</div>
                 <div class="card-body">
                     <div class="chart-wrap"><canvas id="cfChart"></canvas></div>
-                    <div class="small text-muted mt-2">In = Owners’ payments · Out = Expense payments</div>
+                    <div class="small text-muted mt-2">In = Owners' payments · Out = Expense payments</div>
                 </div>
             </div>
         </div>
@@ -143,7 +143,7 @@
         </div>
     </div>
 
-    <!-- ===== Recent Activity (your improved table) ===== -->
+    <!-- ===== Recent Activity ===== -->
     <div class="row g-3 mb-3">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -152,21 +152,21 @@
                     <div class="text-muted small">Last 25 items</div>
                 </div>
                 <div class="card-body p-0 pb-2">
-                    <div class="table-responsive">
-                        <table id="recentTable" class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 200px;">Date/Time</th>
-                                    <th style="width: 160px;">Type</th>
-                                    <th>Description</th>
-                                    <th class="text-end" style="width: 160px;">Amount</th>
-                                    <th style="width: 90px;">Dir</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model.RecentTransactions != null && Model.RecentTransactions.Any())
-                                {
-                                    foreach (var t in Model.RecentTransactions)
+                    @if (Model.RecentTransactions?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table id="recentTable" class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 200px;">Date/Time</th>
+                                        <th style="width: 160px;">Type</th>
+                                        <th>Description</th>
+                                        <th class="text-end" style="width: 160px;">Amount</th>
+                                        <th style="width: 90px;">Dir</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var t in Model.RecentTransactions)
                                     {
                                         var typeBadge = t.Type switch
                                         {
@@ -179,34 +179,37 @@
                                         var dirBadge = t.Direction == "In" ? "badge bg-success-subtle text-success" :
                                         t.Direction == "Out" ? "badge bg-danger-subtle text-danger" :
                                         "badge bg-secondary-subtle text-secondary";
-                                        var iso = t.OccurredAt.ToUniversalTime().ToString("O"); // ISO UTC
-                                                                                                <tr>
-                                                                                                    <td data-order="@iso">
-                                                                                                        <time class="js-when" datetime="@iso" data-iso="@iso"></time>
-                                                                                                    </td>
-                                                                                                    <td><span class="badge @typeBadge">@t.Type</span></td>
-                                                                                                    <td>@t.Description</td>
-                                                                                                    <td class="text-end">
+                                        var iso = t.OccurredAt.ToUniversalTime().ToString("O");
+
+                                        <tr>
+                                            <td data-order="@iso">
+                                                <time class="js-when" datetime="@iso" data-iso="@iso"></time>
+                                            </td>
+                                            <td><span class="badge @typeBadge">@(t.Type ?? "N/A")</span></td>
+                                            <td>@(t.Description ?? "N/A")</td>
+                                            <td class="text-end">
                                                 @if (t.Amount.HasValue)
                                                 {
-                                                    @($"{t.Currency ?? currency} {t.Amount.Value:N2}")
+                                                    <text>@(t.Currency ?? currency) @t.Amount.Value.ToString("N2")</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>-</text>
                                                 }
                                             </td>
-                                            <td><span class="@dirBadge">@t.Direction</span></td>
+                                            <td><span class="@dirBadge">@(t.Direction ?? "N/A")</span></td>
                                         </tr>
                                     }
-                                }
-                                else
-                                {
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">
-                                            No recent activity to show.
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            No recent activity to show.
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -226,17 +229,15 @@
             position: relative;
             height: 220px;
         }
+
         @@media (max-width: 576px) {
-            .chart-wrap
+            .chart-wrap {
+                height: 220px;
+            }
 
-        {
-            height: 220px;
-        }
-
-        .chart-wrap--sm {
-            height: 200px;
-        }
-
+            .chart-wrap--sm {
+                height: 200px;
+            }
         }
 
         .progress {
@@ -255,7 +256,6 @@
             vertical-align: middle;
         }
     </style>
-
 }
 
 @section Scripts {
@@ -281,17 +281,24 @@
 
         // ===== DataTables =====
         $(function () {
+            // Format time elements
             document.querySelectorAll('time.js-when').forEach(t => {
                 const iso = t.getAttribute('data-iso');
-                t.textContent = fmtDhaka(iso);
+                if (iso) {
+                    t.textContent = fmtDhaka(iso);
+                }
             });
 
-            $('#recentTable').DataTable({
-                order: [[0, 'desc']],
-                pageLength: 10,
-                lengthMenu: [10, 25, 50, 100],
-                stateSave: true
-            });
+            // Only initialize DataTable if the table exists
+            const tableElement = document.getElementById('recentTable');
+            if (tableElement) {
+                $('#recentTable').DataTable({
+                    order: [[0, 'desc']],
+                    pageLength: 10,
+                    lengthMenu: [10, 25, 50, 100],
+                    stateSave: true
+                });
+            }
         });
 
         // ===== Charts =====
