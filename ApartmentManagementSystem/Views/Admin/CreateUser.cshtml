@@ -6,10 +6,16 @@
     var roles = ViewBag.Roles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
 
     var isOwner = User.IsInRole("Owner");
-    // If Owner, only allow "Tenant"
-    var filteredRoles = isOwner
-        ? roles.Where(r => string.Equals(r.Value, "Tenant", StringComparison.OrdinalIgnoreCase)).ToList()
-        : roles;
+    var isPresident = User.IsInRole("President");
+    var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+    // Logic:
+    // - SuperAdmin and President can create all roles
+    // - Owner (but not President) can only create Tenant
+    var canCreateAllRoles = isSuperAdmin || isPresident;
+    var filteredRoles = canCreateAllRoles
+        ? roles
+        : roles.Where(r => string.Equals(r.Value, "Tenant", StringComparison.OrdinalIgnoreCase)).ToList();
 }
 
 <h2 class="mb-3">Create User</h2>
@@ -56,16 +62,16 @@
     <div class="col-md-6">
         <label asp-for="Role" class="form-label"></label>
 
-        @if (isOwner)
+        @if (!canCreateAllRoles)
         {
-            <!-- Owner: lock role to Tenant -->
+            <!-- Owner only: lock role to Tenant -->
             <input type="hidden" asp-for="Role" value="Tenant" />
             <input class="form-control" value="Tenant" readonly />
             <small class="text-muted d-block">As an Owner, you can create <strong>Tenant</strong> users only.</small>
         }
         else
         {
-            <!-- Admin/President/etc: show full roles list -->
+            <!-- SuperAdmin/President: show full roles list -->
             <select asp-for="Role" class="form-select" asp-items="filteredRoles"></select>
             <small class="text-muted d-block">Selecting <strong>President</strong> will also grant <strong>Owner</strong> automatically.</small>
         }
