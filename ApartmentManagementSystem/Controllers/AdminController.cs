@@ -1213,21 +1213,30 @@ namespace ApartmentManagementSystem.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteUser(string id)
         {
-            if (string.IsNullOrWhiteSpace(id)) return BadRequest();
-
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return NotFound();
 
-            var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Contains("SuperAdmin") || roles.Contains("President"))
+            // Check for dependent data that blocks hard delete
+            var hasBills = await _context.TenantBills.AnyAsync(b => b.TenantUserId == id);
+            var hasAssignments = await _context.TenantAssignments.AnyAsync(a => a.TenantUserId == id && a.EndDate == null);
+
+            if (hasBills || hasAssignments)
             {
-                TempData["Error"] = "Cannot delete SuperAdmin or President.";
+                TempData["Error"] =
+                    "This user has billing history and/or active tenant assignment. " +
+                    "For audit integrity, delete is blocked. Please deactivate the user instead.";
                 return RedirectToAction(nameof(Users));
             }
 
             var result = await _userManager.DeleteAsync(user);
-            TempData[result.Succeeded ? "Success" : "Error"] =
-                result.Succeeded ? $"Deleted {user.Fullname}." : string.Join("; ", result.Errors.Select(e => e.Description));
+            if (!result.Succeeded)
+            {
+                foreach (var e in result.Errors) ModelState.AddModelError("", e.Description);
+                TempData["Error"] = "Delete failed.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            TempData["Success"] = "User deleted.";
             return RedirectToAction(nameof(Users));
         }
 
