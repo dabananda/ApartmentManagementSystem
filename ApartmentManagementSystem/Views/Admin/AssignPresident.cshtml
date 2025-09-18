@@ -4,40 +4,55 @@
     ViewData["Title"] = "Assign President";
 }
 
-<h2 class="mb-3">Assign President</h2>
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+        <div class="card">
+            <div class="card-header text-center">
+                <h3 class="card-title">Assign President</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-controller="Admin" asp-action="AssignPresident" class="row g-3">
+                    @Html.AntiForgeryToken()
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
+                    <div class="col-md-6">
+                        <label asp-for="BuildingId" class="form-label"></label>
+                        <select asp-for="BuildingId" class="form-select" asp-items="Model.Buildings" id="BuildingId">
+                            <option value="">-- Select a building --</option>
+                        </select>
+                        <span asp-validation-for="BuildingId" class="text-danger"></span>
+                    </div>
 
-<form method="post" asp-controller="Admin" asp-action="AssignPresident" class="row g-3">
-    @Html.AntiForgeryToken()
+                    <div class="col-md-6">
+                        <label asp-for="OwnerUserId" class="form-label"></label>
+                        <select asp-for="OwnerUserId" class="form-select" asp-items="Model.Owners" id="OwnerUserId">
+                            <option value="">-- Select an owner --</option>
+                        </select>
+                        <span asp-validation-for="OwnerUserId" class="text-danger"></span>
+                    </div>
 
-    <div class="col-md-6">
-        <label asp-for="BuildingId" class="form-label"></label>
-        <select asp-for="BuildingId" class="form-select" asp-items="Model.Buildings" id="BuildingId">
-            <option value="">-- Select a building --</option>
-        </select>
-        <span asp-validation-for="BuildingId" class="text-danger"></span>
+                    <div class="col-12">
+                        <div class="row">
+                            <div class="col">
+                                <a asp-action="Users" asp-controller="Admin" class="btn btn-secondary w-100">Back to Admin Panel</a>
+                            </div>
+                            <div class="col text-end">
+                                <button class="btn btn-primary w-100" type="submit">Assign President</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-
-    <div class="col-md-6">
-        <label asp-for="OwnerUserId" class="form-label"></label>
-        <select asp-for="OwnerUserId" class="form-select" asp-items="Model.Owners" id="OwnerUserId">
-            <option value="">-- Select an owner --</option>
-        </select>
-        <span asp-validation-for="OwnerUserId" class="text-danger"></span>
-    </div>
-
-    <div class="col-12">
-        <button class="btn btn-primary" type="submit">Assign President</button>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
