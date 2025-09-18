@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Net.Mail;
+using System.Net.Sockets;
 
 namespace ApartmentManagementSystem.Controllers
 {
@@ -17,10 +19,11 @@ namespace ApartmentManagementSystem.Controllers
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _users;
         private readonly IEmailSender _email;
+        private readonly ILogger<TenantRentController> _log;
 
-        public TenantRentController(ApplicationDbContext db, UserManager<ApplicationUser> users, IEmailSender email)
+        public TenantRentController(ApplicationDbContext db, UserManager<ApplicationUser> users, IEmailSender email, ILogger<TenantRentController> log)
         {
-            _db = db; _users = users; _email = email;
+            _db = db; _users = users; _email = email; _log = log;
         }
 
         // GET: /TenantRent/List
@@ -354,34 +357,54 @@ namespace ApartmentManagementSystem.Controllers
             var list = payments.ToList();
             if (list.Count == 0) return;
 
-            var rows = new System.Text.StringBuilder();
-            var billIds = list.Select(x => x.TenantBillId).ToList();
-            var bills = await _db.TenantBills
-                 .AsNoTracking()
-                 .Include(x => x.Flat)
-                 .Where(x => billIds.Contains(x.Id))
-                 .ToDictionaryAsync(x => x.Id);
-            foreach (var p in list)
+            try
             {
-                var b = bills[p.TenantBillId];
-                rows.AppendLine($@"<tr>
-                                     <td>{b.Title}</td><td>{b.BillDate:yyyy-MM-dd}</td>
-                                     <td style=""text-align:right"">{p.Amount:C}</td><td>{(string.IsNullOrWhiteSpace(p.Reference) ? "-" : p.Reference)}</td>
-                                 </tr>");
-            }
+                var billIds = list.Select(x => x.TenantBillId).ToList();
+                var bills = await _db.TenantBills
+                    .AsNoTracking()
+                    .Include(x => x.Flat)
+                    .Where(x => billIds.Contains(x.Id))
+                    .ToDictionaryAsync(x => x.Id);
 
-            var total = list.Sum(x => x.Amount);
-            var html = $@"
-                <p>Hello {System.Net.WebUtility.HtmlEncode(user.Fullname ?? user.UserName)},</p>
-                <p>We’ve recorded your rent payment{(list.Count > 1 ? "s" : "")}:</p>
-                <table cellpadding=""6"" border=""1"" style=""border-collapse:collapse;"">
-                    <thead><tr><th>Bill</th><th>Bill Date</th><th>Amount</th><th>Reference</th></tr></thead>
-                    <tbody>{rows}</tbody>
-                    <tfoot><tr><td colspan=""2"" style=""text-align:right""><strong>Total</strong></td>
-                    <td style=""text-align:right""><strong>{total:C}</strong></td><td></td></tr></tfoot>
-                </table>
-                <p>Thank you.</p>";
-            await _email.SendEmailAsync(user.Email!, "Rent payment receipt", html);
+                var rows = new System.Text.StringBuilder();
+                foreach (var p in list)
+                {
+                    var b = bills[p.TenantBillId];
+                    rows.AppendLine($@"<tr>
+                    <td>{b.Title}</td><td>{b.BillDate:yyyy-MM-dd}</td>
+                    <td style=""text-align:right"">{p.Amount:C}</td><td>{(string.IsNullOrWhiteSpace(p.Reference) ? "-" : p.Reference)}</td>
+                </tr>");
+                }
+
+                var total = list.Sum(x => x.Amount);
+                var html = $@"
+            <p>Hello {System.Net.WebUtility.HtmlEncode(user.Fullname ?? user.UserName)},</p>
+            <p>We’ve recorded your rent payment{(list.Count > 1 ? "s" : "")}:</p>
+            <table cellpadding=""6"" border=""1"" style=""border-collapse:collapse;"">
+                <thead><tr><th>Bill</th><th>Bill Date</th><th>Amount</th><th>Reference</th></tr></thead>
+                <tbody>{rows}</tbody>
+                <tfoot><tr><td colspan=""2"" style=""text-align:right""><strong>Total</strong></td>
+                <td style=""text-align:right""><strong>{total:C}</strong></td><td></td></tr></tfoot>
+            </table>
+            <p>Thank you.</p>";
+
+                await _email.SendEmailAsync(user.Email!, "Rent payment receipt", html);
+            }
+            catch (SmtpException ex)
+            {
+                _log.LogWarning(ex, "SMTP failed while emailing rent receipt to {Email}. Payment saved.", user.Email);
+                TempData["Warning"] = "Payment saved, but the receipt email could not be sent (SMTP issue).";
+            }
+            catch (SocketException ex)
+            {
+                _log.LogWarning(ex, "Socket error while emailing rent receipt to {Email}. Payment saved.", user.Email);
+                TempData["Warning"] = "Payment saved, but the receipt email could not be sent (network issue).";
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Unexpected error while emailing rent receipt to {Email}. Payment saved.", user.Email);
+                TempData["Warning"] = "Payment saved, but sending the receipt failed.";
+            }
         }
 
         private async Task<int> EnsureCurrentMonthBillsForTenantAsync(string tenantUserId)
