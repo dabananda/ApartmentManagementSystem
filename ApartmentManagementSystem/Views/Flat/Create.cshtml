@@ -4,32 +4,38 @@
     ViewData["Title"] = "Create Flat";
 }
 
-<h1>Create Flat</h1>
-
-<h4>Building: @ViewData["BuildingName"]</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <input type="hidden" asp-for="BuildingId" value="@ViewData["BuildingId"]" />
-
-            <div class="form-group">
-                <label asp-for="FlatNumber" class="control-label"></label>
-                <input asp-for="FlatNumber" class="form-control" />
-                <span asp-validation-for="FlatNumber" class="text-danger"></span>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header text-center bg-brand-gradient text-white py-3">
+                <h4 class="card-title">Create Flat</h4>
+                <small class="opacity-75">Create a flat for @ViewData["BuildingName"]</small>
             </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+            <div class="card-body">
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <input type="hidden" asp-for="BuildingId" value="@ViewData["BuildingId"]" />
+
+                    <div class="form-group mb-3">
+                        <label asp-for="FlatNumber" class="control-label">Flat Number</label>
+                        <input asp-for="FlatNumber" class="form-control" placeholder="Enter flat number (e.g, 1A)" />
+                        <span asp-validation-for="FlatNumber" class="text-danger"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <a class="btn btn-outline-secondary w-100" asp-action="Index" asp-controller="Flat" asp-route-buildingId="@ViewData["BuildingId"]">Back to Flat List</a>
+                        </div>
+                        <div class="col">
+                            <input type="submit" value="Create" class="btn btn-primary w-100" />
+                        </div>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index" asp-controller="Building">Back to Building List</a>
-</div>
 
 @section Scripts {
     @{
