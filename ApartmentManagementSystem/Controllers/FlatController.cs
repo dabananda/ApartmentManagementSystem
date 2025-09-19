@@ -186,23 +186,53 @@ namespace ApartmentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id, bool confirmed = false)
         {
+            // Load only what's needed to route back correctly
             var flat = await _context.Flats
-                .Include(f => f.Building)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.Id == id);
 
             if (flat == null) return NotFound();
 
-            // Authorization check for President role
+            // President can only delete within their own building
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
-                if (user.BuildingId != flat.BuildingId) return Forbid();
+                if (user?.BuildingId != flat.BuildingId) return Forbid();
             }
 
-            _context.Flats.Remove(flat);
-            await _context.SaveChangesAsync();
+            // ---- Dependency checks (aligns with DeleteBehavior.Restrict FKs) ----
+            var hasBills = await _context.TenantBills.AnyAsync(b => b.FlatId == id);
+            var hasTenants = await _context.Tenants.AnyAsync(t => t.FlatId == id);
+            var hasActiveAssign = await _context.TenantAssignments.AnyAsync(a => a.FlatId == id && a.EndDate == null);
+            var hasEntryLogs = await _context.EntryLogs.AnyAsync(e => e.FlatId == id);
 
-            TempData["Success"] = "Flat deleted successfully.";
+            if (hasBills || hasTenants || hasActiveAssign || hasEntryLogs)
+            {
+                var reasons = new List<string>();
+                if (hasBills) reasons.Add("tenant bills");
+                if (hasTenants) reasons.Add("tenants");
+                if (hasActiveAssign) reasons.Add("active tenant assignment");
+                if (hasEntryLogs) reasons.Add("entry logs");
+
+                TempData["Error"] = "Cannot delete this flat because it has " +
+                                    string.Join(", ", reasons) +
+                                    ". Remove/archive those records first.";
+                return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
+            }
+
+            try
+            {
+                // Delete by key to avoid reloading a tracked entity
+                _context.Flats.Remove(new Flat { Id = id });
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Flat deleted successfully.";
+            }
+            catch (DbUpdateException)
+            {
+                // Race condition safety net
+                TempData["Error"] = "Delete blocked by related data. Please remove dependent records first.";
+            }
+
             return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
         }
     }
