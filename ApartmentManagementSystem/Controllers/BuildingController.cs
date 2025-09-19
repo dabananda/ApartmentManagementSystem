@@ -257,12 +257,42 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
             if (!User.IsInRole("SuperAdmin")) return Forbid();
+
             var building = await _context.Buildings.FindAsync(id);
-            if (building != null)
+            if (building == null) return NotFound();
+
+            // Collect all flat ids in this building
+            var flatIds = await _context.Flats
+                .Where(f => f.BuildingId == id)
+                .Select(f => f.Id)
+                .ToListAsync();
+
+            // If any flats have Restrict dependents, deleting the building will fail (cascade -> restrict)
+            var hasBlocking =
+                   await _context.TenantBills.AnyAsync(b => flatIds.Contains(b.FlatId))
+                || await _context.Tenants.AnyAsync(t => flatIds.Contains(t.FlatId))
+                || await _context.TenantAssignments.AnyAsync(a => flatIds.Contains(a.FlatId) && a.EndDate == null)
+                || await _context.EntryLogs.AnyAsync(e => flatIds.Contains(e.FlatId));
+
+            if (hasBlocking)
             {
-                _context.Buildings.Remove(building);
-                await _context.SaveChangesAsync();
+                TempData["Error"] =
+                    "Cannot delete this building because one or more flats have related records " +
+                    "(bills, tenants, active assignments, or entry logs). Please remove/archive those records first.";
+                return RedirectToAction(nameof(Details), new { id });
             }
+
+            try
+            {
+                _context.Buildings.Remove(building); // will cascade to Flats safely when no blockers exist
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Building deleted.";
+            }
+            catch (DbUpdateException)
+            {
+                TempData["Error"] = "Delete blocked by related data. Please remove dependent records first.";
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
