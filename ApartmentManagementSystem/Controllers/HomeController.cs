@@ -54,8 +54,8 @@ namespace ApartmentManagementSystem.Controllers
                 return View("Index", model);
             }
 
-             await _emailSender.SendEmailAsync("satyajitroy2k24@gmail.com", $"[AMS] {model.Subject}",
-                 $"From: {model.Name} <{model.Email}>\n\n{model.Message}");
+            await _emailSender.SendEmailAsync("dabananda.dev@gmail.com", $"[AMS] {model.Subject}",
+                $"From: {model.Email} <br/> Name: {model.Name} <br/> Message: {model.Message}");
 
             _logger.LogInformation("Contact message from {Name} <{Email}>: {Subject} / {Message}",
                 model.Name, model.Email, model.Subject, model.Message);
