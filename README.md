@@ -4,6 +4,10 @@ A role-based ASP.NET Core MVC application to operate an apartment building: buil
 
 ---
 
+Live: https://givema7496-001-site1.ktempurl.com/
+
+---
+
 ## Table of Contents
 
 - [Features](#features)
