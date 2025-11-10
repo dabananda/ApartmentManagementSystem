@@ -2,6 +2,13 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
+@{
+    var user = UserManager.GetUserAsync(User).Result;
+    var initials = user?.Fullname?.Split(' ').Take(2).Select(n => n.FirstOrDefault()).ToArray();
+    var avatarText = initials?.Length >= 2 ? $"{initials[0]}{initials[1]}" : (user?.Fullname?.FirstOrDefault().ToString() ?? "U");
+    var profilePictureUrl = user?.ProfilePictureUrl;
+}
+
 @if (SignInManager.IsSignedIn(User))
 {
     <!-- User Profile Dropdown -->
@@ -9,13 +16,17 @@
         <a class="nav-link dropdown-toggle text-white px-3 py-2 rounded-3 bg-opacity-10 bg-white d-flex align-items-center"
            href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <div class="user-avatar me-2 d-none d-md-flex">
-                <div class="avatar-circle-small">
-                    @{
-                        var user = UserManager.GetUserAsync(User).Result;
-                        var initials = user?.Fullname?.Split(' ').Take(2).Select(n => n.FirstOrDefault()).ToArray();
-                        var avatarText = initials?.Length >= 2 ? $"{initials[0]}{initials[1]}" : (user?.Fullname?.FirstOrDefault().ToString() ?? "U");
+                <div class="avatar-circle-small me-2">
+
+                    @if (!string.IsNullOrEmpty(profilePictureUrl))
+                    {
+                        <img src="@profilePictureUrl" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />
                     }
-                    @avatarText
+                    else
+                    {
+                        @avatarText
+                    }
+
                 </div>
             </div>
             <span class="d-none d-lg-inline">@user?.Fullname</span>
@@ -23,7 +34,7 @@
         </a>
 
         <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" style="min-width: 200px;">
-            <li class="px-3 py-2 border-bottom">
+            @* <li class="px-3 py-2 border-bottom">
                 <div class="d-flex align-items-center">
                     <div class="avatar-circle-small me-2">
                         @avatarText
@@ -33,14 +44,14 @@
                         <div class="small text-muted">@user?.Email</div>
                     </div>
                 </div>
-            </li>
-
-            @* <li>
-                <a class="dropdown-item d-flex align-items-center py-2" asp-area="Identity" asp-page="/Account/Manage/Index">
-                    <i class="bi bi-person-gear me-2"></i>
-                    <span>Profile Settings</span>
-                </a>
             </li> *@
+
+            <li>
+                <a class="dropdown-item d-flex align-items-center py-2" asp-area="Identity" asp-page="/Account/Manage/Index">
+                    <i class="bi bi-person me-2"></i>
+                    <span>Profile</span>
+                </a>
+            </li>
 
             <li><hr class="dropdown-divider my-1"></li>
 
@@ -82,6 +93,7 @@ else
         font-weight: bold;
         font-size: 0.75rem;
         flex-shrink: 0;
+        overflow: hidden;
     }
 
     .dropdown-menu {

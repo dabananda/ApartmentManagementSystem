@@ -9,8 +9,24 @@
 <partial name="_StatusMessage" for="StatusMessage" />
 <div class="row">
     <div class="col-md-6">
-        <form id="profile-form" method="post">
+        <form id="profile-form" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-group mb-3 text-center">
+                <label asp-for="Input.ProfilePicture" class="form-label"></label>
+                <br />
+
+                @if (string.IsNullOrEmpty(Model.CurrentProfilePictureUrl))
+                {
+                    <img id="profilePicturePreview" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1759038526/MatchUp/user_nzddef.png" alt="Profile Picture" class="rounded-circle mb-2" style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #eee;" />
+                }
+                else
+                {
+                    <img id="profilePicturePreview" src="@Model.CurrentProfilePictureUrl" alt="Profile Picture" class="rounded-circle mb-2" style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #eee;" />
+                }
+
+                <input asp-for="Input.ProfilePicture" type="file" class="form-control mb-3" accept="image/*" />
+                <span asp-validation-for="Input.ProfilePicture" class="text-danger"></span>
+            </div>
             <div class="form-floating mb-3">
                 <input asp-for="Username" class="form-control" placeholder="Please choose your username." disabled />
                 <label asp-for="Username" class="form-label"></label>
@@ -27,4 +43,25 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var fileInput = document.getElementById('Input_ProfilePicture');
+            var previewImg = document.getElementById('profilePicturePreview');
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function() {
+                    if (this.files && this.files[0]) {
+                        var reader = new FileReader();
+
+                        reader.onload = function(e) {
+                            previewImg.src = e.target.result;
+                        };
+
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+            }
+        });
+    </script>
 }

@@ -39,6 +39,7 @@ builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
 builder.Services.AddHostedService<TenantMonthlyBillGenerator>();
+builder.Services.AddScoped<IPhotoUploadService, CloudinaryPhotoUploadService>();
 
 // StripeClient via DI
 builder.Services.AddSingleton(sp =>

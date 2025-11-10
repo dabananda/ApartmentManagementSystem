@@ -7,6 +7,7 @@ namespace ApartmentManagementSystem.Models
     {
         [Required, MaxLength(100)]
         public string Fullname { get; set; } = default!;
+        public string? ProfilePictureUrl { get; set; }
 
         // Which building this user belongs to (if any)
         public Guid? BuildingId { get; set; }

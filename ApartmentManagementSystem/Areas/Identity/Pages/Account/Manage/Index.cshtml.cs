@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
+using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using ApartmentManagementSystem.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace ApartmentManagementSystem.Areas.Identity.Pages.Account.Manage
 {
@@ -17,13 +18,16 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account.Manage
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IPhotoUploadService _photoUploadService;
 
         public IndexModel(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager)
+            SignInManager<ApplicationUser> signInManager,
+            IPhotoUploadService photoUploadService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _photoUploadService = photoUploadService;
         }
 
         /// <summary>
@@ -31,6 +35,8 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account.Manage
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
         public string Username { get; set; }
+
+        public string CurrentProfilePictureUrl { get; set; }
 
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -59,6 +65,9 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account.Manage
             [Phone]
             [Display(Name = "Phone number")]
             public string PhoneNumber { get; set; }
+
+            [Display(Name = "New Profile Picture")]
+            public IFormFile ProfilePicture { get; set; }
         }
 
         private async Task LoadAsync(ApplicationUser user)
@@ -67,6 +76,8 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account.Manage
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
 
             Username = userName;
+
+            CurrentProfilePictureUrl = user.ProfilePictureUrl;
 
             Input = new InputModel
             {
@@ -107,6 +118,27 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account.Manage
                 if (!setPhoneResult.Succeeded)
                 {
                     StatusMessage = "Unexpected error when trying to set phone number.";
+                    return RedirectToPage();
+                }
+            }
+
+            if (Input.ProfilePicture != null && Input.ProfilePicture.Length > 0)
+            {
+                try
+                {
+                    var newProfilePictureUrl = await _photoUploadService.UploadAsync(Input.ProfilePicture);
+                    user.ProfilePictureUrl = newProfilePictureUrl;
+                    var updateResult = await _userManager.UpdateAsync(user);
+
+                    if (!updateResult.Succeeded)
+                    {
+                        StatusMessage = "Unexpected error when trying to set profile picture.";
+                        return RedirectToPage();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = "Error: Could not upload profile picture. " + ex.Message;
                     return RedirectToPage();
                 }
             }
