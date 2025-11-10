@@ -66,7 +66,7 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account.Manage
             [Display(Name = "Phone number")]
             public string PhoneNumber { get; set; }
 
-            [Display(Name = "New Profile Picture")]
+            [Display(Name = "")]
             public IFormFile ProfilePicture { get; set; }
         }
 
