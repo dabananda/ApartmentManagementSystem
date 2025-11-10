@@ -7,6 +7,9 @@
     bool isOwner = User.IsInRole("Owner");
     bool isPresident = User.IsInRole("President");
     bool isSuperAdmin = User.IsInRole("SuperAdmin");
+
+    // Check if sidebar should be hidden
+    bool hideSidebar = ViewData["HideSidebar"] != null && (bool)ViewData["HideSidebar"];
 }
 
 <!DOCTYPE html>
@@ -43,24 +46,17 @@
                 <span class="d-md-none">AMS</span>
             </a>
 
-            <!-- Mobile toggle button -->
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="offcanvas"
-                    data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <!-- Mobile toggle button - hide if sidebar is hidden -->
+            @if (!hideSidebar)
+            {
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="offcanvas"
+                        data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            }
 
             <!-- Right side nav items -->
             <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
-                <!-- Notifications (optional) -->
-                @* <div class="nav-item me-3 d-none d-lg-block">
-                    <button class="btn btn-link text-white p-2 position-relative">
-                        <i class="bi bi-bell fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em;">
-                            3
-                        </span>
-                    </button>
-                </div> *@
-
                 <!-- Home link -->
                 <div class="nav-item me-2">
                     <a class="nav-link text-white px-3 py-2 rounded-3 bg-opacity-10 bg-white d-flex align-items-center"
@@ -79,28 +75,29 @@
 
     <div class="container-fluid p-0">
         <div class="row g-0">
-            <!-- Desktop Sidebar -->
-            <nav class="col-lg-3 col-xl-2 d-none d-lg-block sidebar-modern">
-                <div class="sidebar-content h-100">
-                    @* @Html.Partial("_SidebarContent") *@
-                    <partial name="_SidebarContent" />
-                </div>
-            </nav>
+            <!-- Desktop Sidebar - conditionally rendered -->
+            @if (!hideSidebar)
+            {
+                <nav class="col-lg-3 col-xl-2 d-none d-lg-block sidebar-modern">
+                    <div class="sidebar-content h-100">
+                        <partial name="_SidebarContent" />
+                    </div>
+                </nav>
 
-            <!-- Mobile Offcanvas Sidebar -->
-            <div class="offcanvas offcanvas-start sidebar-offcanvas" tabindex="-1" id="sidebarOffcanvas">
-                <div class="offcanvas-header border-bottom">
-                    <h6 class="offcanvas-title fw-semibold text-dark">Navigation</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                <!-- Mobile Offcanvas Sidebar -->
+                <div class="offcanvas offcanvas-start sidebar-offcanvas" tabindex="-1" id="sidebarOffcanvas">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title fw-semibold text-dark">Navigation</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                    </div>
+                    <div class="offcanvas-body p-0">
+                        <partial name="_SidebarContent" />
+                    </div>
                 </div>
-                <div class="offcanvas-body p-0">
-                    @* @Html.Partial("_SidebarContent") *@
-                    <partial name="_SidebarContent" />
-                </div>
-            </div>
+            }
 
-            <!-- Main Content -->
-            <main class="col-lg-9 col-xl-10 main-content">
+            <!-- Main Content - dynamically adjust width -->
+            <main class="@(hideSidebar ? "col-12" : "col-lg-9 col-xl-10") main-content">
                 <div class="content-wrapper p-3 p-lg-4">
                     @RenderBody()
                 </div>
@@ -119,7 +116,6 @@
 
     <partial name="_SwalToasts" />
 
-    @* Optional vendor scripts per-page only *@
     @RenderSection("VendorScripts", required: false)
     @RenderSection("Scripts", required: false)
 </body>
