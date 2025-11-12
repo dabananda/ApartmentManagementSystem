@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ApartmentManagementSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class NewLocalDv : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -100,6 +100,7 @@ namespace ApartmentManagementSystem.Migrations
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Fullname = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ProfilePictureUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     BuildingId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     IsApproved = table.Column<bool>(type: "bit", nullable: false),
                     ApprovedByUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
