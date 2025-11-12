@@ -41,7 +41,6 @@ namespace ApartmentManagementSystem.Models
         [StringLength(500, ErrorMessage = "Purpose cannot exceed 500 characters")]
         public string Purpose { get; set; }
 
-        [Required(ErrorMessage = "Entry time is required")]
         public DateTime EntryTime { get; set; } = DateTime.Now;
 
         public DateTime? ExitTime { get; set; }

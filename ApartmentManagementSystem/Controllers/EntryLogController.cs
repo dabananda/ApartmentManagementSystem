@@ -55,9 +55,21 @@ namespace ApartmentManagementSystem.Controllers
             if (user == null) return Unauthorized();
 
             // Initialize a new EntryLog with default values
+            // Set time without seconds and milliseconds
+            var currentTime = DateTime.Now;
+            var timeWithoutSeconds = new DateTime(
+                currentTime.Year,
+                currentTime.Month,
+                currentTime.Day,
+                currentTime.Hour,
+                currentTime.Minute,
+                0, // seconds
+                0  // milliseconds
+            );
+
             var model = new EntryLog
             {
-                EntryTime = DateTime.Now,
+                EntryTime = timeWithoutSeconds,
                 NumberOfPerson = 1
             };
 
@@ -73,11 +85,57 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            // Remove validation errors for navigation properties
             ModelState.Remove("Building");
             ModelState.Remove("Flat");
 
-            // Authorization check - ensure user can only create entries for their building
+            // Normalize EntryTime to remove seconds and milliseconds
+            if (model.EntryTime != default(DateTime) && model.EntryTime != DateTime.MinValue)
+            {
+                model.EntryTime = new DateTime(
+                    model.EntryTime.Year,
+                    model.EntryTime.Month,
+                    model.EntryTime.Day,
+                    model.EntryTime.Hour,
+                    model.EntryTime.Minute,
+                    0, // seconds
+                    0  // milliseconds
+                );
+            }
+            else
+            {
+                // If EntryTime is not set, use current time without seconds
+                var currentTime = DateTime.Now;
+                model.EntryTime = new DateTime(
+                    currentTime.Year,
+                    currentTime.Month,
+                    currentTime.Day,
+                    currentTime.Hour,
+                    currentTime.Minute,
+                    0,
+                    0
+                );
+            }
+
+            // Normalize ExitTime to remove seconds and milliseconds if it's set
+            if (model.ExitTime.HasValue)
+            {
+                model.ExitTime = new DateTime(
+                    model.ExitTime.Value.Year,
+                    model.ExitTime.Value.Month,
+                    model.ExitTime.Value.Day,
+                    model.ExitTime.Value.Hour,
+                    model.ExitTime.Value.Minute,
+                    0, // seconds
+                    0  // milliseconds
+                );
+            }
+
+            ModelState.Remove("EntryTime");
+            if (model.ExitTime.HasValue)
+            {
+                ModelState.Remove("ExitTime");
+            }
+
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
             {
                 if (user.BuildingId != model.BuildingId)
@@ -86,7 +144,6 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            // Validate that the flat belongs to the selected building
             if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
             {
                 var flatExists = await _context.Flats
@@ -98,13 +155,15 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            // Validate entry time
-            if (model.EntryTime > DateTime.Now)
+            // Validate entry time is not in the future (with minute precision)
+            var now = DateTime.Now;
+            var currentTimeWithoutSeconds = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, 0);
+
+            if (model.EntryTime > currentTimeWithoutSeconds)
             {
                 ModelState.AddModelError("EntryTime", "Entry time cannot be in the future.");
             }
 
-            // Validate exit time
             if (model.ExitTime.HasValue && model.ExitTime <= model.EntryTime)
             {
                 ModelState.AddModelError("ExitTime", "Exit time must be after entry time.");
@@ -120,7 +179,6 @@ namespace ApartmentManagementSystem.Controllers
                 return RedirectToAction("Index");
             }
 
-            // If we got this far, something failed, redisplay form
             await PopulateDropdowns(user, model.BuildingId, model.FlatId);
             return View(model);
         }

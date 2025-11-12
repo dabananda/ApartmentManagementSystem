@@ -8,12 +8,6 @@
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12">
-            @* <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Entry Logs</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Create New Entry</li>
-                </ol>
-            </nav> *@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h3 class="text-primary mb-1">
@@ -48,15 +42,6 @@
                     <form asp-action="Create" id="entryLogForm">
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                        <!-- Visitor Information Section -->
-                        @* <div class="row mb-4">
-                            <div class="col-12">
-                                <h6 class="text-primary border-bottom pb-2 mb-3">
-                                    <i class="fas fa-user me-2"></i>Visitor Information
-                                </h6>
-                            </div>
-                        </div> *@
-
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <div class="form-floating">
@@ -77,15 +62,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Location Information Section -->
-                        @* <div class="row mb-4">
-                            <div class="col-12">
-                                <h6 class="text-primary border-bottom pb-2 mb-3">
-                                    <i class="fas fa-map-marker-alt me-2"></i>Location Information
-                                </h6>
-                            </div>
-                        </div> *@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -118,15 +94,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Visit Details Section -->
-                        @* <div class="row mb-4">
-                            <div class="col-12">
-                                <h6 class="text-primary border-bottom pb-2 mb-3">
-                                    <i class="fas fa-clipboard-list me-2"></i>Visit Details
-                                </h6>
-                            </div>
-                        </div> *@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -168,25 +135,16 @@
                             </div>
                         </div>
 
-                        <!-- Time Information Section -->
-                        @* <div class="row mb-4">
-                            <div class="col-12">
-                                <h6 class="text-primary border-bottom pb-2 mb-3">
-                                    <i class="fas fa-clock me-2"></i>Time Information
-                                </h6>
-                            </div>
-                        </div> *@
-
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <div class="form-floating">
-                                    <input asp-for="EntryTime" type="datetime-local" class="form-control" />
+                                    <input asp-for="EntryTime" type="datetime-local" class="form-control" required />
                                     <label asp-for="EntryTime" class="form-label">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Entry Time
+                                        <i class="fas fa-sign-in-alt me-1"></i>Entry Time *
                                     </label>
                                     <span asp-validation-for="EntryTime" class="text-danger small"></span>
                                 </div>
-                                <small class="text-muted">Leave empty to use current time</small>
+                                <small class="text-muted">Current time is set by default</small>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-floating">
@@ -236,11 +194,6 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
 
-    /* .btn-lg {
-        border-radius: 10px;
-        font-weight: 500;
-    } */
-
     .border-bottom {
         border-color: #dee2e6 !important;
     }
@@ -256,15 +209,34 @@
     }
 
     <script>
-        // Set current date-time as default for entry time
+        // Set current date-time as default for entry time (without seconds)
         document.addEventListener('DOMContentLoaded', function() {
             const entryTimeInput = document.querySelector('input[name="EntryTime"]');
             if (entryTimeInput && !entryTimeInput.value) {
-                const now = new Date();
-                const localDateTime = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                entryTimeInput.value = localDateTime;
+                setCurrentTime(entryTimeInput);
             }
         });
+
+        // Helper function to get current time without seconds
+        function getCurrentTimeString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        // Set current time to input
+        function setCurrentTime(input) {
+            input.value = getCurrentTimeString();
+        }
+
+        // Get max datetime (current time) for validation
+        function getMaxDatetime() {
+            return getCurrentTimeString();
+        }
 
         // Load flats based on selected building
         function loadFlats() {
@@ -303,7 +275,7 @@
             let isValid = true;
 
             requiredFields.forEach(field => {
-                if (!field.value.trim()) {
+                if (!field.value || field.value.trim() === '') {
                     field.classList.add('is-invalid');
                     isValid = false;
                 } else {
@@ -313,19 +285,37 @@
             });
 
             // Validate entry time is not in the future
-            const entryTime = document.querySelector('input[name="EntryTime"]').value;
-            if (entryTime && new Date(entryTime) > new Date()) {
-                alert('Entry time cannot be in the future.');
-                e.preventDefault();
-                return;
+            const entryTimeInput = document.querySelector('input[name="EntryTime"]');
+            const entryTime = entryTimeInput.value;
+
+            if (entryTime) {
+                const entryDate = new Date(entryTime);
+                const now = new Date();
+                // Round current time to the minute to match input precision
+                now.setSeconds(0, 0);
+
+                if (entryDate > now) {
+                    alert('Entry time cannot be in the future.');
+                    entryTimeInput.classList.add('is-invalid');
+                    e.preventDefault();
+                    return;
+                }
             }
 
             // Validate exit time is after entry time
-            const exitTime = document.querySelector('input[name="ExitTime"]').value;
-            if (entryTime && exitTime && new Date(exitTime) <= new Date(entryTime)) {
-                alert('Exit time must be after entry time.');
-                e.preventDefault();
-                return;
+            const exitTimeInput = document.querySelector('input[name="ExitTime"]');
+            const exitTime = exitTimeInput.value;
+
+            if (entryTime && exitTime) {
+                const entryDate = new Date(entryTime);
+                const exitDate = new Date(exitTime);
+
+                if (exitDate <= entryDate) {
+                    alert('Exit time must be after entry time.');
+                    exitTimeInput.classList.add('is-invalid');
+                    e.preventDefault();
+                    return;
+                }
             }
 
             if (!isValid) {
@@ -337,7 +327,7 @@
         // Real-time validation feedback
         document.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
             field.addEventListener('blur', function() {
-                if (this.value.trim()) {
+                if (this.value && this.value.trim()) {
                     this.classList.remove('is-invalid');
                     this.classList.add('is-valid');
                 } else {
@@ -347,6 +337,45 @@
             });
         });
 
+        // Real-time validation for entry time
+        document.querySelector('input[name="EntryTime"]').addEventListener('change', function() {
+            if (this.value) {
+                const entryDate = new Date(this.value);
+                const now = new Date();
+                now.setSeconds(0, 0);
+
+                if (entryDate > now) {
+                    this.classList.add('is-invalid');
+                    this.setCustomValidity('Entry time cannot be in the future');
+                } else {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                    this.setCustomValidity('');
+                }
+            }
+        });
+
+        // Real-time validation for exit time
+        document.querySelector('input[name="ExitTime"]').addEventListener('change', function() {
+            const entryTime = document.querySelector('input[name="EntryTime"]').value;
+            if (this.value && entryTime) {
+                const entryDate = new Date(entryTime);
+                const exitDate = new Date(this.value);
+
+                if (exitDate <= entryDate) {
+                    this.classList.add('is-invalid');
+                    this.setCustomValidity('Exit time must be after entry time');
+                } else {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                    this.setCustomValidity('');
+                }
+            } else if (this.value) {
+                this.classList.add('is-valid');
+                this.setCustomValidity('');
+            }
+        });
+
         // Phone number formatting
         const phoneInput = document.querySelector('input[name="PhoneNumber"]');
         if (phoneInput) {
@@ -354,13 +383,11 @@
                 // Remove all non-digits
                 let value = this.value.replace(/\D/g, '');
 
-                // Format as needed (example: +880-XXXX-XXXXXX for Bangladesh)
-                if (value.length > 0) {
-                    if (value.length <= 11) {
-                        this.value = value;
-                    } else {
-                        this.value = value.substr(0, 11);
-                    }
+                // Limit to 11 digits
+                if (value.length > 11) {
+                    this.value = value.substr(0, 11);
+                } else {
+                    this.value = value;
                 }
             });
         }
