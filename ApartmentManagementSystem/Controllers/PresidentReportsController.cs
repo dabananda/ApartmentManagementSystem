@@ -80,10 +80,10 @@ namespace ApartmentManagementSystem.Controllers
 
             var billIds = bills.Select(b => b.Id).ToList();
 
-            var collectedByBill = await _context.ExpenseAllocations.AsNoTracking()
-                .Where(a => billIds.Contains(a.CommonBillId) && a.IsPaid)
-                .GroupBy(a => a.CommonBillId)
-                .Select(g => new { BillId = g.Key, Collected = g.Sum(x => x.AmountDue) })
+            var collectedByBill = await _context.ExpenseAllocationPayments.AsNoTracking()
+                .Where(p => billIds.Contains(p.CommonBillId) && p.Status == PaymentStatus.Succeeded)
+                .GroupBy(p => p.CommonBillId)
+                .Select(g => new { BillId = g.Key, Collected = g.Sum(x => x.Amount) })
                 .ToListAsync();
             var collectedLookup = collectedByBill.ToDictionary(x => x.BillId, x => x.Collected);
 
