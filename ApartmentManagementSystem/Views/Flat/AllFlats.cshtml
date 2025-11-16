@@ -47,20 +47,20 @@
                     }
                 </td>
                 <td>
-                    @if (item.Tenants != null && item.Tenants.Any())
-                    {
-                        @foreach (var tenant in item.Tenants.Where(t => t.IsActive))
+                    @{
+                        var activeTenantsMap = ViewData["ActiveTenantsMap"] as Dictionary<Guid, List<string>>;
+
+                        if (activeTenantsMap != null && activeTenantsMap.ContainsKey(item.Id))
                         {
-                            <span class="badge bg-info me-1">@tenant.Fullname</span>
+                            foreach (var tenantName in activeTenantsMap[item.Id])
+                            {
+                                <span class="badge bg-info me-1">@tenantName</span>
+                            }
                         }
-                        @if (!item.Tenants.Any(t => t.IsActive))
+                        else
                         {
                             <span class="text-muted">No Active Tenants</span>
                         }
-                    }
-                    else
-                    {
-                        <span class="text-muted">No Tenants</span>
                     }
                 </td>
                 <td>

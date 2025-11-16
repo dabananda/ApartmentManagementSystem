@@ -27,8 +27,21 @@ namespace ApartmentManagementSystem.Controllers
             var flats = await _context.Flats
                             .Include(f => f.Owner)
                             .Include(f => f.Building)
-                            .Include(f => f.Tenants)
                             .ToListAsync();
+
+            var activeAssignments = await _context.TenantAssignments
+                .Include(ta => ta.TenantUser)
+                .Where(ta => ta.EndDate == null)
+                .ToListAsync();
+
+            var tenantMap = activeAssignments
+                .GroupBy(ta => ta.FlatId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(ta => ta.TenantUser.Fullname ?? ta.TenantUser.Email).ToList()
+                );
+
+            ViewData["ActiveTenantsMap"] = tenantMap;
 
             var currentUser = await _userManager.GetUserAsync(User);
             ViewData["BuildingId"] = currentUser?.BuildingId;
