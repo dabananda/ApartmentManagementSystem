@@ -1,18 +1,19 @@
-using ApartmentManagementSystem.Data;
+﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 using Stripe.Checkout;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -41,7 +42,6 @@ builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
 builder.Services.AddHostedService<TenantMonthlyBillGenerator>();
 builder.Services.AddScoped<IPhotoUploadService, CloudinaryPhotoUploadService>();
 
-// StripeClient via DI
 builder.Services.AddSingleton(sp =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
@@ -49,12 +49,23 @@ builder.Services.AddSingleton(sp =>
     return new StripeClient(key);
 });
 
-// Optional: bind StripeOptions for currency, webhook secret, etc.
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+var defaultCulture = new CultureInfo("bn-BD");
+defaultCulture.NumberFormat.CurrencySymbol = "৳";
+defaultCulture.NumberFormat.CurrencyNegativePattern = 1;
+
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
+    SupportedCultures = new List<CultureInfo> { defaultCulture },
+    SupportedUICultures = new List<CultureInfo> { defaultCulture }
+};
+
+app.UseRequestLocalization(localizationOptions);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -62,7 +73,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -74,7 +84,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Seed the database with initial data
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

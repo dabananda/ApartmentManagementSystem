@@ -38,9 +38,6 @@ namespace ApartmentManagementSystem.Controllers
             _opts = opts.Value; _log = log; _cfg = cfg;
         }
 
-        // ------------------------
-        // TENANT CHECKOUT (Stripe)
-        // ------------------------
         [HttpPost("tenant/checkout")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TenantCheckout(Guid billId, decimal? amount = null)
@@ -75,10 +72,11 @@ namespace ApartmentManagementSystem.Controllers
                 return RedirectToAction("Bills", "TenantPortal");
             }
 
-            await tx.CommitAsync(); // read-only section done
+            await tx.CommitAsync();
 
             var cents = (long)Math.Round(take * 100m, MidpointRounding.AwayFromZero);
-            var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "usd" : _opts.Currency.ToLowerInvariant();
+            //var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "usd" : _opts.Currency.ToLowerInvariant();
+            var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "bdt" : _opts.Currency.ToLowerInvariant();
 
             var sessionService = new SessionService(_stripe);
             var successUrl = Url.Action(nameof(Success), "Payments", null, Request.Scheme) + "?session_id={CHECKOUT_SESSION_ID}";
@@ -126,9 +124,6 @@ namespace ApartmentManagementSystem.Controllers
             return Redirect(session.Url);
         }
 
-        // -----------------------
-        // OWNER CHECKOUT (Stripe)
-        // -----------------------
         [HttpPost("owner/checkout")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OwnerCheckout(Guid commonBillId)
@@ -162,7 +157,8 @@ namespace ApartmentManagementSystem.Controllers
             await tx.CommitAsync();
 
             var cents = (long)Math.Round(due * 100m, MidpointRounding.AwayFromZero);
-            var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "usd" : _opts.Currency.ToLowerInvariant();
+            //var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "usd" : _opts.Currency.ToLowerInvariant();
+            var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "bdt" : _opts.Currency.ToLowerInvariant();
 
             var sessionService = new SessionService(_stripe);
             var successUrl = Url.Action(nameof(Success), "Payments", null, Request.Scheme) + "?session_id={CHECKOUT_SESSION_ID}";
