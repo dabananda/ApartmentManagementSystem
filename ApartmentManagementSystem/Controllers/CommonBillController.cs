@@ -1,6 +1,5 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +19,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: CommonBill/Index/{buildingId}
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -36,7 +34,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(bills);
         }
 
-        // GET: CommonBill/Create/{buildingId}
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -44,7 +41,6 @@ namespace ApartmentManagementSystem.Controllers
             if (user?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
             ViewData["BuildingId"] = buildingId;
-            // Prefill today's date; the view will display it (read-only)
             return View(new CommonBill
             {
                 BuildingId = buildingId.Value,
@@ -52,7 +48,6 @@ namespace ApartmentManagementSystem.Controllers
             });
         }
 
-        // POST: CommonBill/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,TotalAmount,Notes,BuildingId")] CommonBill bill)
@@ -60,7 +55,6 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            // Auto-implement bill date on the server
             bill.BillDate = DateTime.Today;
 
             if (ModelState.IsValid)
@@ -68,7 +62,6 @@ namespace ApartmentManagementSystem.Controllers
                 await _context.AddAsync(bill);
                 await _context.SaveChangesAsync();
 
-                // Allocate the bill to all flat owners in the building (existing behavior)
                 var owners = await _context.Flats
                     .Where(f => f.BuildingId == bill.BuildingId && f.OwnerId != null)
                     .Select(f => f.Owner)
@@ -104,7 +97,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(bill);
         }
 
-        // GET: CommonBill/Details/{id}
         public async Task<IActionResult> Details(Guid id)
         {
             var bill = await _context.CommonBills
@@ -120,7 +112,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(bill);
         }
 
-        // GET: CommonBill/Edit/{id}
         public async Task<IActionResult> Edit(Guid id)
         {
             var bill = await _context.CommonBills.FindAsync(id);
@@ -133,7 +124,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(bill);
         }
 
-        // POST: CommonBill/Edit/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,TotalAmount,Notes,BuildingId")] CommonBill input)
@@ -152,7 +142,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(bill);
             }
 
-            // Only allow editing name/amount/notes; keep original BillDate
             bill.Name = input.Name;
             bill.TotalAmount = input.TotalAmount;
             bill.Notes = input.Notes;
@@ -164,7 +153,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
         }
 
-        // GET: CommonBill/Delete/{id}
         public async Task<IActionResult> Delete(Guid id)
         {
             var bill = await _context.CommonBills
@@ -175,14 +163,12 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _userManager.GetUserAsync(User);
             if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            // Prevent delete if there are payments referencing this bill (DB has NoAction on FK)
             var hasPayments = await _context.ExpensePayments.AnyAsync(p => p.CommonBillId == bill.Id);
             ViewData["HasPayments"] = hasPayments;
 
             return View(bill);
         }
 
-        // POST: CommonBill/Delete/{id}
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
@@ -200,7 +186,6 @@ namespace ApartmentManagementSystem.Controllers
                 return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
             }
 
-            // Remove allocations first (cascades would handle, but be explicit and safe)
             var allocations = _context.ExpenseAllocations.Where(a => a.CommonBillId == bill.Id);
             _context.ExpenseAllocations.RemoveRange(allocations);
 

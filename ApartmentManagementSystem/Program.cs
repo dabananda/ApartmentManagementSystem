@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
-using Stripe.Checkout;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,15 +51,17 @@ builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stri
 
 var app = builder.Build();
 
-var defaultCulture = new CultureInfo("bn-BD");
-defaultCulture.NumberFormat.CurrencySymbol = "৳";
-defaultCulture.NumberFormat.CurrencyNegativePattern = 1;
+// Configure the localization options - set currency from $ to tk
+var customCulture = new CultureInfo("en-US");
+customCulture.NumberFormat.CurrencySymbol = "tk";
+customCulture.NumberFormat.CurrencyPositivePattern = 3;
+customCulture.NumberFormat.CurrencyNegativePattern = 8;
 
 var localizationOptions = new RequestLocalizationOptions
 {
-    DefaultRequestCulture = new RequestCulture(defaultCulture),
-    SupportedCultures = new List<CultureInfo> { defaultCulture },
-    SupportedUICultures = new List<CultureInfo> { defaultCulture }
+    DefaultRequestCulture = new RequestCulture(customCulture),
+    SupportedCultures = new List<CultureInfo> { customCulture },
+    SupportedUICultures = new List<CultureInfo> { customCulture }
 };
 
 app.UseRequestLocalization(localizationOptions);
