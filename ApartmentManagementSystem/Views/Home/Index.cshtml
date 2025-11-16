@@ -27,7 +27,7 @@
 }
 
 <!-- HERO SECTION -->
-<section class="hero-modern overflow-hidden">
+<section class="hero-modern overflow-hidden" id="home">
     <div class="hero-background"></div>
     <div class="container position-relative">
         <div class="row align-items-center min-vh-100 py-5">
@@ -615,6 +615,72 @@
     </div>
 </section>
 
+<!-- ABOUT US SECTION -->
+<section class="py-5 bg-white" id="about-us">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-4">Meet the Team Behind AMS</h2>
+            <p class="lead text-muted">Built by passionate developers from the Institute of Science Trade & Technology</p>
+        </div>
+
+        <div class="row justify-content-center gap-4 mb-4">
+            <div class="col-lg-3 col-md-5 shadow rounded rounded-lg">
+                <div class="h-100">
+                    <div class="text-center">
+                        <img src="https://res.cloudinary.com/djz3p8sux/image/upload/v1762970456/ams/sqacocma6wvd7j2qgolh.png"
+                             alt="Dabananda Mitra"
+                             class="w-100">
+                    </div>
+                    <div class="team-content">
+                        <h4 class="fw-bold mb-2">Dabananda Mitra</h4>
+                        <p class="text-purple fw-semibold mb-2">Lead Developer & System Architect</p>
+                        <p class="text-muted mb-3">
+                            <small><i class="bi bi-mortarboard me-1"></i>Registration: 19502004810</small>
+                        </p>
+                        <p class="text-muted">
+                            Specialized in building scalable web applications and creating intuitive user experiences.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-5 shadow rounded rounded-lg">
+                <div class="h-100">
+                    <div class="text-center">
+                        <img src="https://res.cloudinary.com/djz3p8sux/image/upload/v1763295283/ams/suraiya_bilkis_wckofa.png"
+                             alt="Suraiya Bilkis"
+                             class="w-100">
+                    </div>
+                    <div class="team-content">
+                        <h4 class="fw-bold mb-2">Suraiya Bilkis</h4>
+                        <p class="text-purple fw-semibold mb-2">Co-Developer & UI/UX Designer</p>
+                        <p class="text-muted mb-3">
+                            <small><i class="bi bi-mortarboard me-1"></i>Registration: 19502004837</small>
+                        </p>
+                        <p class="text-muted">
+                            Focused on creating beautiful interfaces and ensuring seamless user experiences.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <div class="about-institute p-4 rounded-3 bg-light">
+                    <div class="mb-3">
+                        <i class="bi bi-building fs-1 text-purple"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Department of Computer Science & Engineering</h5>
+                    <p class="text-muted mb-0">
+                        Institute of Science Trade & Technology (ISTT)<br>
+                        <small>Mirpur 15, Dhaka, Bangladesh</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- CONTACT SECTION -->
 <section id="contact" class="py-5">
     <div class="container">
@@ -699,6 +765,87 @@
         </div>
     </div>
 </section>
+
+<style>
+    .team-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+        .team-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+        }
+
+    .team-image-wrapper {
+        width: 50%;
+        /* height: 220px; */
+        overflow: hidden;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .team-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .team-card:hover .team-image {
+        transform: scale(1.05);
+    }
+
+    .team-content {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .about-institute {
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+
+        .about-institute:hover {
+            border-color: #7c3aed;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1);
+        }
+
+    @@media (max-width: 768px) {
+        .team-image-wrapper {
+            height: 280px;
+        }
+
+        .team-content {
+            padding: 1.5rem;
+        }
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .team-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+        .team-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
