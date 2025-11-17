@@ -32,7 +32,7 @@
     <div class="col-md-3">
         <div class="card shadow-sm">
             <div class="card-body">
-                <div class="text-muted">Tenant Rent — Total</div>
+                <div class="text-muted">Toal Tenant Rent</div>
                 <div class="h4 mb-0">@Model.RentTotalBilled.ToString("C")</div>
                 <div class="small text-success">Paid: @Model.RentTotalPaid.ToString("C")</div>
                 <div class="small @(rentDue > 0 ? "text-danger" : "text-success")">Due: @rentDue.ToString("C")</div>
@@ -43,7 +43,7 @@
     <div class="col-md-3">
         <div class="card shadow-sm">
             <div class="card-body">
-                <div class="text-muted">Common Bills — Total</div>
+                <div class="text-muted">Total Common Bills</div>
                 <div class="h4 mb-0">@Model.CommonTotalBilled.ToString("C")</div>
                 <div class="small text-success">Paid: @Model.CommonTotalPaid.ToString("C")</div>
                 <div class="small @(commonDue > 0 ? "text-danger" : "text-success")">Due: @commonDue.ToString("C")</div>
@@ -54,7 +54,7 @@
     <div class="col-md-3">
         <div class="card shadow-sm">
             <div class="card-body">
-                <div class="text-muted">Paid This Month (Rent)</div>
+                <div class="text-muted">Total Collected Rent</div>
                 <div class="h4 mb-0">@Model.RentPaidThisMonth.ToString("C")</div>
                 <div class="small text-muted">Since @(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).ToString("yyyy-MM-dd"))</div>
             </div>
