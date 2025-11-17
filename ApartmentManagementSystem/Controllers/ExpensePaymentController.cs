@@ -20,7 +20,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: ExpensePayment/Index/{buildingId}
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -37,7 +36,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(payments);
         }
 
-        // GET: ExpensePayment/Create/{buildingId}
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -75,7 +73,6 @@ namespace ApartmentManagementSystem.Controllers
             return View();
         }
 
-        // POST: ExpensePayment/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,PaymentDate,Amount,Notes,BuildingId,CommonBillId")] ExpensePayment payment)
@@ -134,6 +131,18 @@ namespace ApartmentManagementSystem.Controllers
 
             ViewData["CommonBillId"] = unpaidBillsOnFail;
             ViewData["BuildingId"] = payment.BuildingId;
+            return View(payment);
+        }
+        
+        public async Task<IActionResult> Details(Guid? id)
+        {
+            if (id == null) return NotFound();
+            var payment = await _context.ExpensePayments
+                                        .Include(p => p.CommonBill)
+                                        .FirstOrDefaultAsync(m => m.Id == id);
+            if (payment == null) return NotFound();
+            var user = await _userManager.GetUserAsync(User);
+            if (user?.BuildingId != payment.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
             return View(payment);
         }
     }

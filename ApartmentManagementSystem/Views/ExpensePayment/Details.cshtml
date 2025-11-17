@@ -1,0 +1,36 @@
+﻿@model ApartmentManagementSystem.Models.ExpensePayment
+
+@{
+    ViewData["Title"] = "Expense Payment Details";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="card">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Name)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(m => m.Name)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(m => m.PaymentDate)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(m => m.PaymentDate)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Amount)</dt>
+            <dd class="col-sm-9">@String.Format("{0:C}", Model.Amount)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Notes)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(m => m.Notes)</dd>
+        </dl>
+    </div>
+
+    <div class="card-footer">
+        <a asp-action="Index" asp-route-buildingId="@Model.BuildingId" class="btn btn-secondary">Back to List</a>
+        <a asp-action="Create" asp-route-buildingId="@Model.BuildingId" class="btn btn-primary">Record New Payment</a>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
