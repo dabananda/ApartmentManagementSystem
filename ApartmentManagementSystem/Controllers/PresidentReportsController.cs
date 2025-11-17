@@ -22,7 +22,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // Helper to get current user's building (throws if none)
         private async Task<(Guid buildingId, string buildingName)> RequireBuilding()
         {
             var me = await _userManager.GetUserAsync(User);
@@ -34,14 +33,12 @@ namespace ApartmentManagementSystem.Controllers
             return (bId, bName);
         }
 
-        // Try to pick a bill title without depending on a specific property name
         private static string BillTitle(object bill)
         {
             return ReadStringProp(bill, "Title", "Name", "Description", "BillName", "Purpose")
                    ?? $"Bill {ReadStringProp(bill, "Id") ?? ""}";
         }
 
-        // Reflection helper: read the first available string-able property value (returns null if none)
         private static string? ReadStringProp(object obj, params string[] names)
         {
             var t = obj.GetType();
@@ -56,7 +53,6 @@ namespace ApartmentManagementSystem.Controllers
             return null;
         }
 
-        // CSV field escaper
         private static string Csv(string? s)
         {
             if (string.IsNullOrEmpty(s)) return "";
@@ -65,8 +61,6 @@ namespace ApartmentManagementSystem.Controllers
             return s;
         }
 
-        // ----------------- Financial -----------------
-        // GET: /PresidentReports/Financial
         public async Task<IActionResult> Financial(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
@@ -116,7 +110,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // GET: /PresidentReports/FinancialCsv
         public async Task<IActionResult> FinancialCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
@@ -151,8 +144,6 @@ namespace ApartmentManagementSystem.Controllers
             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "financial_report.csv");
         }
 
-        // ----------------- Occupancy -----------------
-        // GET: /PresidentReports/Occupancy
         public async Task<IActionResult> Occupancy()
         {
             var (buildingId, buildingName) = await RequireBuilding();
@@ -166,10 +157,12 @@ namespace ApartmentManagementSystem.Controllers
                 .Distinct()
                 .CountAsync();
 
-            var tenantsCount = await _context.Tenants.AsNoTracking()
-                .Include(t => t.Flat)
-                .Where(t => t.Flat.BuildingId == buildingId)
-                .CountAsync();
+            // Count active tenant assignments for flats in this building (handles new assignment-based model)
+            var tenantsCount = await (from ta in _context.TenantAssignments.AsNoTracking()
+                                      join f in _context.Flats.AsNoTracking() on ta.FlatId equals f.Id
+                                      where f.BuildingId == buildingId && (ta.EndDate == null || ta.EndDate >= DateTime.Today)
+                                      select ta)
+                                     .CountAsync();
 
             var vm = new OccupancyReportViewModel
             {
@@ -182,7 +175,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // GET: /PresidentReports/OccupancyCsv
         public async Task<IActionResult> OccupancyCsv()
         {
             var (buildingId, buildingName) = await RequireBuilding();
@@ -200,8 +192,6 @@ namespace ApartmentManagementSystem.Controllers
             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "occupancy_report.csv");
         }
 
-        // ----------------- Visitors -----------------
-        // GET: /PresidentReports/Visitors
         public async Task<IActionResult> Visitors(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
@@ -236,7 +226,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // GET: /PresidentReports/VisitorsCsv
         public async Task<IActionResult> VisitorsCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
@@ -257,8 +246,6 @@ namespace ApartmentManagementSystem.Controllers
             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "visitor_report.csv");
         }
 
-        // ----------------- Maintenance -----------------
-        // GET: /PresidentReports/Maintenance
         public async Task<IActionResult> Maintenance(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
@@ -297,7 +284,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // GET: /PresidentReports/MaintenanceCsv
         public async Task<IActionResult> MaintenanceCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
