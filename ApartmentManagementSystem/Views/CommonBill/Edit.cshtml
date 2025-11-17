@@ -5,7 +5,7 @@
 
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
+        <div class="col-12 col-md-6 col-lg-5">
             <!-- Modern Card -->
             <div class="card shadow border-0">
                 <!-- Header -->
@@ -14,7 +14,6 @@
                         <i class="bi bi-pencil-square fs-4 me-2"></i>
                         <h4 class="mb-0 fw-semibold">Edit Common Bill</h4>
                     </div>
-                    <small class="opacity-75">Update billing information</small>
                 </div>
 
                 <!-- Form Body -->
@@ -32,7 +31,7 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <label asp-for="Name" class="form-label text-muted text-uppercase fw-semibold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Bill Name</label>
-                                    <input asp-for="Name" class="form-control form-control-lg" placeholder="Enter bill name" />
+                                    <input asp-for="Name" class="form-control placeholder="Enter bill name" />
                                     <span asp-validation-for="Name" class="text-danger small mt-1"></span>
                                 </div>
                             </div>
@@ -46,7 +45,7 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <label asp-for="TotalAmount" class="form-label text-muted text-uppercase fw-semibold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Amount</label>
-                                    <div class="input-group input-group-lg">
+                                    <div class="input-group">
                                         <input asp-for="TotalAmount" class="form-control" placeholder="0.00" />
                                         <span class="input-group-text bg-success bg-opacity-10 text-success fw-semibold">tk</span>
                                     </div>
