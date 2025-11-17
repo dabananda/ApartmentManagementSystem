@@ -1,0 +1,122 @@
+@model ApartmentManagementSystem.Models.EntryLog
+
+@{
+    ViewData["Title"] = "Edit Entry Log";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-brand-gradient py-3 text-center text-white">
+                    <h4 class="mb-0">Edit Entry Log</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Fullname" class="form-label">Full Name</label>
+                                <input asp-for="Fullname" class="form-control" />
+                                <span asp-validation-for="Fullname" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label">Phone</label>
+                                <input asp-for="PhoneNumber" class="form-control" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="BuildingId" class="form-label">Building</label>
+                                <select asp-for="BuildingId" class="form-select" asp-items="ViewBag.BuildingId" onchange="loadFlats()">
+                                    <option value="">Select Building</option>
+                                </select>
+                                <span asp-validation-for="BuildingId" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="FlatId" class="form-label">Flat</label>
+                                <select asp-for="FlatId" class="form-select" asp-items="ViewBag.FlatId">
+                                    <option value="">Select Flat</option>
+                                </select>
+                                <span asp-validation-for="FlatId" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="EntryType" class="form-label">Entry Type</label>
+                                <select asp-for="EntryType" class="form-select">
+                                    <option value="0">Visitor</option>
+                                    <option value="1">Delivery</option>
+                                    <option value="2">Teacher</option>
+                                    <option value="3">Maintenance</option>
+                                    <option value="4">Other</option>
+                                </select>
+                                <span asp-validation-for="EntryType" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="NumberOfPerson" class="form-label">Number of Persons</label>
+                                <input asp-for="NumberOfPerson" type="number" min="1" max="50" class="form-control" />
+                                <span asp-validation-for="NumberOfPerson" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Purpose" class="form-label">Purpose</label>
+                            <textarea asp-for="Purpose" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Purpose" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="EntryTime" class="form-label">Entry Time</label>
+                                <input asp-for="EntryTime" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="EntryTime" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ExitTime" class="form-label">Exit Time</label>
+                                <input asp-for="ExitTime" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="ExitTime" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col col-md-6">
+                                <a asp-action="Index" class="btn btn-outline-secondary w-100">Cancel</a>
+                            </div>
+                            <div class="col col-md-6">
+                                <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadFlats() {
+            const buildingId = document.getElementById('BuildingId').value;
+            const flatSelect = document.getElementById('FlatId');
+            flatSelect.innerHTML = '<option>Loading...</option>';
+            if (!buildingId) { flatSelect.innerHTML = '<option value="">Select Building First</option>'; return; }
+            fetch(`/api/flats/bybuilding/${buildingId}`)
+                .then(r => r.json())
+                .then(data => {
+                    flatSelect.innerHTML = '';
+                    data.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.textContent = f.flatNumber;
+                        flatSelect.appendChild(opt);
+                    });
+                });
+        }
+    </script>
+}
