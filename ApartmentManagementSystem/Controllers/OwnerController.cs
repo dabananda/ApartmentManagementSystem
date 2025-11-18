@@ -20,7 +20,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: Owner/Dashboard
         public async Task<IActionResult> Dashboard()
         {
             var me = await _userManager.GetUserAsync(User);
@@ -30,7 +29,6 @@ namespace ApartmentManagementSystem.Controllers
             var today = DateTime.Today;
             var monthStart = new DateTime(today.Year, today.Month, 1);
 
-            // -------- Flats owned / occupied --------
             var flatsOwnedQ = _context.Flats.Where(f => f.OwnerId == ownerId);
             var flatsOwnedCount = await flatsOwnedQ.CountAsync();
 
@@ -40,7 +38,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Distinct()
                 .CountAsync();
 
-            // -------- Tenant Rent totals (TenantBills / TenantPayments) --------
             var ownerBillsQ = _context.TenantBills
                 .Include(b => b.Payments)
                 .Include(b => b.Flat)
@@ -60,7 +57,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(p => p.PaymentDate >= monthStart && p.TenantBill!.Flat!.OwnerId == ownerId)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0m;
 
-            // -------- Common Bill totals (ExpenseAllocations / ExpenseAllocationPayments) --------
             var commonAllocationsQ = _context.ExpenseAllocations
                 .Include(a => a.CommonBill)
                 .Where(a => a.OwnerId == ownerId);
@@ -71,7 +67,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(p => p.OwnerId == ownerId)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0m;
 
-            // -------- Active Tenants list (from TenantAssignments) --------
             var tenants = await _context.TenantAssignments
                 .Include(a => a.TenantUser)
                 .Include(a => a.Flat)
@@ -87,7 +82,6 @@ namespace ApartmentManagementSystem.Controllers
                 })
                 .ToListAsync();
 
-            // -------- Recent Rent Payments (10) --------
             var recentRent = await _context.TenantPayments
                 .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)
                 .Include(p => p.TenantBill)!.ThenInclude(b => b.TenantUser)
@@ -105,7 +99,6 @@ namespace ApartmentManagementSystem.Controllers
                 })
                 .ToListAsync();
 
-            // -------- Recent Common Bill Payments (10) --------
             var recentCommon = await _context.ExpenseAllocationPayments
                 .Include(p => p.ExpenseAllocation)!.ThenInclude(a => a.CommonBill)
                 .Where(p => p.OwnerId == ownerId)
@@ -139,17 +132,14 @@ namespace ApartmentManagementSystem.Controllers
                 RecentCommon = recentCommon
             };
 
-            // If you had an existing larger Dashboard model, attach vm fields there instead.
             return View(vm);
         }
 
-        // GET: Owner/OwnedFlats
         public async Task<IActionResult> OwnedFlats(string? ownerId = null)
         {
             var me = await _userManager.GetUserAsync(User);
             if (me == null) return Forbid();
 
-            // Scope: Owner can ONLY see their own flats; President/SA can optionally pass ownerId
             var targetOwnerId = User.IsInRole("Owner") ? me.Id : (ownerId ?? me.Id);
 
             var today = DateTime.Today;
@@ -195,17 +185,14 @@ namespace ApartmentManagementSystem.Controllers
             return View(rows);
         }
 
-        // GET: Owner/CommonBills
         [HttpGet]
         public async Task<IActionResult> CommonBills(string? ownerId = null)
         {
             var me = await _userManager.GetUserAsync(User);
             if (me == null) return Forbid();
 
-            // Owner can only see their own bills; President/SA may pass ownerId
             var targetOwnerId = User.IsInRole("Owner") ? me.Id : (ownerId ?? me.Id);
 
-            // All allocations for this owner; if President, scope to their building
             var q = _context.ExpenseAllocations
                 .Include(a => a.CommonBill)
                 .Include(a => a.Payments)
@@ -240,7 +227,6 @@ namespace ApartmentManagementSystem.Controllers
                 })
                 .ToList();
 
-            // Payment history (same style you use in OwnerBillingController.View)
             var history = await _context.ExpenseAllocationPayments
                 .Join(_context.ExpenseAllocations.Include(a => a.CommonBill),
                       p => p.ExpenseAllocationId,

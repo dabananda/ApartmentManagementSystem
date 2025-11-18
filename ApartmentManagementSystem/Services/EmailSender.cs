@@ -31,7 +31,6 @@ namespace ApartmentManagementSystem.Services
 
             using var client = new SmtpClient(smtpServer, port);
 
-            // CRITICAL: Set UseDefaultCredentials to false BEFORE setting credentials
             client.UseDefaultCredentials = false;
             client.Credentials = new NetworkCredential(username, password);
             client.EnableSsl = true;

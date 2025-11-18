@@ -6,9 +6,7 @@
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-12 col-md-6 col-lg-5">
-            <!-- Modern Card -->
             <div class="card shadow border-0">
-                <!-- Header -->
                 <div class="card-header bg-brand-gradient text-white text-center py-3">
                     <div class="d-flex align-items-center justify-content-center">
                         <i class="bi bi-pencil-square fs-4 me-2"></i>
@@ -16,14 +14,12 @@
                     </div>
                 </div>
 
-                <!-- Form Body -->
                 <div class="card-body p-4">
                     <form asp-action="Edit" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="BuildingId" />
 
-                        <!-- Bill Name -->
                         <div class="mb-3">
                             <div class="d-flex align-items-start">
                                 <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
@@ -37,7 +33,6 @@
                             </div>
                         </div>
 
-                        <!-- Total Amount -->
                         <div class="mb-3">
                             <div class="d-flex align-items-start">
                                 <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
@@ -54,7 +49,6 @@
                             </div>
                         </div>
 
-                        <!-- Bill Date (Read-only display) -->
                         <div class="mb-3">
                             <div class="d-flex align-items-center">
                                 <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -70,7 +64,6 @@
                             </div>
                         </div>
 
-                        <!-- Notes -->
                         <div class="mb-4">
                             <div class="d-flex align-items-start">
                                 <div class="bg-secondary bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
@@ -84,7 +77,6 @@
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
                         <div class="row g-2">
                             <div class="col-12 col-sm-6">
                                 <a class="btn btn-outline-secondary w-100" asp-action="Index" asp-route-buildingId="@Model.BuildingId">

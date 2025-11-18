@@ -20,7 +20,6 @@ namespace ApartmentManagementSystem.ViewModels.Owner
         [StringLength(100)]
         public string? Reference { get; set; }
 
-        // For display
         public string OwnerName { get; set; } = string.Empty;
         public decimal CurrentDue { get; set; }
     }

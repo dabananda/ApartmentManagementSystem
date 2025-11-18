@@ -19,7 +19,6 @@ namespace ApartmentManagementSystem.Services
             {
                 try
                 {
-                    // run once a day ~00:10
                     var now = DateTime.Now;
                     var delay = DateTime.Today.AddDays(1).AddMinutes(10) - now;
                     if (delay < TimeSpan.Zero) delay = TimeSpan.FromHours(24);
@@ -30,7 +29,6 @@ namespace ApartmentManagementSystem.Services
                     using var scope = _sp.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                    // active assignments with active profile
                     var q = await db.TenantAssignments
                         .Include(a => a.Flat)
                         .Where(a => a.EndDate == null)
@@ -48,7 +46,6 @@ namespace ApartmentManagementSystem.Services
 
                         var firstOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-                        // avoid duplicates
                         var exists = await db.TenantBills.AnyAsync(tb =>
                             tb.FlatId == a.FlatId && tb.TenantUserId == a.TenantUserId && tb.BillDate == firstOfMonth, stoppingToken);
                         if (exists) continue;

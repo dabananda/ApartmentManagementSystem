@@ -22,7 +22,6 @@ namespace ApartmentManagementSystem.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
-        // optimistic concurrency (you had rowversion; keep if present)
         [Timestamp] public byte[]? RowVersion { get; set; }
 
         public ICollection<TenantPayment> Payments { get; set; } = new List<TenantPayment>();

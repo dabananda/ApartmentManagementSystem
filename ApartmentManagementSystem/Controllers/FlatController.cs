@@ -21,7 +21,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: Flat/AllFlats
         public async Task<IActionResult> AllFlats()
         {
             var flats = await _context.Flats
@@ -49,7 +48,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(flats);
         }
 
-        // GET: Flat/Index/{buildingId}
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -76,7 +74,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(flats);
         }
 
-        // GET: Flat/Create
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -87,7 +84,6 @@ namespace ApartmentManagementSystem.Controllers
             return View();
         }
 
-        // POST: Flat/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("FlatNumber,BuildingId")] Flat flat)
@@ -109,7 +105,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(flat);
         }
 
-        // GET: Flat/AssignOwner/{flatId}
         public async Task<IActionResult> AssignOwner(Guid? flatId)
         {
             if (flatId == null) return NotFound();
@@ -118,36 +113,30 @@ namespace ApartmentManagementSystem.Controllers
                 .FirstOrDefaultAsync(f => f.Id == flatId);
             if (flat == null) return NotFound();
 
-            // President authorization: can only assign within their building
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
                 if (user.BuildingId != flat.BuildingId) return Forbid();
             }
 
-            // Owners limited to the same building (and sorted nicely)
             var ownersInRole = await _userManager.GetUsersInRoleAsync("Owner");
-            //var owners = ownersInRole
-            //    .Where(o => o.BuildingId == flat.BuildingId)
-            //    .OrderBy(o => o.Fullname)
-            //    .ToList();
+
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
 
             var viewModel = new AssignOwnerViewModel
             {
                 FlatId = flat.Id,
-                OwnerId = flat.OwnerId, // preselect current owner
+                OwnerId = flat.OwnerId,
                 Owners = new SelectList(owners, "Id", "Fullname", flat.OwnerId)
             };
 
             ViewData["FlatNumber"] = flat.FlatNumber;
             ViewData["BuildingName"] = flat.Building.Name;
-            ViewData["BuildingId"] = flat.BuildingId; // for back link
+            ViewData["BuildingId"] = flat.BuildingId;
 
             return View(viewModel);
         }
 
-        // POST: Flat/AssignOwner
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignOwner(AssignOwnerViewModel model)
@@ -174,7 +163,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(model);
         }
 
-        // GET: Flat/Delete/{id}
         public async Task<IActionResult> Delete(Guid id)
         {
             var flat = await _context.Flats
@@ -184,7 +172,6 @@ namespace ApartmentManagementSystem.Controllers
 
             if (flat == null) return NotFound();
 
-            // Authorization check for President role
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
@@ -194,26 +181,22 @@ namespace ApartmentManagementSystem.Controllers
             return View(flat);
         }
 
-        // POST: Flat/Delete/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id, bool confirmed = false)
         {
-            // Load only what's needed to route back correctly
             var flat = await _context.Flats
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.Id == id);
 
             if (flat == null) return NotFound();
 
-            // President can only delete within their own building
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
                 if (user?.BuildingId != flat.BuildingId) return Forbid();
             }
 
-            // ---- Dependency checks (aligns with DeleteBehavior.Restrict FKs) ----
             var hasBills = await _context.TenantBills.AnyAsync(b => b.FlatId == id);
             var hasTenants = await _context.Tenants.AnyAsync(t => t.FlatId == id);
             var hasActiveAssign = await _context.TenantAssignments.AnyAsync(a => a.FlatId == id && a.EndDate == null);
@@ -235,14 +218,12 @@ namespace ApartmentManagementSystem.Controllers
 
             try
             {
-                // Delete by key to avoid reloading a tracked entity
                 _context.Flats.Remove(new Flat { Id = id });
                 await _context.SaveChangesAsync();
                 TempData["Success"] = "Flat deleted successfully.";
             }
             catch (DbUpdateException)
             {
-                // Race condition safety net
                 TempData["Error"] = "Delete blocked by related data. Please remove dependent records first.";
             }
 

@@ -54,6 +54,6 @@ namespace ApartmentManagementSystem.ViewModels.Owner
         [DataType(DataType.Date)] public DateTime PaymentDate { get; set; } = DateTime.Today;
         [StringLength(100)] public string? Reference { get; set; }
 
-        [StringLength(80)] public string? IdempotencyKey { get; set; } // New
+        [StringLength(80)] public string? IdempotencyKey { get; set; }
     }
 }

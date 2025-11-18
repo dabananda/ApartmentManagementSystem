@@ -17,12 +17,11 @@ namespace ApartmentManagementSystem.Models
         [Column(TypeName = "decimal(18, 2)")]
         public decimal Amount { get; set; }
 
-        // Kept for reporting (date the payment applies to)
         [DataType(DataType.Date)]
         public DateTime PaymentDate { get; set; } = DateTime.Today;
 
         [StringLength(100)]
-        public string? Reference { get; set; } // e.g., receipt no, note
+        public string? Reference { get; set; }
 
         [Required]
         public Guid CommonBillId { get; set; }
@@ -30,11 +29,9 @@ namespace ApartmentManagementSystem.Models
         [Required]
         public string OwnerId { get; set; } = default!;
 
-        // NEW: exact timestamp the row was created (used in Recent Activity)
         [Required]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-        // ---- New: same idempotency and gateway hooks as tenant payments ----
         [StringLength(80)]
         public string? IdempotencyKey { get; set; }
 

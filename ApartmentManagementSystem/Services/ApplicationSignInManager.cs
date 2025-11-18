@@ -23,7 +23,6 @@ namespace ApartmentManagementSystem.Services
         {
             if (!await base.CanSignInAsync(user)) return false;
 
-            // Require approval + not only in "User" role
             if (!user.IsApproved) return false;
 
             var roles = await UserManager.GetRolesAsync(user);

@@ -64,19 +64,9 @@
                 </td>
                 <td>
                     <div class="btn-group" role="group">
-                        <!-- Flat tenants (legacy page still useful) -->
                         <a asp-action="ViewTenants" asp-route-flatId="@row.FlatId" class="btn btn-secondary btn-sm" title="View all tenants in this flat">
                             <i class="fas fa-users"></i> Flat Tenants
                         </a>
-
-                        <!-- Rent/Bills page (new flow) -->
-                        @* @if (!string.IsNullOrWhiteSpace(row.TenantUserId))
-                        {
-                            <a asp-controller="TenantRent" asp-action="View" asp-route-tenantUserId="@row.TenantUserId"
-                               class="btn btn-success btn-sm" title="View Rent / Payments">
-                                <i class="fas fa-money-bill-wave"></i> Rent
-                            </a>
-                        } *@
                     </div>
                 </td>
             </tr>

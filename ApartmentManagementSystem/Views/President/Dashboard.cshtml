@@ -264,10 +264,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
     <script>
-        // ===== Time rendering (Asia/Dhaka) =====
         function fmtDhaka(iso) {
             try {
-                const dt = new Date(iso); // UTC
+                const dt = new Date(iso);
                 const opts = {
                     timeZone: 'Asia/Dhaka',
                     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -279,9 +278,7 @@
             } catch { return iso; }
         }
 
-        // ===== DataTables =====
         $(function () {
-            // Format time elements
             document.querySelectorAll('time.js-when').forEach(t => {
                 const iso = t.getAttribute('data-iso');
                 if (iso) {
@@ -289,7 +286,6 @@
                 }
             });
 
-            // Only initialize DataTable if the table exists
             const tableElement = document.getElementById('recentTable');
             if (tableElement) {
                 $('#recentTable').DataTable({
@@ -301,13 +297,11 @@
             }
         });
 
-        // ===== Charts =====
         (function(){
             const cf = @Html.Raw(JsonSerializer.Serialize(Model.Cashflow));
             const aging = @Html.Raw(JsonSerializer.Serialize(Model.Aging));
             const top = @Html.Raw(JsonSerializer.Serialize(Model.TopOwners));
 
-            // Cashflow (line)
             const ctx1 = document.getElementById('cfChart');
             if (ctx1 && cf && cf.Labels && cf.Labels.length) {
                 new Chart(ctx1, {
@@ -329,7 +323,6 @@
                 });
             }
 
-            // Aging (doughnut)
             const ctx2 = document.getElementById('agingChart');
             if (ctx2) {
                 const vals = [aging.D0_30, aging.D31_60, aging.D61_90, aging.D90Plus];
@@ -343,7 +336,6 @@
                 });
             }
 
-            // Top owners (horizontal bar)
             const ctx3 = document.getElementById('topOwnersChart');
             if (ctx3 && top && top.Labels && top.Labels.length) {
                 new Chart(ctx3, {

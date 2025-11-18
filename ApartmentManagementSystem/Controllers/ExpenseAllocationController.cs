@@ -19,7 +19,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: ExpenseAllocation/Index/{commonBillId}
         public async Task<IActionResult> Index(Guid? commonBillId)
         {
             if (commonBillId == null) return NotFound();
@@ -31,7 +30,6 @@ namespace ApartmentManagementSystem.Controllers
                                             .Include(b => b.Building)
                                             .FirstOrDefaultAsync(b => b.Id == commonBillId);
 
-            // Security check: The user's BuildingId must match the bill's BuildingId
             if (commonBill == null || (commonBill.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin")))
             {
                 return Forbid();

@@ -75,9 +75,7 @@ namespace ApartmentManagementSystem.Controllers
             await tx.CommitAsync();
 
             var cents = (long)Math.Round(take * 100m, MidpointRounding.AwayFromZero);
-            //var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "usd" : _opts.Currency.ToLowerInvariant();
             var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "bdt" : _opts.Currency.ToLowerInvariant();
-
             var sessionService = new SessionService(_stripe);
             var successUrl = Url.Action(nameof(Success), "Payments", null, Request.Scheme) + "?session_id={CHECKOUT_SESSION_ID}";
             var cancelUrl = Url.Action(nameof(Cancel), "Payments", null, Request.Scheme);
@@ -157,9 +155,7 @@ namespace ApartmentManagementSystem.Controllers
             await tx.CommitAsync();
 
             var cents = (long)Math.Round(due * 100m, MidpointRounding.AwayFromZero);
-            //var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "usd" : _opts.Currency.ToLowerInvariant();
             var currency = string.IsNullOrWhiteSpace(_opts.Currency) ? "bdt" : _opts.Currency.ToLowerInvariant();
-
             var sessionService = new SessionService(_stripe);
             var successUrl = Url.Action(nameof(Success), "Payments", null, Request.Scheme) + "?session_id={CHECKOUT_SESSION_ID}";
             var cancelUrl = Url.Action(nameof(Cancel), "Payments", null, Request.Scheme);
@@ -206,9 +202,6 @@ namespace ApartmentManagementSystem.Controllers
             return Redirect(session.Url);
         }
 
-        // -----------------------
-        // Simple result pages
-        // -----------------------
         [HttpGet("success")]
         public async Task<IActionResult> Success([FromQuery(Name = "session_id")] string sessionId)
         {
@@ -243,9 +236,6 @@ namespace ApartmentManagementSystem.Controllers
         [HttpGet("cancel")]
         public IActionResult Cancel() => View();
 
-        // -----------------------
-        // STRIPE WEBHOOK
-        // -----------------------
         [AllowAnonymous]
         [HttpPost("webhook")]
         public async Task<IActionResult> Webhook()
@@ -294,7 +284,7 @@ namespace ApartmentManagementSystem.Controllers
             return Ok();
         }
 
-        private async Task HandleCheckoutSessionCompleted(Stripe.Checkout.Session session)
+        private async Task HandleCheckoutSessionCompleted(Session session)
         {
             if (!string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
             {
@@ -419,7 +409,6 @@ namespace ApartmentManagementSystem.Controllers
             await _email.SendEmailAsync(user.Email!, "Common bill payment receipt", html);
         }
 
-        // Centralized post-payment reconciliation for both tenant & owner paths
         private async Task ProcessPaymentFromMetaAsync(
             IDictionary<string, string> meta,
             decimal amountReceived,
@@ -428,7 +417,6 @@ namespace ApartmentManagementSystem.Controllers
             if (!meta.TryGetValue("kind", out var kind) || string.IsNullOrWhiteSpace(kind))
                 return;
 
-            // ---- Tenant rent ----
             if (string.Equals(kind, "tenant", StringComparison.OrdinalIgnoreCase) &&
                 meta.TryGetValue("tenantBillId", out var billIdStr) &&
                 Guid.TryParse(billIdStr, out var billId))
@@ -469,7 +457,6 @@ namespace ApartmentManagementSystem.Controllers
 
                 await SendTenantPaymentEmail(bill.TenantUserId, new[] { entity });
             }
-            // ---- Owner common bill ----
             else if (string.Equals(kind, "owner", StringComparison.OrdinalIgnoreCase) &&
                      meta.TryGetValue("ownerId", out var ownerId) &&
                      meta.TryGetValue("commonBillId", out var cbStr) &&

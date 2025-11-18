@@ -62,7 +62,6 @@
             const ownerSelect = document.getElementById('OwnerUserId');
 
             async function loadOwnersFor(buildingId) {
-                // Clear current owner options
                 ownerSelect.innerHTML = '<option value="">-- Select an owner --</option>';
 
                 if (!buildingId) return;
@@ -81,16 +80,13 @@
                     });
                 } catch (e) {
                     console.error(e);
-                    // Optional: show a toast/alert
                 }
             }
 
-            // Load owners immediately if a building is already selected (e.g., after validation error)
             if (buildingSelect && buildingSelect.value) {
                 loadOwnersFor(buildingSelect.value);
             }
 
-            // Update owners when building changes — NO PAGE RELOAD
             buildingSelect?.addEventListener('change', function (e) {
                 loadOwnersFor(e.target.value);
             });

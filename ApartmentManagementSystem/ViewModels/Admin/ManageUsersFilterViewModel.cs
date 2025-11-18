@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ApartmentManagementSystem.ViewModels.Admin
+﻿namespace ApartmentManagementSystem.ViewModels.Admin
 {
     public class ManageUsersFilterViewModel
     {

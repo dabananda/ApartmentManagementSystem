@@ -67,7 +67,6 @@
 
 <a asp-action="Index" asp-route-buildingId="@buildingId" class="btn btn-outline-secondary">Back to Bills</a>
 
-<!-- Payment Modal -->
 <div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -92,7 +91,6 @@
 
                     <div class="mb-2">
                         <label class="form-label">Amount</label>
-                        @* <input type="number" step="0.01" min="0.01" class="form-control" name="Amount" required /> *@
                         <input type="number" step="0.01" min="0.01" class="form-control" name="Amount" id="OwnerPayAmount" required />
                     </div>
 

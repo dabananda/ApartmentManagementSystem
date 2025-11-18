@@ -188,7 +188,6 @@
     }
 
     <script>
-        // Set current date-time as default for entry time (without seconds)
         document.addEventListener('DOMContentLoaded', function() {
             const entryTimeInput = document.querySelector('input[name="EntryTime"]');
             if (entryTimeInput && !entryTimeInput.value) {
@@ -196,7 +195,6 @@
             }
         });
 
-        // Helper function to get current time without seconds
         function getCurrentTimeString() {
             const now = new Date();
             const year = now.getFullYear();
@@ -207,22 +205,18 @@
             return `${year}-${month}-${day}T${hours}:${minutes}`;
         }
 
-        // Set current time to input
         function setCurrentTime(input) {
             input.value = getCurrentTimeString();
         }
 
-        // Get max datetime (current time) for validation
         function getMaxDatetime() {
             return getCurrentTimeString();
         }
 
-        // Load flats based on selected building
         function loadFlats() {
             const buildingId = document.getElementById('BuildingId').value;
             const flatSelect = document.getElementById('FlatId');
 
-            // Clear existing options
             flatSelect.innerHTML = '<option value="">Loading flats...</option>';
 
             if (!buildingId) {
@@ -230,7 +224,6 @@
                 return;
             }
 
-            // Make AJAX call to get flats for the selected building
             fetch(`/api/flats/bybuilding/${buildingId}`)
                 .then(response => response.json())
                 .then(data => {
@@ -248,7 +241,6 @@
                 });
         }
 
-        // Form validation and submission
         document.getElementById('entryLogForm').addEventListener('submit', function(e) {
             const requiredFields = this.querySelectorAll('[required]');
             let isValid = true;
@@ -263,14 +255,12 @@
                 }
             });
 
-            // Validate entry time is not in the future
             const entryTimeInput = document.querySelector('input[name="EntryTime"]');
             const entryTime = entryTimeInput.value;
 
             if (entryTime) {
                 const entryDate = new Date(entryTime);
                 const now = new Date();
-                // Round current time to the minute to match input precision
                 now.setSeconds(0, 0);
 
                 if (entryDate > now) {
@@ -281,7 +271,6 @@
                 }
             }
 
-            // Validate exit time is after entry time
             const exitTimeInput = document.querySelector('input[name="ExitTime"]');
             const exitTime = exitTimeInput.value;
 
@@ -303,7 +292,6 @@
             }
         });
 
-        // Real-time validation feedback
         document.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
             field.addEventListener('blur', function() {
                 if (this.value && this.value.trim()) {
@@ -316,7 +304,6 @@
             });
         });
 
-        // Real-time validation for entry time
         document.querySelector('input[name="EntryTime"]').addEventListener('change', function() {
             if (this.value) {
                 const entryDate = new Date(this.value);
@@ -334,7 +321,6 @@
             }
         });
 
-        // Real-time validation for exit time
         document.querySelector('input[name="ExitTime"]').addEventListener('change', function() {
             const entryTime = document.querySelector('input[name="EntryTime"]').value;
             if (this.value && entryTime) {
@@ -355,14 +341,11 @@
             }
         });
 
-        // Phone number formatting
         const phoneInput = document.querySelector('input[name="PhoneNumber"]');
         if (phoneInput) {
             phoneInput.addEventListener('input', function() {
-                // Remove all non-digits
                 let value = this.value.replace(/\D/g, '');
 
-                // Limit to 11 digits
                 if (value.length > 11) {
                     this.value = value.substr(0, 11);
                 } else {

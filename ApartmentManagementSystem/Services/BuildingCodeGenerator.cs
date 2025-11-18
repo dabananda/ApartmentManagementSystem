@@ -10,7 +10,6 @@ namespace ApartmentManagementSystem.Services
 
         public async Task<string> GenerateAsync(CancellationToken ct = default)
         {
-            // Codes: BID1001, BID1002, ...
             var last = await _db.Buildings
                 .AsNoTracking()
                 .Where(b => b.Code != null && b.Code.StartsWith("BID"))

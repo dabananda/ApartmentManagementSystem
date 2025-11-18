@@ -24,7 +24,6 @@ namespace ApartmentManagementSystem.ViewModels.Admin
         [Compare("Password")]
         public string ConfirmPassword { get; set; } = default!;
 
-        // Allowed: President, Tenant, User
         [Required]
         public string Role { get; set; } = "User";
     }

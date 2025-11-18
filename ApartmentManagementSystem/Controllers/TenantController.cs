@@ -23,7 +23,6 @@ namespace ApartmentManagementSystem.Controllers
             _config = config;
         }
 
-        // GET: Tenant/ViewTenants/{flatId}
         public async Task<IActionResult> ViewTenants(Guid? flatId)
         {
             if (flatId == null) return NotFound();
@@ -31,7 +30,6 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _userManager.GetUserAsync(User);
             if (me == null) return Forbid();
 
-            // Load the flat (need BuildingId to authorize a President)
             var flat = await _context.Flats
                 .AsNoTracking()
                 .Include(f => f.Building)
@@ -48,7 +46,6 @@ namespace ApartmentManagementSystem.Controllers
             ViewData["FlatNumber"] = flat.FlatNumber;
             ViewData["FlatId"] = flat.Id;
 
-            // 1) Active assignment-based tenants (source of truth)
             var assignmentRows = await _context.TenantAssignments.AsNoTracking()
                 .Include(a => a.TenantUser)
                 .Where(a => a.FlatId == flat.Id && a.EndDate == null)
@@ -70,7 +67,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .ToHashSet();
 
-            // 2) Legacy tenants that don’t duplicate current assignments
             var legacyRows = await _context.Tenants.AsNoTracking()
                 .Where(t => t.FlatId == flat.Id && (t.UserId == null || !assignedUserIds.Contains(t.UserId)))
                 .Select(t => new FlatTenantRow
@@ -94,7 +90,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(rows);
         }
 
-        // GET: Tenant/BuildingTenants
         public async Task<IActionResult> BuildingTenants()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -103,11 +98,9 @@ namespace ApartmentManagementSystem.Controllers
 
             var buildingId = user.BuildingId!.Value;
 
-            // Building info
             var building = await _context.Buildings.AsNoTracking().FirstOrDefaultAsync(b => b.Id == buildingId);
             if (building == null) return NotFound();
 
-            // --- Assignments (source of truth) ---
             var assignmentRows = await _context.TenantAssignments
                 .Include(a => a.Flat)!.ThenInclude(f => f.Owner)
                 .Include(a => a.TenantUser)
@@ -126,10 +119,8 @@ namespace ApartmentManagementSystem.Controllers
                 })
                 .ToListAsync();
 
-            // Track which flats already covered by assignments (avoid duplicates with legacy)
             var assignedFlatIds = assignmentRows.Select(r => r.FlatId).ToHashSet();
 
-            // --- Legacy active tenants for flats that have no active assignment yet ---
             var legacyRows = await _context.Tenants
                 .Include(t => t.Flat)!.ThenInclude(f => f.Owner)
                 .Where(t => t.IsActive && t.Flat!.BuildingId == buildingId && !assignedFlatIds.Contains(t.FlatId))
@@ -137,7 +128,7 @@ namespace ApartmentManagementSystem.Controllers
                 {
                     FlatId = t.FlatId,
                     FlatNumber = t.Flat!.FlatNumber,
-                    TenantUserId = t.UserId ?? "", // may be blank if legacy didn't link to Identity
+                    TenantUserId = t.UserId ?? "",
                     TenantName = t.Fullname,
                     Email = t.Email,
                     PhoneNumber = t.PhoneNumber,

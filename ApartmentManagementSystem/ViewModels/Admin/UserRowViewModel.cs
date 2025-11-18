@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace ApartmentManagementSystem.ViewModels.Admin
+﻿namespace ApartmentManagementSystem.ViewModels.Admin
 {
     public class UserRowViewModel
     {

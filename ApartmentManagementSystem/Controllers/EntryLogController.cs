@@ -20,7 +20,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: EntryLog
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -30,7 +29,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Include(x => x.Building)
                 .Include(x => x.Flat);
 
-            // If user is not SuperAdmin, filter by their building
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
             {
                 if (user.BuildingId.HasValue)
@@ -39,7 +37,6 @@ namespace ApartmentManagementSystem.Controllers
                 }
                 else
                 {
-                    // If user has no building assigned, show empty list
                     entryLogsQuery = entryLogsQuery.Where(el => false);
                 }
             }
@@ -48,14 +45,11 @@ namespace ApartmentManagementSystem.Controllers
             return View(entryLogs);
         }
 
-        // GET: EntryLog/Create
         public async Task<IActionResult> Create()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            // Initialize a new EntryLog with default values
-            // Set time without seconds and milliseconds
             var currentTime = DateTime.Now;
             var timeWithoutSeconds = new DateTime(
                 currentTime.Year,
@@ -63,8 +57,8 @@ namespace ApartmentManagementSystem.Controllers
                 currentTime.Day,
                 currentTime.Hour,
                 currentTime.Minute,
-                0, // seconds
-                0  // milliseconds
+                0,
+                0
             );
 
             var model = new EntryLog
@@ -77,7 +71,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(model);
         }
 
-        // POST: EntryLog/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EntryLog model)
@@ -88,7 +81,6 @@ namespace ApartmentManagementSystem.Controllers
             ModelState.Remove("Building");
             ModelState.Remove("Flat");
 
-            // Normalize EntryTime to remove seconds and milliseconds
             if (model.EntryTime != default(DateTime) && model.EntryTime != DateTime.MinValue)
             {
                 model.EntryTime = new DateTime(
@@ -97,13 +89,12 @@ namespace ApartmentManagementSystem.Controllers
                     model.EntryTime.Day,
                     model.EntryTime.Hour,
                     model.EntryTime.Minute,
-                    0, // seconds
-                    0  // milliseconds
+                    0,
+                    0
                 );
             }
             else
             {
-                // If EntryTime is not set, use current time without seconds
                 var currentTime = DateTime.Now;
                 model.EntryTime = new DateTime(
                     currentTime.Year,
@@ -116,7 +107,6 @@ namespace ApartmentManagementSystem.Controllers
                 );
             }
 
-            // Normalize ExitTime to remove seconds and milliseconds if it's set
             if (model.ExitTime.HasValue)
             {
                 model.ExitTime = new DateTime(
@@ -125,8 +115,8 @@ namespace ApartmentManagementSystem.Controllers
                     model.ExitTime.Value.Day,
                     model.ExitTime.Value.Hour,
                     model.ExitTime.Value.Minute,
-                    0, // seconds
-                    0  // milliseconds
+                    0,
+                    0
                 );
             }
 
@@ -155,7 +145,6 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            // Validate entry time is not in the future (with minute precision)
             var now = DateTime.Now;
             var currentTimeWithoutSeconds = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, 0);
 
@@ -183,7 +172,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(model);
         }
 
-        // GET: EntryLog/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null) return NotFound();
@@ -205,7 +193,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(entry);
         }
 
-        // GET: EntryLog/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null) return NotFound();
@@ -224,7 +211,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(entry);
         }
 
-        // POST: EntryLog/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, EntryLog model)
@@ -236,7 +222,6 @@ namespace ApartmentManagementSystem.Controllers
             ModelState.Remove("Building");
             ModelState.Remove("Flat");
 
-            // Normalize times
             if (model.EntryTime != default(DateTime) && model.EntryTime != DateTime.MinValue)
             {
                 model.EntryTime = new DateTime(model.EntryTime.Year, model.EntryTime.Month, model.EntryTime.Day, model.EntryTime.Hour, model.EntryTime.Minute, 0, 0);
@@ -279,7 +264,6 @@ namespace ApartmentManagementSystem.Controllers
                     if (user.BuildingId != existing.BuildingId) return Forbid();
                 }
 
-                // Update fields
                 existing.Fullname = model.Fullname;
                 existing.PhoneNumber = model.PhoneNumber;
                 existing.BuildingId = model.BuildingId;
@@ -301,7 +285,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(model);
         }
 
-        // GET: EntryLog/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null) return NotFound();
@@ -323,7 +306,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(entry);
         }
 
-        // POST: EntryLog/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
@@ -346,14 +328,12 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction("Index");
         }
 
-        // API endpoint to get flats by building
         [HttpGet("api/flats/bybuilding/{buildingId}")]
         public async Task<IActionResult> GetFlatsByBuilding(Guid buildingId)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            // Authorization check - ensure user can only access flats from their building
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
             {
                 if (user.BuildingId != buildingId)
@@ -373,7 +353,6 @@ namespace ApartmentManagementSystem.Controllers
 
         private async Task PopulateDropdowns(ApplicationUser user, Guid? selectedBuildingId = null, Guid? selectedFlatId = null)
         {
-            // Populate buildings dropdown based on user role
             IQueryable<Building> buildingsQuery = _context.Buildings;
 
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
@@ -384,14 +363,13 @@ namespace ApartmentManagementSystem.Controllers
                 }
                 else
                 {
-                    buildingsQuery = buildingsQuery.Where(b => false); // Empty list
+                    buildingsQuery = buildingsQuery.Where(b => false);
                 }
             }
 
             var buildings = await buildingsQuery.OrderBy(b => b.Name).ToListAsync();
             ViewBag.BuildingId = new SelectList(buildings, "Id", "Name", selectedBuildingId);
 
-            // Populate flats dropdown
             var flats = new List<Flat>();
             if (selectedBuildingId.HasValue && selectedBuildingId != Guid.Empty)
             {
@@ -409,7 +387,6 @@ namespace ApartmentManagementSystem.Controllers
             }
             else if (await _userManager.IsInRoleAsync(user, "SuperAdmin"))
             {
-                // For SuperAdmin, show all flats or none initially
                 flats = new List<Flat>();
             }
 

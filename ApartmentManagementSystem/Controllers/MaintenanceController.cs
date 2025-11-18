@@ -19,7 +19,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: /Maintenance
         public async Task<IActionResult> Index(string status = "Open")
         {
             var user = await _userManager.GetUserAsync(User);
@@ -42,10 +41,8 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // GET: /Maintenance/Create
         public IActionResult Create() => View(new MaintenanceTicket());
 
-        // POST: /Maintenance/Create
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(MaintenanceTicket model)
         {
@@ -65,7 +62,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: /Maintenance/Advance/{id}  (Open -> InProgress -> Closed)
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Advance(Guid id)
         {

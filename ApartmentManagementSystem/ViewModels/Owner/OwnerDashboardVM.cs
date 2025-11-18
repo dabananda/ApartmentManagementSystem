@@ -2,25 +2,20 @@
 {
     public class OwnerDashboardVM
     {
-        // Flats
         public int FlatsOwnedCount { get; set; }
         public int FlatsOccupiedCount { get; set; }
 
-        // Tenant Rent (from TenantBills/TenantPayments)
         public decimal RentTotalBilled { get; set; }
         public decimal RentTotalPaid { get; set; }
         public decimal RentTotalDue => RentTotalBilled - RentTotalPaid;
         public decimal RentPaidThisMonth { get; set; }
 
-        // Common Bills (from ExpenseAllocations/ExpenseAllocationPayments)
-        public decimal CommonTotalBilled { get; set; }  // sum of all allocations for this owner
-        public decimal CommonTotalPaid { get; set; }    // sum of payments by this owner
+        public decimal CommonTotalBilled { get; set; }
+        public decimal CommonTotalPaid { get; set; }
         public decimal CommonTotalDue => CommonTotalBilled - CommonTotalPaid;
 
-        // Tenants (active)
         public List<OwnerTenantRow> Tenants { get; set; } = new();
 
-        // Recent payments
         public List<OwnerRecentRentPaymentRow> RecentRent { get; set; } = new();
         public List<OwnerRecentCommonPaymentRow> RecentCommon { get; set; } = new();
     }

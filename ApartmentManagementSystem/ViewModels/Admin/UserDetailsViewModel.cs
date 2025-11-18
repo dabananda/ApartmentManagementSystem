@@ -51,7 +51,6 @@ namespace ApartmentManagementSystem.ViewModels.Admin
         [Display(Name = "Account Status")]
         public string AccountStatus { get; set; }
 
-        // Helper properties for display
         public string PrimaryRole => Roles.FirstOrDefault() ?? "User";
         public bool HasMultipleRoles => Roles.Count > 1;
         public bool IsOwner => Roles.Contains("Owner");

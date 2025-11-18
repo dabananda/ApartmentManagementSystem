@@ -7,9 +7,7 @@
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
-            <!-- Card -->
             <div class="card shadow border-0">
-                <!-- Header -->
                 <div class="card-header bg-danger text-white text-center py-3">
                     <div class="d-flex align-items-center justify-content-center">
                         <i class="bi bi-exclamation-triangle fs-4 me-2"></i>
@@ -17,11 +15,9 @@
                     </div>
                 </div>
 
-                <!-- Card Body -->
                 <div class="card-body p-4">
                     @if (hasPayments)
                     {
-                        <!-- Warning Message -->
                         <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
                             <i class="bi bi-shield-exclamation fs-4 me-3 flex-shrink-0"></i>
                             <div>
@@ -30,11 +26,9 @@
                             </div>
                         </div>
 
-                        <!-- Bill Details (Read-only) -->
                         <div class="bg-light rounded p-3 mb-4">
                             <h6 class="text-muted mb-3 text-center">Bill Information</h6>
 
-                            <!-- Bill Name -->
                             <div class="mb-2">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -47,7 +41,6 @@
                                 </div>
                             </div>
 
-                            <!-- Amount -->
                             <div class="mb-2">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -60,7 +53,6 @@
                                 </div>
                             </div>
 
-                            <!-- Date -->
                             <div class="mb-0">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -74,7 +66,6 @@
                             </div>
                         </div>
 
-                        <!-- Back Button -->
                         <div class="text-center">
                             <a class="btn btn-outline-secondary px-4" asp-action="Index" asp-route-buildingId="@Model.BuildingId">
                                 <i class="bi bi-arrow-left me-2"></i>
@@ -84,8 +75,6 @@
                     }
                     else
                     {
-                        <!-- Bill Details for Confirmation -->
-                        <!-- Bill Name -->
                         <div class="mb-3">
                             <div class="d-flex align-items-center">
                                 <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -98,7 +87,6 @@
                             </div>
                         </div>
 
-                        <!-- Total Amount -->
                         <div class="mb-3">
                             <div class="d-flex align-items-center">
                                 <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -114,7 +102,6 @@
                             </div>
                         </div>
 
-                        <!-- Bill Date -->
                         <div class="mb-3">
                             <div class="d-flex align-items-center">
                                 <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -127,7 +114,6 @@
                             </div>
                         </div>
 
-                        <!-- Notes -->
                         @if (!string.IsNullOrEmpty(Model.Notes))
                         {
                             <div class="mb-4">
@@ -143,7 +129,6 @@
                             </div>
                         }
 
-                        <!-- Confirmation Form -->
                         <form asp-action="Delete" method="post">
                             @Html.AntiForgeryToken()
                             <input type="hidden" asp-for="Id" />

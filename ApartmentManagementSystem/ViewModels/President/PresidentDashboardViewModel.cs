@@ -4,7 +4,6 @@ namespace ApartmentManagementSystem.ViewModels.President
 {
     public class PresidentDashboardViewModel
     {
-        // Existing KPI/header data
         public string BuildingName { get; set; } = "(Building)";
         public int TotalBills { get; set; }
         public decimal TotalCollected { get; set; }
@@ -14,10 +13,8 @@ namespace ApartmentManagementSystem.ViewModels.President
         public int TodayEntries { get; set; }
         public int Last7dEntries { get; set; }
 
-        // Existing table data
         public List<TransactionRowViewModel> RecentTransactions { get; set; } = new();
 
-        // NEW — Charts
         public CashflowChartVM Cashflow { get; set; } = new();
         public AgingBucketsVM Aging { get; set; } = new();
         public TopOwnersVM TopOwners { get; set; } = new();
@@ -25,23 +22,18 @@ namespace ApartmentManagementSystem.ViewModels.President
 
     public class TransactionRowViewModel
     {
-        public DateTime OccurredAt { get; set; } // UTC
+        public DateTime OccurredAt { get; set; }
         public string Type { get; set; } = "";
         public string Description { get; set; } = "";
         public decimal? Amount { get; set; }
         public string? Currency { get; set; }
-        public string Direction { get; set; } = "Info"; // In / Out / Info
+        public string Direction { get; set; } = "Info";
     }
-
-    // ===== Charts =====
 
     public class CashflowChartVM
     {
-        // Labels: "2025-01", "2025-02", ...
         public List<string> Labels { get; set; } = new();
-        // Money IN (owner payments)
         public List<decimal> In { get; set; } = new();
-        // Money OUT (expense payments)
         public List<decimal> Out { get; set; } = new();
     }
 
@@ -58,7 +50,7 @@ namespace ApartmentManagementSystem.ViewModels.President
 
     public class TopOwnersVM
     {
-        public List<string> Labels { get; set; } = new();   // Owner names
-        public List<decimal> Values { get; set; } = new();   // Outstanding due
+        public List<string> Labels { get; set; } = new();
+        public List<decimal> Values { get; set; } = new();
     }
 }
