@@ -158,10 +158,11 @@
                             <tr>
                                 <th class="border-0">Visitor Name</th>
                                 <th class="border-0">Phone</th>
+                                <th class="border-0">Building</th>
                                 <th class="border-0">Flat</th>
                                 <th class="border-0">Type</th>
                                 <th class="border-0">Persons</th>
-                                <th class="border-0">Purpose</th>
+                                @* <th class="border-0">Purpose</th> *@
                                 <th class="border-0">Entry Time</th>
                                 <th class="border-0">Exit Time</th>
                                 <th class="border-0 text-center">Status</th>
@@ -193,6 +194,9 @@
                                         }
                                     </td>
                                     <td class="align-middle">
+                                        <span class="text-dark">@item.Building.Name</span>
+                                    </td>
+                                    <td class="align-middle">
                                         <span class="badge bg-secondary">@item.Flat.FlatNumber</span>
                                     </td>
                                     <td class="align-middle">
@@ -211,11 +215,11 @@
                                     <td class="align-middle text-center">
                                         <span>@item.NumberOfPerson</span>
                                     </td>
-                                    <td class="align-middle">
+                                    @* <td class="align-middle">
                                         <span class="text-muted" title="@item.Purpose">
                                             @(item.Purpose.Length > 30 ? item.Purpose.Substring(0, 30) + "..." : item.Purpose)
                                         </span>
-                                    </td>
+                                    </td> *@
                                     <td class="align-middle">
                                         <small class="text-muted">
                                             <div>@item.EntryTime.ToString("MMM dd, yyyy")</div>
