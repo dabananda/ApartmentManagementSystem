@@ -602,40 +602,34 @@
         </div>
 
         <div class="row justify-content-center gap-4 mb-4">
-            <div class="col-lg-3 col-md-5 shadow rounded rounded-lg">
-                <div class="h-100">
+            <div class="col-lg-3 col-md-5 shadow rounded rounded-lg dev-card">
+                <div class="h-100 py-3">
                     <div class="text-center">
                         <img src="https://res.cloudinary.com/djz3p8sux/image/upload/v1762970456/ams/sqacocma6wvd7j2qgolh.png"
                              alt="Dabananda Mitra"
-                             class="w-100">
+                             class="w-100 img-thumbnail dev-img">
                     </div>
-                    <div class="team-content">
+                    <div class="mt-3 text-center">
                         <h4 class="fw-bold mb-2">Dabananda Mitra</h4>
-                        <p class="text-purple fw-semibold mb-2">Lead Developer & System Architect</p>
-                        <p class="text-muted mb-3">
-                            <small><i class="bi bi-mortarboard me-1"></i>Registration: 19502004810</small>
-                        </p>
+                        <p class="text-purple fw-semibold mb-2"></p>
                         <p class="text-muted">
-                            Specialized in building scalable web applications and creating intuitive user experiences.
+                            <small><i class="bi bi-mortarboard me-1"></i>Registration: 19502004810</small>
                         </p>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-5 shadow rounded rounded-lg">
-                <div class="h-100">
+            <div class="col-lg-3 col-md-5 shadow rounded rounded-lg dev-card">
+                <div class="h-100 py-3">
                     <div class="text-center">
                         <img src="https://res.cloudinary.com/djz3p8sux/image/upload/v1763295283/ams/suraiya_bilkis_wckofa.png"
                              alt="Suraiya Bilkis"
-                             class="w-100">
+                             class="w-100 img-thumbnail dev-img">
                     </div>
-                    <div class="team-content">
+                    <div class="mt-3 text-center">
                         <h4 class="fw-bold mb-2">Suraiya Bilkis</h4>
-                        <p class="text-purple fw-semibold mb-2">Co-Developer & UI/UX Designer</p>
-                        <p class="text-muted mb-3">
-                            <small><i class="bi bi-mortarboard me-1"></i>Registration: 19502004837</small>
-                        </p>
+                        <p class="text-purple fw-semibold mb-2"></p>
                         <p class="text-muted">
-                            Focused on creating beautiful interfaces and ensuring seamless user experiences.
+                            <small><i class="bi bi-mortarboard me-1"></i>Registration: 19502004837</small>
                         </p>
                     </div>
                 </div>
@@ -744,6 +738,21 @@
 </section>
 
 <style>
+    .dev-img {
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .dev-card {
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+
+        .dev-card:hover {
+            border-color: #7c3aed;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1);
+        }
+
     .team-card {
         background: white;
         border-radius: 16px;
@@ -775,11 +784,6 @@
 
     .team-card:hover .team-image {
         transform: scale(1.05);
-    }
-
-    .team-content {
-        padding: 2rem;
-        text-align: center;
     }
 
     .about-institute {
