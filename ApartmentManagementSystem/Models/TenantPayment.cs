@@ -34,15 +34,11 @@ namespace ApartmentManagementSystem.Models
         [StringLength(100)]
         public string? Reference { get; set; }
 
-        // ---- New: for safe online payments / Stripe idempotency ----
-        // A client-supplied unique token per "create payment" intent.
-        // Keep it nullable; enforce uniqueness only when not null.
         [StringLength(80)]
         public string? IdempotencyKey { get; set; }
 
         public PaymentGateway Gateway { get; set; } = PaymentGateway.None;
 
-        // External processor charge/intent id (e.g., Stripe PaymentIntent id)
         [StringLength(120)]
         public string? ExternalRef { get; set; }
 

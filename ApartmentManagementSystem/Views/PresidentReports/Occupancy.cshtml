@@ -75,7 +75,6 @@
 @section Scripts {
     <script>
         (function() {
-          // Doughnut: occupied vs vacant
           var occCtx = document.getElementById('occDonut').getContext('2d');
           new Chart(occCtx, {
             type: 'doughnut',
@@ -90,7 +89,6 @@
             options: { legend: { position: 'bottom' } }
           });
 
-          // Bars: distinct owners & tenants
           var pplCtx = document.getElementById('peopleBars').getContext('2d');
           new Chart(pplCtx, {
             type: 'bar',
@@ -100,7 +98,6 @@
                 label: 'Count',
                 data: [@Model.OwnersCount, @Model.TenantsCount],
                 backgroundColor: ['rgb(167, 227, 153)', 'rgba(255,178,64,0.6)'],
-                // borderColor: 'rgba(255,159,64,1)',
                 borderWidth: 1
               }]
             },

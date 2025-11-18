@@ -17,9 +17,7 @@
         </div>
     </div>
 
-    <!-- Overview Cards Row -->
     <div class="row mb-4">
-        <!-- Buildings Card -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
@@ -36,7 +34,6 @@
             </div>
         </div>
 
-        <!-- Users Card -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
@@ -54,7 +51,6 @@
             </div>
         </div>
 
-        <!-- Flats Card -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
@@ -71,7 +67,6 @@
             </div>
         </div>
 
-        <!-- Financial Card -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
@@ -90,116 +85,6 @@
         </div>
     </div>
 
-    <!-- Quick Stats Row -->
-    @* <div class="row">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">System Summary</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="h4 text-primary">@Model.FlatsWithOwners</div>
-                                <small class="text-muted">Flats with Owners</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="h4 text-warning">@Model.FlatsWithoutOwners</div>
-                                <small class="text-muted">Unassigned Flats</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="h4 text-info">@Model.OccupiedFlats</div>
-                                <small class="text-muted">Occupied Flats</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="h4 text-secondary">@Model.VacantFlats</div>
-                                <small class="text-muted">Vacant Flats</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="h4 text-success">@Model.TotalPresidents</div>
-                                <small class="text-muted">Presidents</small>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="h4 @(Model.PendingApprovals > 0 ? "text-danger" : "text-success")">@Model.PendingApprovals</div>
-                                <small class="text-muted">Pending Approvals</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div> *@
-
-    <!-- Buildings Overview Section -->
-    @* <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Buildings Overview</h6>
-                    <a asp-controller="Building" asp-action="Index" class="btn btn-sm btn-primary">View All Buildings</a>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>Building Name</th>
-                                    <th>Address</th>
-                                    <th>Total Flats</th>
-                                    <th>Occupied</th>
-                                    <th>Vacant</th>
-                                    <th>Total Bills</th>
-                                    <th>Total Payments</th>
-                                    <th>Balance</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var building in Model.BuildingsSummary)
-                                {
-                                    <tr>
-                                        <td>@building.Name</td>
-                                        <td>@building.Address</td>
-                                        <td>@building.TotalFlats</td>
-                                        <td><span class="badge badge-success">@building.OccupiedFlats</span></td>
-                                        <td><span class="badge badge-secondary">@building.VacantFlats</span></td>
-                                        <td>@building.TotalBills.ToString("C")</td>
-                                        <td>@building.TotalPayments.ToString("C")</td>
-                                        <td class="@(building.Balance >= 0 ? "text-success" : "text-danger")">
-                                            @building.Balance.ToString("C")
-                                        </td>
-                                        <td>
-                                            <a asp-controller="Building" asp-action="Details" asp-route-id="@building.Id"
-                                               class="btn btn-sm btn-info">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <a asp-controller="Flat" asp-action="Index" asp-route-buildingId="@building.Id"
-                                               class="btn btn-sm btn-secondary">
-                                                <i class="bi bi-houses"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div> *@
-
-    <!-- Financial Overview -->
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Financial Overview</h6>
@@ -241,8 +126,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Recent Activities -->
 
     <div class="row">
         <div class="col-12 col-md-6">

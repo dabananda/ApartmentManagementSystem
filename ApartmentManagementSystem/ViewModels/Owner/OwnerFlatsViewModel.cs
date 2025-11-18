@@ -1,7 +1,4 @@
-﻿using ApartmentManagementSystem.Models;
-using System.ComponentModel.DataAnnotations;
-
-namespace ApartmentManagementSystem.ViewModels.Owner
+﻿namespace ApartmentManagementSystem.ViewModels.Owner
 {
     public class OwnerFlatsViewModel
     {

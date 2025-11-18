@@ -4,18 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - Apartment Management System</title>
-
-    @* <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" /> *@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
 </head>
 <body>
-    <!-- Modern Purple Navbar -->
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-purple fixed-top">
         <div class="container">
-            <!-- Brand with gradient -->
             <a class="navbar-brand fw-bold fs-3 text-white" asp-controller="Home" asp-action="Index">
                 <span class="brand-gradient">AMS</span>
             </a>
@@ -83,12 +80,12 @@
         </div>
     </nav>
 
-    <!-- Main content with proper spacing -->
+    <!-- Main content -->
     <main class="main-content">
         @RenderBody()
     </main>
 
-    <!-- Modern Footer -->
+    <!-- Footer -->
     <footer class="footer-modern">
         <div class="container">
             <div class="row g-4 align-items-center">
@@ -150,11 +147,9 @@
         </div>
     </footer>
 
-    @* <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script> *@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lottie web component -->
     <script src="https://unpkg.com/@@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     @RenderSection("Scripts", required: false)
 
@@ -166,7 +161,6 @@
             --purple-light: #c4b5fd;
         }
 
-        /* Modern Purple Navbar */
         .navbar-purple {
             background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
             backdrop-filter: blur(10px);
@@ -180,7 +174,6 @@
                 box-shadow: 0 2px 30px rgba(148, 90, 246, 0.4);
             }
 
-        /* Brand styling */
         .brand-gradient {
             background: linear-gradient(135deg, #ffffff, #f1f5f9);
             -webkit-background-clip: text;
@@ -189,7 +182,6 @@
             text-shadow: 0 0 30px rgba(255,255,255,0.5);
         }
 
-        /* Modern nav links */
         .nav-link-modern {
             color: rgba(255,255,255,0.9) !important;
             font-weight: 500;
@@ -221,7 +213,6 @@
                 width: 80%;
             }
 
-        /* Custom toggler */
         .custom-toggler {
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 8px;
@@ -236,7 +227,6 @@
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.8%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='m4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
         }
 
-        /* Button styles */
         .btn-gradient-white {
             background: linear-gradient(135deg, #ffffff, #f8fafc);
             border: none;
@@ -265,12 +255,10 @@
                 transform: translateY(-1px);
             }
 
-        /* Main content spacing */
         .main-content {
             margin-top: 80px;
         }
 
-        /* Modern Footer */
         .footer-modern {
             background: linear-gradient(135deg, var(--purple-dark), var(--purple-secondary));
             padding: 3rem 0 2rem;
@@ -315,58 +303,48 @@
                 transform: translateY(-2px);
             }
 
-        /* Mobile responsive */
         @@media (max-width: 991.98px) {
-            .navbar-collapse
+            .navbar-collapse {
+                background: rgba(255,255,255,0.1);
+                backdrop-filter: blur(20px);
+                border-radius: 12px;
+                padding: 1rem;
+                margin-top: 1rem;
+            }
 
-        {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
+            .nav-item {
+                margin: 0.25rem 0;
+            }
 
-        .nav-item {
-            margin: 0.25rem 0;
-        }
+            .nav-link-modern {
+                text-align: center;
+            }
 
-        .nav-link-modern {
-            text-align: center;
-        }
-
-        .main-content {
-            margin-top: 70px;
-        }
-
+            .main-content {
+                margin-top: 70px;
+            }
         }
 
         @@media (max-width: 767.98px) {
-            .footer-modern .col-lg-6
+            .footer-modern .col-lg-6 {
+                text-align: center !important;
+            }
 
-        {
-            text-align: center !important;
+            .footer-links {
+                margin-bottom: 1rem !important;
+            }
         }
 
-        .footer-links {
-            margin-bottom: 1rem !important;
-        }
-
-        }
-
-        /* Smooth scroll behavior */
         html {
             scroll-behavior: smooth;
         }
 
-        /* Navbar scroll effect */
         .navbar-purple {
             transition: all 0.3s ease;
         }
     </style>
 
     <script>
-        // Add scroll effect to navbar
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar-purple');
             if (window.scrollY > 50) {
@@ -376,13 +354,12 @@
             }
         });
 
-        // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
-                    const offsetTop = target.offsetTop - 80; // Account for fixed navbar
+                    const offsetTop = target.offsetTop - 80;
                     window.scrollTo({
                         top: offsetTop,
                         behavior: 'smooth'

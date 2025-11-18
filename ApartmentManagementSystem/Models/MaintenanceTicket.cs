@@ -15,7 +15,6 @@ namespace ApartmentManagementSystem.Models
         [Required, StringLength(2000)]
         public string Description { get; set; } = "";
 
-        // Open -> InProgress -> Closed
         [Required, StringLength(20)]
         public string Status { get; set; } = "Open";
 

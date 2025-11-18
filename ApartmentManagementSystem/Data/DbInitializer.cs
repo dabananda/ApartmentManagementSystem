@@ -21,7 +21,6 @@ namespace ApartmentManagementSystem.Data
                 }
             }
 
-            // Seed SuperAdmin
             if (await userManager.FindByEmailAsync(superAdminEmail) == null)
             {
                 var superAdmin = new ApplicationUser

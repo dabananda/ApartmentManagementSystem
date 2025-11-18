@@ -19,7 +19,6 @@ namespace ApartmentManagementSystem.ViewModels.Admin
         [Display(Name = "Building")]
         public Guid? BuildingId { get; set; }
 
-        // display-only helpers
         public string? BuildingName { get; set; }
         public bool IsSuperAdminCaller { get; set; } = false;
     }

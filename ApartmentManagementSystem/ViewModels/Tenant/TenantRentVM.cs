@@ -20,8 +20,6 @@ namespace ApartmentManagementSystem.ViewModels.Tenant
         [Required, Range(0.01, double.MaxValue)] public decimal Amount { get; set; }
         [DataType(DataType.Date)] public DateTime PaymentDate { get; set; } = DateTime.Today;
         [StringLength(100)] public string? Reference { get; set; }
-
-        // New: client-provided idempotency token (e.g., Stripe PaymentIntent id or a GUID you generate on the client)
         [StringLength(80)] public string? IdempotencyKey { get; set; }
     }
 

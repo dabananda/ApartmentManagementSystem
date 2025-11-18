@@ -19,8 +19,6 @@ namespace ApartmentManagementSystem.Controllers
             _userManager = userManager;
         }
 
-        // GET: /Announcement
-        // Shows only this President's building announcements
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -37,18 +35,14 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // GET: /Announcement/Create
         public IActionResult Create() => View(new Announcement());
 
-        // POST: /Announcement/Create
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Title,Body")] Announcement model)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId == null) return Forbid();
 
-            // BuildingId comes ONLY from the President's account, never the form
-            // Remove validation for BuildingId because we're setting it here
             ModelState.Remove(nameof(Announcement.BuildingId));
 
             if (!ModelState.IsValid) return View(model);

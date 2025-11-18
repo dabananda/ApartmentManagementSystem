@@ -21,37 +21,9 @@
         </div>
     </div>
 
-    @*<div class="col-md-3">
-        <label class="form-label mb-1">Has President</label>
-        <select class="form-select" name="HasPresident">
-            @{
-                var hp = Model.Filter.HasPresident;
-            }
-            @if (hp == null)
-            {
-                <option value="" selected="selected">All</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-            }
-            else if (hp == true)
-            {
-                <option value="">All</option>
-                <option value="true" selected="selected">Yes</option>
-                <option value="false">No</option>
-            }
-            else
-            {
-                <option value="">All</option>
-                <option value="true">Yes</option>
-                <option value="false" selected="selected">No</option>
-            }
-        </select>
-    </div>*@
-
     <div class="col-md-4">
         <div class="d-flex justify-content-end">
             <div class="me-1 flex-grow-1">
-                @* <label class="form-label mb-1">Page size</label> *@
                 <select class="form-select" name="PageSize">
                     @{
                         var sizes = new[] { 10, 20, 50, 100 };

@@ -77,7 +77,6 @@
     </tbody>
 </table>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -101,10 +100,7 @@
 </div>
 
 @section Scripts {
-    <!-- DataTables CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
-
-    <!-- DataTables JS -->
     <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
 
@@ -122,12 +118,12 @@
                 "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 "columnDefs": [
                     {
-                        "targets": [5], // Actions column
+                        "targets": [5],
                         "orderable": false,
                         "searchable": false
                     }
                 ],
-                "order": [[0, "asc"], [1, "asc"]], // Sort by Building, then Flat Number
+                "order": [[0, "asc"], [1, "asc"]],
                 "language": {
                     "search": "Search:",
                     "lengthMenu": "Show _MENU_ entries",
@@ -142,16 +138,10 @@
             });
         });
 
-        // Delete confirmation function
         function confirmDelete(flatId, flatNumber, buildingName) {
-            // Set the flat information in the modal
             document.getElementById('flatInfoText').textContent = 'Flat ' + flatNumber + ' in ' + buildingName;
-
-            // Set the form action with the flat ID
             var deleteForm = document.getElementById('deleteForm');
             deleteForm.action = '@Url.Action("Delete", "Flat")' + '/' + flatId;
-
-            // Show the modal
             var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
             deleteModal.show();
         }

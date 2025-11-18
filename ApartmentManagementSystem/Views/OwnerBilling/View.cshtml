@@ -18,7 +18,6 @@
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
-<!-- Status Cards -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card shadow-sm">
@@ -104,7 +103,6 @@
                     @if (canPay && b.Due > 0)
                     {
                         <div class="d-inline-flex gap-1">
-                            <!-- Partial Pay (modal) -->
                             <button class="btn btn-sm btn-outline-primary"
                                     data-bs-toggle="modal"
                                     data-bs-target="#payModal"
@@ -113,7 +111,6 @@
                                 Pay
                             </button>
 
-                            <!-- Full Pay (posts exact due for this bill) -->
                             <form asp-action="FullPay" method="post" class="d-inline"
                                   onsubmit="return confirm('Fully pay this bill for @Model.OwnerName?');">
                                 <input type="hidden" name="ownerId" value="@Model.OwnerId" />
@@ -121,7 +118,6 @@
                                 <button type="submit" class="btn btn-sm btn-success" title="Pay the full remaining due">Full Pay</button>
                             </form>
 
-                            <!-- Online Pay (redirects to payment gateway for this bill) -->
                             <form asp-controller="Payments" asp-action="OwnerCheckout" method="post" class="d-inline">
                                 <input type="hidden" name="ownerId" value="@Model.OwnerId" />
                                 <input type="hidden" name="commonBillId" value="@b.CommonBillId" />
@@ -139,7 +135,6 @@
     </tbody>
 </table>
 
-<!-- Payment History -->
 <div class="mt-4">
     <h4 class="mb-2">Payment History</h4>
     @if (Model.History.Count == 0)
@@ -187,7 +182,6 @@
     }
 </div>
 
-<!-- Pay Modal -->
 <div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">

@@ -26,7 +26,6 @@ namespace ApartmentManagementSystem.Controllers
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> AssignPresident(Guid? buildingId)
         {
-            // Build buildings dropdown
             var buildings = await _context.Buildings
                 .OrderBy(b => b.Name)
                 .Select(b => new SelectListItem
@@ -36,11 +35,9 @@ namespace ApartmentManagementSystem.Controllers
                 })
                 .ToListAsync();
 
-            // Owners filtered by selected building
             var owners = new List<SelectListItem>();
             if (buildingId.HasValue)
             {
-                // Get ONLY users in Owner role AND in the selected building
                 var ownerUsers = await _userManager.GetUsersInRoleAsync(Roles.Owner);
                 owners = ownerUsers
                     .Where(u => u.BuildingId == buildingId.Value)
@@ -60,14 +57,13 @@ namespace ApartmentManagementSystem.Controllers
                 Owners = owners
             };
 
-            return View(vm); // Views/Admin/AssignPresident.cshtml
+            return View(vm);
         }
 
         [Authorize(Roles = Roles.SuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignPresident(AssignPresidentViewModel model)
         {
-            // Rebuild lists if we need to return the view with errors
             async Task PopulateListsAsync()
             {
                 model.Buildings = await _context.Buildings
@@ -120,7 +116,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            // **Critical**: ensure the selected user belongs to the selected building
             if (user.BuildingId != model.BuildingId.Value)
             {
                 ModelState.AddModelError(nameof(model.OwnerUserId), "Selected owner does not belong to the chosen building.");
@@ -128,7 +123,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            // Must be in Owner role already (as per UI intent)
             if (!await _userManager.IsInRoleAsync(user, "Owner"))
             {
                 ModelState.AddModelError(nameof(model.OwnerUserId), "Selected user is not an Owner.");
@@ -136,18 +130,15 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            // Assign President role (keep Owner), remove Tenant/User if present
             foreach (var r in new[] { "User", "Tenant" })
                 if (await _userManager.IsInRoleAsync(user, r))
                     await _userManager.RemoveFromRoleAsync(user, r);
 
             if (!await _userManager.IsInRoleAsync(user, "President"))
                 await _userManager.AddToRoleAsync(user, "President");
-            // Ensure Owner stays (should already be)
             if (!await _userManager.IsInRoleAsync(user, "Owner"))
                 await _userManager.AddToRoleAsync(user, "Owner");
 
-            // Mark approved
             user.IsApproved = true;
             user.ApprovedAt = DateTime.UtcNow;
             user.ApprovedByUserId = (await _userManager.GetUserAsync(User))?.Id;
@@ -155,11 +146,9 @@ namespace ApartmentManagementSystem.Controllers
 
             TempData["Success"] = $"Assigned {user.Fullname} as President for building {building.Name}.";
 
-            // Back to GET, keeping building filter to show the refined owner list again
             return RedirectToAction(nameof(AssignPresident), new { buildingId = model.BuildingId });
         }
 
-        // Return owners for a given building (JSON) — no page reload needed
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> OwnersForBuilding(Guid buildingId)
         {
@@ -177,7 +166,6 @@ namespace ApartmentManagementSystem.Controllers
             return Json(owners);
         }
 
-        // GET: Admin/Users
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> Users()
         {
@@ -195,7 +183,6 @@ namespace ApartmentManagementSystem.Controllers
                 var roles = await _userManager.GetRolesAsync(user);
                 var flatCount = user.OwnedFlats?.Count ?? 0;
 
-                // Get tenant count for owned flats
                 var tenantCount = 0;
                 if (user.OwnedFlats != null && user.OwnedFlats.Any())
                 {
@@ -204,11 +191,9 @@ namespace ApartmentManagementSystem.Controllers
                         .CountAsync(t => flatIds.Contains(t.FlatId) && t.IsActive);
                 }
 
-                // Get outstanding bills count
                 var outstandingBills = await _context.ExpenseAllocations
                     .CountAsync(ea => ea.OwnerId == user.Id && !ea.IsPaid);
 
-                // Get total outstanding amount
                 var outstandingAmount = await _context.ExpenseAllocations
                     .Where(ea => ea.OwnerId == user.Id && !ea.IsPaid)
                     .SumAsync(ea => ea.AmountDue);
@@ -238,13 +223,11 @@ namespace ApartmentManagementSystem.Controllers
             return View(userViewModels);
         }
 
-        // GET: Admin/CreateUser
         [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
         public async Task<IActionResult> CreateUser()
         {
             var me = await _userManager.GetUserAsync(User);
 
-            // Buildings list
             var buildingItems = new List<SelectListItem>();
             if (User.IsInRole("SuperAdmin"))
             {
@@ -262,7 +245,6 @@ namespace ApartmentManagementSystem.Controllers
 
             ViewBag.Buildings = buildingItems;
 
-            // Roles list (Owner is granted automatically with President)
             ViewBag.Roles = new List<SelectListItem>
             {
                 new("User", "User"),
@@ -271,7 +253,6 @@ namespace ApartmentManagementSystem.Controllers
                 new("Owner", "Owner")
             };
 
-            // Prefill building for President
             var vm = new CreateUserViewModel();
             if (User.IsInRole("President") && me?.BuildingId != null)
                 vm.BuildingId = me.BuildingId.Value;
@@ -279,14 +260,12 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // POST: Admin/CreateUser
         [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateUser(CreateUserViewModel model)
         {
             var me = await _userManager.GetUserAsync(User);
 
-            // Rebuild selects if returning view with errors
             async Task LoadListsAsync()
             {
                 var buildingItems = new List<SelectListItem>();
@@ -320,7 +299,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            // Validate building
             var building = await _context.Buildings.FindAsync(model.BuildingId);
             if (building == null)
             {
@@ -329,7 +307,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            // Presidents can only create within their building
             if (User.IsInRole("President") && (me?.BuildingId == null || me.BuildingId != model.BuildingId))
             {
                 ModelState.AddModelError(nameof(model.BuildingId), "You can only create users in your building.");
@@ -337,7 +314,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            // Email uniqueness
             if (await _userManager.FindByEmailAsync(model.Email) != null)
             {
                 ModelState.AddModelError(nameof(model.Email), "A user with this email already exists.");
@@ -353,7 +329,7 @@ namespace ApartmentManagementSystem.Controllers
                 PhoneNumber = model.PhoneNumber,
                 BuildingId = model.BuildingId,
                 EmailConfirmed = true,
-                IsApproved = model.Role != "User", // pending only when role is "User"
+                IsApproved = model.Role != "User",
                 ApprovedAt = model.Role == "User" ? null : DateTime.UtcNow,
                 ApprovedByUserId = model.Role == "User" ? null : me?.Id,
                 CreatedAt = DateTime.UtcNow
@@ -367,16 +343,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            // Apply role rules
-            //if (model.Role == "President")
-            //{
-            //    // President must also have Owner
-            //    await EnsureOnlyRolesAsync(user, "President", "Owner");
-            //    user.IsApproved = true;
-            //    user.ApprovedAt = DateTime.UtcNow;
-            //    user.ApprovedByUserId = me?.Id;
-            //    await _userManager.UpdateAsync(user);
-            //}
             if (model.Role == "Tenant")
             {
                 await EnsureOnlyRolesAsync(user, "Tenant");
@@ -401,7 +367,7 @@ namespace ApartmentManagementSystem.Controllers
                 user.ApprovedByUserId = me?.Id;
                 await _userManager.UpdateAsync(user);
             }
-            else // "User" (pending)
+            else
             {
                 await EnsureOnlyRolesAsync(user, "User");
                 user.IsApproved = false;
@@ -413,21 +379,17 @@ namespace ApartmentManagementSystem.Controllers
             TempData["Success"] = $"Created user {user.Fullname} ({user.Email}).";
             return RedirectToAction(nameof(Users), new { BuildingId = model.BuildingId });
 
-            // ---- local helper enforces single-role policy (President gets +Owner) ----
             async Task EnsureOnlyRolesAsync(ApplicationUser u, params string[] rolesToKeep)
             {
-                // Remove all managed roles
                 foreach (var r in new[] { "User", "Staff", "Tenant", "Owner", "President" })
                     if (await _userManager.IsInRoleAsync(u, r))
                         await _userManager.RemoveFromRoleAsync(u, r);
 
-                // Add requested roles
                 foreach (var r in rolesToKeep.Distinct())
                     await _userManager.AddToRoleAsync(u, r);
             }
         }
 
-        // GET: Admin/EditUser/{id}
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> EditUser(string id)
         {
@@ -437,13 +399,11 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return NotFound();
 
-            // Presidents can only edit users from their building
             if (User.IsInRole("President"))
             {
                 if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
             }
 
-            // Building select list
             var buildingItems = new List<SelectListItem>();
             if (User.IsInRole("SuperAdmin"))
             {
@@ -454,7 +414,6 @@ namespace ApartmentManagementSystem.Controllers
             }
             else if (user.BuildingId != null)
             {
-                // President: show the current building only (read-only)
                 var b = await _context.Buildings.FindAsync(user.BuildingId);
                 if (b != null)
                     buildingItems.Add(new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
@@ -465,24 +424,22 @@ namespace ApartmentManagementSystem.Controllers
             {
                 Id = user.Id,
                 Fullname = user.Fullname,
-                Email = user.Email, // read-only in the view (changing email = changing username; handled elsewhere)
+                Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 BuildingId = user.BuildingId,
                 BuildingName = user.Building?.Name,
                 IsSuperAdminCaller = User.IsInRole("SuperAdmin")
             };
 
-            return View(vm); // Views/Admin/EditUser.cshtml
+            return View(vm);
         }
 
-        // POST: Admin/EditUser
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> EditUser(EditUserViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                // Refill building list
                 var buildingItems = new List<SelectListItem>();
                 if (User.IsInRole("SuperAdmin"))
                 {
@@ -505,17 +462,14 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == model.Id);
             if (user == null) return NotFound();
 
-            // Presidents can only edit within their building
             if (User.IsInRole("President"))
             {
                 if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
             }
 
-            // Update basic fields
             user.Fullname = model.Fullname?.Trim() ?? user.Fullname;
             user.PhoneNumber = string.IsNullOrWhiteSpace(model.PhoneNumber) ? null : model.PhoneNumber.Trim();
 
-            // Building changes: only SuperAdmin can change
             if (User.IsInRole("SuperAdmin"))
             {
                 if (model.BuildingId.HasValue)
@@ -524,7 +478,6 @@ namespace ApartmentManagementSystem.Controllers
                     if (targetBuilding == null)
                     {
                         ModelState.AddModelError(nameof(model.BuildingId), "Invalid building.");
-                        // rebuild list
                         ViewBag.Buildings = await _context.Buildings
                             .OrderBy(b => b.Name)
                             .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" })
@@ -543,7 +496,6 @@ namespace ApartmentManagementSystem.Controllers
             if (!res.Succeeded)
             {
                 foreach (var e in res.Errors) ModelState.AddModelError(string.Empty, e.Description);
-                // rebuild list
                 var buildingItems = new List<SelectListItem>();
                 if (User.IsInRole("SuperAdmin"))
                 {
@@ -566,18 +518,13 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Users), new { BuildingId = user.BuildingId });
         }
 
-        // GET: Admin/ApproveOwners
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> ApproveOwners()
         {
-            // Find all users who are not assigned a role yet
             var users = await _userManager.GetUsersInRoleAsync("User");
-            // Find users who are not in any of the specific roles
-            //var users = _context.Users.Where(u => !u.Roles.Any()).ToListAsync();
             return View(users);
         }
 
-        // POST: Admin/ApproveOwner/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
@@ -589,22 +536,16 @@ namespace ApartmentManagementSystem.Controllers
                 return NotFound();
             }
 
-            // Add the "Owner" role to the user
             var result = await _userManager.AddToRoleAsync(user, "Owner");
-
-            // Remove the default "User" role if needed
-            // await _userManager.RemoveFromRoleAsync(user, "User");
 
             if (!result.Succeeded)
             {
-                // Handle errors if role assignment fails
                 TempData["Error"] = "Failed to approve owner.";
             }
 
             return RedirectToAction(nameof(ApproveOwners));
         }
 
-        // GET: Admin/Approvals
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> Approvals([FromQuery] ApprovalsFilterViewModel filter)
         {
@@ -647,11 +588,9 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            // roles for the current page
             var roleMap = new Dictionary<string, IList<string>>();
             foreach (var u in users) roleMap[u.Id] = await _userManager.GetRolesAsync(u);
 
-            // building dropdown
             var buildings = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
             if (User.IsInRole("SuperAdmin"))
             {
@@ -663,7 +602,9 @@ namespace ApartmentManagementSystem.Controllers
             {
                 var b = await _context.Buildings.FindAsync(me.BuildingId);
                 if (b != null)
+                {
                     buildings.Add(new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = b.Id.ToString(), Text = $"{b.Name} ({b.Code})" });
+                }
             }
 
             var vm = new ApprovalsPageViewModel
@@ -690,7 +631,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // POST: Admin/ApproveUser
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveUser(string id, string role, [FromServices] IEmailSender mail)
@@ -719,31 +659,31 @@ namespace ApartmentManagementSystem.Controllers
             {
                 if (currentIsSuperAdmin)
                 {
-                    // SuperAdmin may demote a President to Owner-only or Tenant-only
                     foreach (var r in new[] { "User", "Staff", "Owner", "Tenant", "President" })
                         if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
 
-                    await _userManager.AddToRoleAsync(user, role); // Owner OR Tenant
+                    await _userManager.AddToRoleAsync(user, role);
                 }
                 else
                 {
-                    // Non-superadmin cannot make a President Tenant; Owner keeps President+Owner
                     if (role == "Tenant")
                     {
                         TempData["Error"] = "A President cannot be assigned the Tenant role.";
                         return RedirectToAction(nameof(Approvals), new { BuildingId = user.BuildingId });
                     }
 
-                    // Keep President + Owner
                     if (!await _userManager.IsInRoleAsync(user, "President"))
+                    {
                         await _userManager.AddToRoleAsync(user, "President");
+                    }
                     if (!await _userManager.IsInRoleAsync(user, "Owner"))
+                    {
                         await _userManager.AddToRoleAsync(user, "Owner");
+                    }
                 }
             }
             else
             {
-                // Non-president: exactly one of Owner/Tenant
                 foreach (var r in new[] { "User", "Staff", "Owner", "Tenant" })
                     if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
                 await _userManager.AddToRoleAsync(user, role);
@@ -762,14 +702,13 @@ namespace ApartmentManagementSystem.Controllers
                     await mail.SendEmailAsync(user.Email, "Your account has been approved",
                         $@"<p>Hi {user.Fullname},</p><p>Your role is now <strong>{roleText}</strong>. You can log in now.</p>");
                 }
-                catch { /* ignore mail errors */ }
+                catch { }
             }
 
             TempData["Success"] = $"Approved {user.Fullname} as {(targetIsPresident && !currentIsSuperAdmin ? "President + " + role : role)}.";
             return RedirectToAction(nameof(Approvals), new { BuildingId = user.BuildingId });
         }
 
-        // POST: Admin/BulkApprove
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkApprove(string[] ids, string role, [FromServices] IEmailSender mail)
@@ -811,7 +750,7 @@ namespace ApartmentManagementSystem.Controllers
                     }
                     else
                     {
-                        if (role == "Tenant") continue; // presidents can't be made tenant by non-superadmin
+                        if (role == "Tenant") continue;
                         if (!await _userManager.IsInRoleAsync(user, "President"))
                             await _userManager.AddToRoleAsync(user, "President");
                         if (!await _userManager.IsInRoleAsync(user, "Owner"))
@@ -836,7 +775,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Approvals));
         }
 
-        // POST: Admin/ResetUser
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetUser(string id)
@@ -860,7 +798,6 @@ namespace ApartmentManagementSystem.Controllers
                 return RedirectToAction(nameof(Approvals), new { BuildingId = user.BuildingId });
             }
 
-            // Reset to pending: remove all managed roles incl. President, set 'User'
             foreach (var r in new[] { "Owner", "Tenant", "President", "User" })
                 if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
             await _userManager.AddToRoleAsync(user, "User");
@@ -874,19 +811,16 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Approvals), new { BuildingId = user.BuildingId });
         }
 
-        // GET: Admin/Users
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         [HttpGet]
         public async Task<IActionResult> Users([FromQuery] ManageUsersFilterViewModel filter)
         {
             var me = await _userManager.GetUserAsync(User);
 
-            // Base query: exclude self, only approved users
             IQueryable<ApplicationUser> q = _userManager.Users
                 .Where(u => u.Id != me.Id && u.IsApproved)
                 .Include(u => u.Building);
 
-            // Presidents are scoped to their own building
             if (User.IsInRole("President"))
             {
                 if (me?.BuildingId == null) return Forbid();
@@ -908,7 +842,6 @@ namespace ApartmentManagementSystem.Controllers
                     (u.PhoneNumber ?? "").ToLower().Contains(term));
             }
 
-            // Role filter (All | President | Owner | Tenant | Staff)
             if (!string.Equals(filter.Role, "All", StringComparison.OrdinalIgnoreCase))
             {
                 var roleUsers = await _userManager.GetUsersInRoleAsync(filter.Role);
@@ -916,7 +849,6 @@ namespace ApartmentManagementSystem.Controllers
                 q = q.Where(u => ids.Contains(u.Id));
             }
 
-            // Pagination
             var total = await q.CountAsync();
             var pageSize = Math.Clamp(filter.PageSize, 5, 100);
             var page = Math.Max(1, filter.Page);
@@ -926,11 +858,9 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Roles for the page
             var roleMap = new Dictionary<string, IList<string>>();
             foreach (var u in users) roleMap[u.Id] = await _userManager.GetRolesAsync(u);
 
-            // Building dropdown
             var buildings = new List<SelectListItem>();
             if (User.IsInRole("SuperAdmin"))
             {
@@ -997,7 +927,6 @@ namespace ApartmentManagementSystem.Controllers
             {
                 if (currentIsSuperAdmin)
                 {
-                    // Demote to single role (Owner or Tenant)
                     foreach (var r in new[] { "User", "Staff", "Owner", "Tenant", "President" })
                         if (await _userManager.IsInRoleAsync(user, r)) await _userManager.RemoveFromRoleAsync(user, r);
                     await _userManager.AddToRoleAsync(user, role);
@@ -1216,7 +1145,6 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return NotFound();
 
-            // Check for dependent data that blocks hard delete
             var hasBills = await _context.TenantBills.AnyAsync(b => b.TenantUserId == id);
             var hasAssignments = await _context.TenantAssignments.AnyAsync(a => a.TenantUserId == id && a.EndDate == null);
 

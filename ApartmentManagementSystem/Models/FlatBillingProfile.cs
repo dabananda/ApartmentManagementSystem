@@ -19,9 +19,8 @@ namespace ApartmentManagementSystem.Models
         [Range(0.01, double.MaxValue)]
         public decimal MonthlyAmount { get; set; }
 
-        // future-friendly: grace days, late fee rules, etc.
         [Range(0, 31)]
-        public int DueDayOfMonth { get; set; } = 1; // generate on 1st
+        public int DueDayOfMonth { get; set; } = 1;
         public bool IsActive { get; set; } = true;
     }
 }

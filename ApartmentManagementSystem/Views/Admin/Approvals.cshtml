@@ -8,7 +8,6 @@
 
 <h2 class="mb-3">User Approvals</h2>
 
-<!-- FILTERS -->
 <form method="get" asp-controller="Admin" asp-action="Approvals" class="row g-2 mb-3">
     <div class="col-md-3">
         <input class="form-control" name="Query" placeholder="Search name/email/phone" value="@Model.Filter.Query" />
@@ -34,7 +33,6 @@
 
     <div class="col-md-2 d-flex align-items-center">
         <div class="form-check">
-            @* You can leave this as-is; RZ1031 only complains on <option>. *@
             <input class="form-check-input" type="checkbox" name="OnlyEmailConfirmed" value="true" @(Model.Filter.OnlyEmailConfirmed ? "checked=\"checked\"" : "") />
             <label class="form-check-label">Only email confirmed</label>
         </div>
@@ -64,23 +62,12 @@
     </div>
 </form>
 
-<!-- FLASH -->
-@* @if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-} *@
-
 @if (!Model.PendingUsers.Any())
 {
     <div class="alert alert-info">No users found for the current filters.</div>
 }
 else
 {
-    <!-- SINGLE OUTER FORM: bulk actions default here; row buttons override via formaction -->
     <form id="bulkForm" asp-controller="Admin" asp-action="BulkApprove" method="post">
         @Html.AntiForgeryToken()
 
@@ -144,7 +131,6 @@ else
                         </td>
                         <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
                         <td>
-                            <!-- Per-row actions: no nested forms. Buttons reuse this form but target specific actions via formaction. -->
                             <button type="submit"
                                     formmethod="post"
                                     formaction="@Url.Action("ApproveUser", "Admin", new { id = u.Id, role = "Owner" })"
@@ -209,7 +195,6 @@ else
 @section Scripts {
     <script>
         (function () {
-            // Keep select-all
             var chkAll = document.getElementById('chkAll');
             if (chkAll) {
                 chkAll.addEventListener('change', function (e) {
@@ -225,7 +210,6 @@ else
                 requireSelection: { formId: 'bulkForm', checkboxSelector: '.chkRow', emptyMessage: 'Select at least one user.' }
             };
 
-            // Bulk approvals by role (buttons typically carry name="role" value="Owner/Tenant/Staff")
             SwalHelpers.bindConfirm("form#bulkForm button[name='role'][value='Owner']",
                 { title: 'Approve selected as Owner?', icon: 'question', confirmText: 'Approve', ...bulkReq });
 
@@ -235,7 +219,6 @@ else
             SwalHelpers.bindConfirm("form#bulkForm button[name='role'][value='Staff']",
                 { title: 'Approve selected as Staff?', icon: 'question', confirmText: 'Approve', ...bulkReq });
 
-            // Per-row approvals & reset
             SwalHelpers.bindConfirm("button[formaction*='ApproveUser'][formaction*='role=Owner']",
                 { title: 'Approve as Owner?', icon: 'question', confirmText: 'Approve' });
 

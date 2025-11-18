@@ -16,7 +16,6 @@
     </div>
 </div>
 
-<!-- FILTERS -->
 <form method="get" asp-controller="Admin" asp-action="Users" class="row justify-content-between mb-3">
     <div class="col-md-3">
         <div class="input-group mb-3">
@@ -95,13 +94,11 @@
 }
 else
 {
-    <!-- SINGLE OUTER FORM (bulk actions). Row buttons override with formaction. -->
     <form id="bulkForm" method="post">
         @Html.AntiForgeryToken()
 
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
             <div class="d-flex flex-wrap gap-2">
-                <!-- Bulk role changes -->
                 <button type="submit"
                         formmethod="post"
                         formaction="@Url.Action("BulkChangeRole", "Admin")"
@@ -124,7 +121,6 @@ else
                     Set selected as Staff
                 </button>
 
-                <!-- Bulk lock/unlock -->
                 <button type="submit"
                         formmethod="post"
                         formaction="@Url.Action("BulkBlock", "Admin")"
@@ -138,7 +134,6 @@ else
                     Unblock selected
                 </button>
 
-                <!-- Bulk delete (SuperAdmin only) -->
                 @if (User.IsInRole("SuperAdmin"))
                 {
                     <button type="submit"
@@ -201,9 +196,7 @@ else
                             </td>
                             <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
                             <td>
-                                <!-- Consolidated action buttons -->
                                 <div class="btn-group gap-1" role="group">
-                                    <!-- Primary Edit button -->
                                     <a class="btn btn-sm btn-outline-primary"
                                        asp-controller="Admin"
                                        asp-action="EditUser"
@@ -212,7 +205,6 @@ else
                                         Edit
                                     </a>
 
-                                    <!-- Role dropdown -->
                                     <div class="btn-group" role="group">
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -259,7 +251,6 @@ else
                                         </ul>
                                     </div>
 
-                                    <!-- More actions dropdown -->
                                     <div class="btn-group" role="group">
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-danger dropdown-toggle"
@@ -344,7 +335,6 @@ else
 @section Scripts {
     <script>
         (function () {
-            // Select-all checkbox (unchanged logic)
             var chkAll = document.getElementById('chkAll');
             if (chkAll) {
                 chkAll.addEventListener('change', function (e) {
@@ -356,12 +346,10 @@ else
 
             if (!window.SwalHelpers) return;
 
-            // Bulk actions require at least one selection
             var bulkReq = {
                 requireSelection: { formId: 'bulkForm', checkboxSelector: '.chkRow', emptyMessage: 'Select at least one user.' }
             };
 
-            // Bind confirmations using the shared helper
             SwalHelpers.bindConfirm("button[formaction*='BulkDelete']",
                 { title: 'Delete selected users?', text: 'This action cannot be undone.', icon: 'warning', confirmText: 'Delete', ...bulkReq });
 

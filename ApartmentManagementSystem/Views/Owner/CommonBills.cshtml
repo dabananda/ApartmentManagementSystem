@@ -15,7 +15,6 @@
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
-<!-- Status -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card shadow-sm">
@@ -105,7 +104,6 @@
     </tbody>
 </table>
 
-<!-- Payment History -->
 <div class="mt-4">
     <h4 class="mb-2">My Payment History</h4>
     @if (Model.History.Count == 0)
@@ -143,13 +141,11 @@
 </div>
 
 @section Styles {
-    <!-- DataTables + Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" />
 }
 
 @section VendorScripts {
-    <!-- DataTables + Bootstrap 5 + Responsive (jQuery is already in the layout) -->
     <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
@@ -159,14 +155,13 @@
 @section Scripts {
     <script>
         $(function () {
-            // Bills table
             $('#billsTable').DataTable({
                 pageLength: 10,
-                order: [[0, 'desc']],           // Date desc
+                order: [[0, 'desc']],
                 responsive: true,
                 autoWidth: false,
                 columnDefs: [
-                    { targets: [2,3,4,5], className: 'text-end' } // money + action
+                    { targets: [2,3,4,5], className: 'text-end' }
                 ],
                 language: {
                     search: "_INPUT_",
@@ -174,14 +169,13 @@
                 }
             });
 
-            // History table
             $('#historyTable').DataTable({
                 pageLength: 10,
-                order: [[0, 'desc']],           // Payment Date desc
+                order: [[0, 'desc']],
                 responsive: true,
                 autoWidth: false,
                 columnDefs: [
-                    { targets: [3], className: 'text-end' } // amount
+                    { targets: [3], className: 'text-end' }
                 ],
                 language: {
                     search: "_INPUT_",

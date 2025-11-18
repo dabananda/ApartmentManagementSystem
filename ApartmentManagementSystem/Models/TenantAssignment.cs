@@ -13,7 +13,7 @@ namespace ApartmentManagementSystem.Models
         public Flat? Flat { get; set; }
 
         [Required]
-        public string TenantUserId { get; set; } = default!;  // ApplicationUser.Id (Tenant)
+        public string TenantUserId { get; set; } = default!;
         [ForeignKey(nameof(TenantUserId))]
         public ApplicationUser? TenantUser { get; set; }
 
@@ -21,7 +21,7 @@ namespace ApartmentManagementSystem.Models
         public DateTime StartDate { get; set; } = DateTime.Today;
 
         [DataType(DataType.Date)]
-        public DateTime? EndDate { get; set; } // null = active
+        public DateTime? EndDate { get; set; }
 
         [NotMapped] public bool IsActive => !EndDate.HasValue || EndDate.Value >= DateTime.Today;
     }

@@ -29,7 +29,6 @@ namespace ApartmentManagementSystem.Models
 
         public ICollection<ExpenseAllocation>? Allocations { get; set; } = new List<ExpenseAllocation>();
 
-        // NEW
         [Required]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
