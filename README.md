@@ -4,10 +4,6 @@ A role-based ASP.NET Core MVC application to operate an apartment building: buil
 
 ---
 
-Live: https://givema7496-001-site1.ktempurl.com/
-
----
-
 ## Table of Contents
 
 - [Features](#features)
@@ -244,15 +240,6 @@ This prevents double-assignments even under concurrent requests.
 - **Payments recorded but page showed an error**: likely SMTP connectivity. Email send is best‑effort; payment saves are not rolled back. Configure `Smtp:*` settings or disable email in dev.
 - **Stripe webhook not firing**: ensure the app is running **and** the Stripe CLI listener is active, and the `Stripe:WebhookSecret` matches the latest CLI output.
 - **DataTables warning about unknown parameter**: ensure the table columns in the view match the data or use named property bindings in DataTables configuration.
-
----
-
-## Development Tips
-
-- Use **User Secrets** for keys/secrets; never commit production secrets.
-- Prefer **`decimal(18,2)`** for money fields (already configured).
-- Add **Serilog** and structured logging in production (optional).
-- Consider splitting the solution into Web / Domain / Infrastructure projects for larger deployments (optional).
 
 ---
 
