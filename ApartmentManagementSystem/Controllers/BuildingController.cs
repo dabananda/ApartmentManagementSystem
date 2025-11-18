@@ -27,10 +27,8 @@ namespace ApartmentManagementSystem.Controllers
             _codeGen = codeGen;
         }
 
-        // GET: Building Index with filtering, pagination, and aggregations
         public async Task<IActionResult> Index([FromQuery] BuildingIndexFilterViewModel filter)
         {
-            // Base query + search
             IQueryable<Building> bq = _context.Buildings.AsNoTracking();
             if (!string.IsNullOrWhiteSpace(filter.Query))
             {
@@ -41,7 +39,6 @@ namespace ApartmentManagementSystem.Controllers
                     (b.Address != null && b.Address.ToLower().Contains(q)));
             }
 
-            // ---------- HasPresident filter (distinct variable names, fix Guid? -> Guid) ----------
             var presidentRoleId_Filter = await _context.Roles
                 .Where(r => r.Name == "President")
                 .Select(r => r.Id)
@@ -54,7 +51,7 @@ namespace ApartmentManagementSystem.Controllers
                     from u in _context.Users
                     join ur in _context.UserRoles on u.Id equals ur.UserId
                     where ur.RoleId == presidentRoleId_Filter && u.BuildingId != null
-                    select u.BuildingId!.Value        // Guid? -> Guid
+                    select u.BuildingId!.Value
                 )
                 .Distinct()
                 .ToListAsync();
@@ -65,7 +62,6 @@ namespace ApartmentManagementSystem.Controllers
             else if (filter.HasPresident == false)
                 bq = bq.Where(b => !buildingsWithPresident_Filter.Contains(b.Id));
 
-            // ---------- Pagination ----------
             var total = await bq.CountAsync();
             var pageSize = Math.Clamp(filter.PageSize, 5, 100);
             var page = Math.Max(1, filter.Page);
@@ -78,8 +74,6 @@ namespace ApartmentManagementSystem.Controllers
 
             var pageIds = buildingsPage.Select(b => b.Id).ToList();
 
-            // ---------- Per-page aggregations ----------
-            // Flats per building (if you don't have a Flats table, remove this whole block & set FlatsCount=0 below)
             var flatsDict = new Dictionary<Guid, int>();
             try
             {
@@ -89,12 +83,8 @@ namespace ApartmentManagementSystem.Controllers
                     .Select(g => new { BuildingId = g.Key, Count = g.Count() })
                     .ToDictionaryAsync(x => x.BuildingId, x => x.Count);
             }
-            catch
-            {
-                // No Flats table — leave dict empty
-            }
+            catch { }
 
-            // Users for these buildings
             var usersPage = await _context.Users
                 .Where(u => u.BuildingId != null && pageIds.Contains(u.BuildingId.Value))
                 .Select(u => new { u.Id, u.BuildingId, u.Fullname, u.Email })
@@ -107,7 +97,6 @@ namespace ApartmentManagementSystem.Controllers
                 u => string.IsNullOrWhiteSpace(u.Fullname) ? (u.Email ?? "-") : u.Fullname
             );
 
-            // Role ids for this page (distinct names so they don't collide with the filter ones above)
             var roleDefs_Page = await _context.Roles
                 .Where(r => r.Name == "Tenant" || r.Name == "Owner" || r.Name == "President")
                 .Select(r => new { r.Id, r.Name })
@@ -143,7 +132,6 @@ namespace ApartmentManagementSystem.Controllers
                         return userNameOrEmail_Page[firstUserId];
                     });
 
-            // ---------- Map to VM ----------
             var vm = new BuildingIndexPageViewModel
             {
                 Filter = filter,
@@ -161,10 +149,9 @@ namespace ApartmentManagementSystem.Controllers
                 }).ToList()
             };
 
-            return View(vm); // Views/Building/Index.cshtml
+            return View(vm);
         }
 
-        // GET: Building Details
         public async Task<IActionResult> Details(Guid id)
         {
             var building = await _context.Buildings
@@ -172,7 +159,6 @@ namespace ApartmentManagementSystem.Controllers
                 .FirstOrDefaultAsync(b => b.Id == id);
             if (building == null) return NotFound();
 
-            // Check for President can only see their assigned building
             if (User.IsInRole("President"))
             {
                 var user = await _userManager.GetUserAsync(User);
@@ -181,14 +167,12 @@ namespace ApartmentManagementSystem.Controllers
             return View(building);
         }
 
-        // GET: Buildings Create View
         public async Task<IActionResult> Create()
         {
             ViewData["SuggestedCode"] = await _codeGen.GenerateAsync();
             return View();
         }
 
-        // POST: Building Create
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,Address,Code")] Building building)
         {
@@ -206,7 +190,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Buildings Edit View
         public async Task<IActionResult> Edit(Guid id)
         {
             var building = await _context.Buildings.FindAsync(id);
@@ -214,7 +197,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(building);
         }
 
-        // POST: Building Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Address")] Building building)
@@ -238,7 +220,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(building);
         }
 
-        // GET: Buildings Delete View
         public async Task<IActionResult> Delete(Guid id)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -249,7 +230,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(building);
         }
 
-        // POST: Building Delete
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
@@ -261,13 +241,11 @@ namespace ApartmentManagementSystem.Controllers
             var building = await _context.Buildings.FindAsync(id);
             if (building == null) return NotFound();
 
-            // Collect all flat ids in this building
             var flatIds = await _context.Flats
                 .Where(f => f.BuildingId == id)
                 .Select(f => f.Id)
                 .ToListAsync();
 
-            // If any flats have Restrict dependents, deleting the building will fail (cascade -> restrict)
             var hasBlocking =
                    await _context.TenantBills.AnyAsync(b => flatIds.Contains(b.FlatId))
                 || await _context.Tenants.AnyAsync(t => flatIds.Contains(t.FlatId))
@@ -284,7 +262,7 @@ namespace ApartmentManagementSystem.Controllers
 
             try
             {
-                _context.Buildings.Remove(building); // will cascade to Flats safely when no blockers exist
+                _context.Buildings.Remove(building);
                 await _context.SaveChangesAsync();
                 TempData["Success"] = "Building deleted.";
             }
@@ -296,7 +274,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Helper method to check if building exists
         private bool BuildingExists(Guid id)
         {
             return _context.Buildings.Any(e => e.Id == id);

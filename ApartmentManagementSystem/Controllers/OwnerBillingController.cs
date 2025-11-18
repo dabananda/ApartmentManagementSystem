@@ -36,7 +36,6 @@ namespace ApartmentManagementSystem.Controllers
             _actionContextAccessor = actionContextAccessor;
         }
 
-        // GET: /OwnerBilling/Index/{buildingId}
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
@@ -44,7 +43,6 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _users.GetUserAsync(User);
             if (me?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            // Owners -> names
             var owners = await _db.Flats.AsNoTracking()
                 .Include(f => f.Owner)
                 .Where(f => f.BuildingId == buildingId && f.OwnerId != null)
@@ -52,15 +50,12 @@ namespace ApartmentManagementSystem.Controllers
                 .Distinct()
                 .ToListAsync();
 
-            // Flats per owner
             var flatsCsv = await _db.Flats.AsNoTracking()
                 .Where(f => f.BuildingId == buildingId && f.OwnerId != null)
                 .GroupBy(f => f.OwnerId!)
                 .Select(g => new { OwnerId = g.Key, Csv = string.Join(", ", g.OrderBy(x => x.FlatNumber).Select(x => x.FlatNumber)) })
                 .ToDictionaryAsync(x => x.OwnerId, x => x.Csv);
 
-            // Totals per owner
-            // 1) Allocated totals per owner
             var allocAggList = await _db.ExpenseAllocations.AsNoTracking()
                 .Include(a => a.CommonBill)
                 .Where(a => a.CommonBill!.BuildingId == buildingId)
@@ -73,7 +68,6 @@ namespace ApartmentManagementSystem.Controllers
                 .ToListAsync();
             var allocAgg = allocAggList.ToDictionary(x => x.OwnerId, x => x.Alloc);
 
-            // 2) Paid totals per owner (join payments → allocations to get OwnerId)
             var paidAggList = await _db.ExpenseAllocationPayments.AsNoTracking()
                 .Join(
                     _db.ExpenseAllocations.Include(a => a.CommonBill)
@@ -91,7 +85,6 @@ namespace ApartmentManagementSystem.Controllers
                 .ToListAsync();
             var paidAgg = paidAggList.ToDictionary(x => x.OwnerId, x => x.Paid);
 
-            // Build rows
             var rows = owners.Select(o => new OwnerBillingRow
             {
                 OwnerId = o.OwnerId!,
@@ -108,7 +101,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(rows);
         }
 
-        // GET: /OwnerBilling/View/{ownerId}
         public async Task<IActionResult> View(string ownerId)
         {
             if (string.IsNullOrWhiteSpace(ownerId)) return NotFound();
@@ -116,7 +108,6 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _users.GetUserAsync(User);
             if (me?.BuildingId == null && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            // All allocations for this owner across their building(s); restrict for President
             var q = _db.ExpenseAllocations
                 .Include(a => a.CommonBill)
                 .Include(a => a.Payments)
@@ -151,7 +142,6 @@ namespace ApartmentManagementSystem.Controllers
                 Bills = items
             };
 
-            // ---- Payment history for this owner (scoped to building for President) ----
             var paymentsQuery = _db.ExpenseAllocationPayments
                 .Join(_db.ExpenseAllocations.Include(a => a.CommonBill),
                       p => p.ExpenseAllocationId,
@@ -160,7 +150,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (User.IsInRole("President"))
             {
-                var bld = buildingId; // computed earlier from allocations
+                var bld = buildingId;
                 paymentsQuery = paymentsQuery.Where(z => z.a.OwnerId == ownerId && z.a.CommonBill!.BuildingId == bld);
             }
             else
@@ -187,7 +177,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(page);
         }
 
-        // POST: /OwnerBilling/Pay
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Pay(RecordOwnerPaymentVM vm)
         {
@@ -200,7 +189,6 @@ namespace ApartmentManagementSystem.Controllers
             if (bill == null) return NotFound();
             if (User.IsInRole("President") && me.BuildingId != bill.BuildingId) return Forbid();
 
-            // Idempotency: short-circuit if already processed
             if (!string.IsNullOrWhiteSpace(vm.IdempotencyKey))
             {
                 var exists = await _db.ExpenseAllocationPayments
@@ -268,7 +256,6 @@ namespace ApartmentManagementSystem.Controllers
                 await _db.ExpenseAllocationPayments.AddAsync(entity);
                 created.Add(entity);
 
-                // keep legacy flags for compatibility
                 if (take == due)
                 {
                     a.IsPaid = true;
@@ -289,7 +276,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
         }
 
-        // POST: /OwnerBilling/PayAll
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> PayAll(string ownerId)
         {
@@ -361,7 +347,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { ownerId });
         }
 
-        // POST: /OwnerBilling/FullPay  (one bill → full)
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> FullPay(string ownerId, Guid commonBillId)
         {
@@ -441,8 +426,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { ownerId });
         }
 
-        // GET: /OwnerBilling/Receipt/{id}
-        // BUGFIX: This previously tried to load TenantPayment by id; now correctly uses ExpenseAllocationPayment.
         public async Task<IActionResult> Receipt(Guid id)
         {
             var pay = await _db.ExpenseAllocationPayments
@@ -455,7 +438,6 @@ namespace ApartmentManagementSystem.Controllers
 
             if (pay == null) return NotFound();
 
-            // Building scoping for President
             var me = await _users.GetUserAsync(User);
             if (User.IsInRole("President") && me?.BuildingId != pay.Bill.BuildingId) return Forbid();
 
@@ -471,7 +453,7 @@ namespace ApartmentManagementSystem.Controllers
                 Amount = pay.Payment.Amount,
                 Reference = pay.Payment.Reference,
                 BuildingName = pay.Bill.Building?.Name ?? "(building)",
-                FlatNumber = "-" // not applicable here
+                FlatNumber = "-"
             };
             return View("~/Views/Shared/Receipt.cshtml", vm);
         }

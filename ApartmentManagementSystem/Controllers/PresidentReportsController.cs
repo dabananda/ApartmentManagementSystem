@@ -66,7 +66,6 @@ namespace ApartmentManagementSystem.Controllers
             var (buildingId, buildingName) = await RequireBuilding();
             var (start, endExclusive) = filter.ToBoundsOrDefault(60);
 
-            // Pull bills as entities (so we can compute a title via reflection)
             var bills = await _context.CommonBills.AsNoTracking()
                 .Where(b => b.BuildingId == buildingId && b.BillDate >= start && b.BillDate < endExclusive)
                 .OrderByDescending(b => b.BillDate)
@@ -93,7 +92,7 @@ namespace ApartmentManagementSystem.Controllers
                     BillDate = b.BillDate,
                     TotalAmount = b.TotalAmount,
                     Collected = collectedLookup.TryGetValue(b.Id, out var c) ? c : 0m,
-                    Payments = 0m // per-bill payments not tracked; totals shown below
+                    Payments = 0m
                 })
                 .ToList();
 
@@ -157,7 +156,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Distinct()
                 .CountAsync();
 
-            // Count active tenant assignments for flats in this building (handles new assignment-based model)
             var tenantsCount = await (from ta in _context.TenantAssignments.AsNoTracking()
                                       join f in _context.Flats.AsNoTracking() on ta.FlatId equals f.Id
                                       where f.BuildingId == buildingId && (ta.EndDate == null || ta.EndDate >= DateTime.Today)
@@ -200,9 +198,8 @@ namespace ApartmentManagementSystem.Controllers
             var query = _context.EntryLogs.AsNoTracking()
                 .Where(e => e.BuildingId == buildingId && e.EntryTime >= start && e.EntryTime < endExclusive);
 
-            // Group by enum server-side, stringify after materialization
             var cats = await query
-                .GroupBy(e => e.EntryType) // If your property is EntryCategory, change here & in CSV
+                .GroupBy(e => e.EntryType)
                 .Select(g => new { Type = g.Key, Count = g.Count() })
                 .ToListAsync();
 

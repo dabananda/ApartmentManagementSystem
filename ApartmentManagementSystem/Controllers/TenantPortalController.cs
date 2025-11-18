@@ -1,6 +1,5 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels;
 using ApartmentManagementSystem.ViewModels.TenantPortal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -21,13 +20,11 @@ namespace ApartmentManagementSystem.Controllers
             _users = users;
         }
 
-        // GET: /TenantPortal/Dashboard
         public async Task<IActionResult> Dashboard()
         {
             var me = await _users.GetUserAsync(User);
             if (me == null) return Forbid();
 
-            // Resolve the tenant's active flat assignment (supports future multi-flat by taking the latest)
             var today = DateTime.Today;
             var assignment = await _db.TenantAssignments
                 .Include(a => a.Flat)!.ThenInclude(f => f.Building)
@@ -43,7 +40,6 @@ namespace ApartmentManagementSystem.Controllers
             var flatId = assignment.FlatId;
             var buildingId = assignment.Flat.BuildingId;
 
-            // Bills + payments (owner-president rent system)
             var bills = await _db.TenantBills
                 .Include(b => b.Payments)
                 .Where(b => b.TenantUserId == me.Id)
@@ -60,7 +56,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(p => p.PaymentDate >= monthStart && p.TenantBill!.TenantUserId == me.Id)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0m;
 
-            // A few recent items for the dashboard
             var recentBills = bills.Take(6).Select(b => new TenantBillRow
             {
                 BillId = b.Id,
@@ -86,10 +81,9 @@ namespace ApartmentManagementSystem.Controllers
                 })
                 .ToListAsync();
 
-            // Notices for tenant's building (and optional global)
             var notices = await _db.Announcements
                 .AsNoTracking()
-                .Where(a => a.BuildingId == buildingId || a.BuildingId == null) // treat null as global
+                .Where(a => a.BuildingId == buildingId || a.BuildingId == null)
                 .OrderByDescending(a => a.CreatedAt)
                 .Take(6)
                 .ToListAsync();
@@ -102,7 +96,6 @@ namespace ApartmentManagementSystem.Controllers
 
                 TotalBilled = total,
                 TotalPaid = paid,
-                //TotalDue = due,
                 PaidThisMonth = paidThisMonth,
 
                 RecentBills = recentBills,
@@ -113,7 +106,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(vm);
         }
 
-        // GET: /TenantPortal/Bills
         public async Task<IActionResult> Bills()
         {
             var me = await _users.GetUserAsync(User);
@@ -139,7 +131,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // GET: /TenantPortal/Payments
         public async Task<IActionResult> Payments()
         {
             var me = await _users.GetUserAsync(User);
@@ -165,7 +156,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // GET: /TenantPortal/Notices
         public async Task<IActionResult> Notices()
         {
             var me = await _users.GetUserAsync(User);
@@ -181,7 +171,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(notices);
         }
 
-        // GET: /TenantPortal/Tickets
         public async Task<IActionResult> Tickets()
         {
             var me = await _users.GetUserAsync(User);
@@ -211,10 +200,8 @@ namespace ApartmentManagementSystem.Controllers
             return View(items);
         }
 
-        // GET: /TenantPortal/NewTicket
         public IActionResult NewTicket() => View(new MaintenanceTicket());
 
-        // POST: /TenantPortal/NewTicket
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> NewTicket(MaintenanceTicket model)
         {
@@ -246,7 +233,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Tickets));
         }
 
-        // GET: /TenantPortal/Visitors
         public async Task<IActionResult> Visitors(DateTime? from = null, DateTime? to = null)
         {
             var me = await _users.GetUserAsync(User);

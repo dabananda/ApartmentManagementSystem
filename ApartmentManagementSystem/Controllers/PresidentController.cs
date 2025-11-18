@@ -25,7 +25,6 @@ namespace ApartmentManagementSystem.Controllers
             _logger = logger;
         }
 
-        // GET: /President/Dashboard
         public async Task<IActionResult> Dashboard()
         {
             var claim = User.FindFirst("building_id")?.Value;
@@ -35,7 +34,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(new PresidentDashboardViewModel());
             }
 
-            // Header info
             var buildingName = await _context.Buildings.AsNoTracking()
                 .Where(b => b.Id == buildingId)
                 .Select(b => b.Name)
@@ -77,7 +75,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(e => e.BuildingId == buildingId && e.EntryTime.Date >= last7dUtc)
                 .CountAsync();
 
-            // ===== Recent Activity (as previously fixed) =====
             var recentOwnerPayments = await (
                 from p in _context.ExpenseAllocationPayments.AsNoTracking()
                 join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
@@ -152,16 +149,12 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(25)
                 .ToList();
 
-            // ===== Charts =====
-
-            // Range: last 12 calendar months ending this month (UTC)
             var firstOfThisMonthUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var startMonthUtc = firstOfThisMonthUtc.AddMonths(-11);
 
-            // Prepare month slots
             var labels = new List<string>(12);
-            var inSeries = new List<decimal>(new decimal[12]);   // owner payments
-            var outSeries = new List<decimal>(new decimal[12]);  // expense payments
+            var inSeries = new List<decimal>(new decimal[12]);
+            var outSeries = new List<decimal>(new decimal[12]);
 
             for (int i = 0; i < 12; i++)
             {
@@ -169,7 +162,6 @@ namespace ApartmentManagementSystem.Controllers
                 labels.Add($"{m:yyyy-MM}");
             }
 
-            // Money IN by month
             var ownerInByMonth = await (
                 from p in _context.ExpenseAllocationPayments.AsNoTracking()
                 join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
@@ -184,7 +176,6 @@ namespace ApartmentManagementSystem.Controllers
                 if (idx >= 0 && idx < 12) inSeries[idx] = row.Amount;
             }
 
-            // Money OUT by month
             var outByMonth = await _context.ExpensePayments.AsNoTracking()
                 .Where(p => p.BuildingId == buildingId && p.CreatedAtUtc >= startMonthUtc)
                 .GroupBy(p => new { p.CreatedAtUtc.Year, p.CreatedAtUtc.Month })
@@ -197,7 +188,6 @@ namespace ApartmentManagementSystem.Controllers
                 if (idx >= 0 && idx < 12) outSeries[idx] = row.Amount;
             }
 
-            // Aging buckets (owners’ outstanding dues) — compute outstanding per allocation
             var allocations = await _context.ExpenseAllocations.AsNoTracking()
                 .Include(a => a.CommonBill)
                 .Where(a => a.CommonBill!.BuildingId == buildingId)
@@ -210,7 +200,6 @@ namespace ApartmentManagementSystem.Controllers
                 })
                 .ToListAsync();
 
-            // sum paid per allocation in one pass
             var paidPerAlloc = await _context.ExpenseAllocationPayments.AsNoTracking()
                 .Join(_context.CommonBills.AsNoTracking(),
                       p => p.CommonBillId, b => b.Id,
@@ -223,7 +212,7 @@ namespace ApartmentManagementSystem.Controllers
             decimal d0_30 = 0, d31_60 = 0, d61_90 = 0, d90plus = 0;
             var ownerDueMap = new Dictionary<string, decimal>(StringComparer.Ordinal);
 
-            var todayLocal = DateTime.Today; // aging by business day; your bill dates are Date only
+            var todayLocal = DateTime.Today;
 
             foreach (var a in allocations)
             {
@@ -244,7 +233,6 @@ namespace ApartmentManagementSystem.Controllers
                     ownerDueMap[a.OwnerId] = cur + outstanding;
             }
 
-            // Top owners by due (limit 7)
             var topOwners = ownerDueMap
                 .OrderByDescending(kv => kv.Value)
                 .Take(7)
@@ -265,7 +253,6 @@ namespace ApartmentManagementSystem.Controllers
                 topValues.Add(kv.Value);
             }
 
-            // Build VM
             var vm = new PresidentDashboardViewModel
             {
                 BuildingName = buildingName,

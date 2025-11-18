@@ -26,7 +26,6 @@ namespace ApartmentManagementSystem.Controllers
             _db = db; _users = users; _email = email; _log = log;
         }
 
-        // GET: /TenantRent/List
         public async Task<IActionResult> List()
         {
             var me = await _users.GetUserAsync(User);
@@ -60,7 +59,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(tenants);
         }
 
-        // GET: /TenantRent/View/{tenantUserId}
         public async Task<IActionResult> View(string tenantUserId)
         {
             var me = await _users.GetUserAsync(User);
@@ -117,13 +115,11 @@ namespace ApartmentManagementSystem.Controllers
             return View(page);
         }
 
-        // POST: /TenantRent/Pay  (partial payment)
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Pay(RecordTenantPaymentVM vm)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            // SERIALIZABLE to prevent over-pay race with concurrent inserts
             await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
             var bill = await _db.TenantBills
@@ -134,7 +130,6 @@ namespace ApartmentManagementSystem.Controllers
             var me = await _users.GetUserAsync(User);
             if (User.IsInRole("Owner") && bill.Flat!.OwnerId != me!.Id) return Forbid();
 
-            // Idempotency: if provided and already processed, consider success
             if (!string.IsNullOrWhiteSpace(vm.IdempotencyKey))
             {
                 var existing = await _db.TenantPayments
@@ -148,7 +143,6 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            // Due NOW (inside tx)
             var paidNow = await _db.TenantPayments
                 .Where(p => p.TenantBillId == bill.Id)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0m;
@@ -192,7 +186,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { tenantUserId = bill.TenantUserId });
         }
 
-        // POST: /TenantRent/FullPay (pay remaining for one bill)
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> FullPay(Guid billId)
         {
@@ -237,7 +230,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { tenantUserId = bill.TenantUserId });
         }
 
-        // POST: /TenantRent/PayAll (all dues for this tenant)
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> PayAll(string tenantUserId)
         {
@@ -297,7 +289,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { tenantUserId });
         }
 
-        // Receipt (reuse your existing receipt pattern, separate view)
         public async Task<IActionResult> Receipt(Guid id)
         {
             var p = await _db.TenantPayments
@@ -333,7 +324,6 @@ namespace ApartmentManagementSystem.Controllers
             return View("~/Views/Shared/Receipt.cshtml", vm);
         }
 
-        // POST: /TenantRent/EmailReceipt
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> EmailReceipt(Guid id)
         {
@@ -348,7 +338,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(View), new { tenantUserId = p.TenantBill!.TenantUserId });
         }
 
-        // Email helper
         private async Task SendTenantPaymentEmail(string tenantUserId, IEnumerable<TenantPayment> payments)
         {
             var user = await _users.FindByIdAsync(tenantUserId);

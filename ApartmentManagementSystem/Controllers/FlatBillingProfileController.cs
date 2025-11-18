@@ -18,7 +18,6 @@ namespace ApartmentManagementSystem.Controllers
             _db = db; _users = users;
         }
 
-        // GET: /FlatBillingProfile/Index
         public async Task<IActionResult> Index()
         {
             var me = await _users.GetUserAsync(User);
@@ -46,7 +45,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(rows);
         }
 
-        // GET: /FlatBillingProfile/Edit/{flatId}
         public async Task<IActionResult> Edit(Guid flatId)
         {
             var me = await _users.GetUserAsync(User);
@@ -60,7 +58,6 @@ namespace ApartmentManagementSystem.Controllers
             return View(p);
         }
 
-        // POST: /FlatBillingProfile/Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(FlatBillingProfile vm)
@@ -72,10 +69,8 @@ namespace ApartmentManagementSystem.Controllers
             var flat = await _db.Flats.FindAsync(vm.FlatId);
             if (flat == null) return NotFound("Flat not found.");
 
-            // Owner can only edit profile for their own flat
             if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
 
-            // Upsert the billing profile
             var existing = await _db.FlatBillingProfiles.FirstOrDefaultAsync(x => x.FlatId == vm.FlatId);
             if (existing == null)
             {
@@ -99,13 +94,11 @@ namespace ApartmentManagementSystem.Controllers
 
             await _db.SaveChangesAsync();
 
-            // === On-demand current-month bill generation (when profile is active) ===
             if (existing.IsActive)
             {
                 var today = DateTime.Today;
                 var firstOfMonth = new DateTime(today.Year, today.Month, 1);
 
-                // Find the current active tenant (if any) for this flat
                 var assignment = await _db.TenantAssignments
                     .Where(a => a.FlatId == vm.FlatId && (a.EndDate == null || a.EndDate >= today))
                     .OrderByDescending(a => a.StartDate)
