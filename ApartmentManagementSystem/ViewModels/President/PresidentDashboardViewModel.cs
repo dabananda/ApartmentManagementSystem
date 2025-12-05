@@ -8,6 +8,8 @@ namespace ApartmentManagementSystem.ViewModels.President
         public int TotalBills { get; set; }
         public decimal TotalCollected { get; set; }
         public decimal TotalPayments { get; set; }
+        public decimal CollectedThisMonth { get; set; }
+        public decimal PaymentsThisMonth { get; set; }
         public int TotalFlats { get; set; }
         public int OccupiedFlats { get; set; }
         public int TodayEntries { get; set; }

@@ -5,7 +5,7 @@
 
 @{
     ViewData["Title"] = "President Dashboard";
-    var currency = "tk";
+    var currency = "BDT"; // Updated to match controller currency string if desired, or keep "tk"
     var totalFlats = Model.TotalFlats;
     var occupied = Model.OccupiedFlats;
     var occRate = totalFlats > 0 ? (int)Math.Round((decimal)occupied * 100m / totalFlats) : 0;
@@ -39,16 +39,17 @@
     }
 
     <div class="row g-3 mb-3">
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Total Common Bills</div>
                     <div class="display-6 fw-semibold">@Model.TotalBills</div>
-                    <div class="text-primary opacity-75"><i class="bi bi-receipt fs-2"></i></div>
+                    <div class="text-primary opacity-75"></div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+
+        <div class="col-md-6 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Collected (All Time)</div>
@@ -57,7 +58,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+
+        <div class="col-md-6 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Payments (All Time)</div>
@@ -66,7 +68,28 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Collected (This Month)</div>
+                    <div class="display-6 fw-semibold">@Model.CollectedThisMonth.ToString("N2") @currency</div>
+                    <div class="text-success mt-1"><i class="bi bi-calendar-check me-1"></i> Current Month</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Payments (This Month)</div>
+                    <div class="display-6 fw-semibold">@Model.PaymentsThisMonth.ToString("N2") @currency</div>
+                    <div class="text-danger mt-1"><i class="bi bi-calendar-x me-1"></i> Current Month</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="text-muted small">Flats</div>
@@ -76,7 +99,6 @@
             </div>
         </div>
     </div>
-
     <div class="row g-3 mb-3">
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
@@ -86,7 +108,8 @@
                         <div class="small text-muted">@occupied / @totalFlats</div>
                     </div>
                     <div class="progress" style="height:10px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width:@occRate%;" aria-valuenow="@occRate" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width:@occRate%;"
+                             aria-valuenow="@occRate" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <div class="mt-2 fw-semibold">@occRate% occupied</div>
                     <div class="text-muted small">Active tenant assignments across flats</div>
@@ -112,7 +135,6 @@
         </div>
     </div>
 
-    <!-- ===== Charts Row ===== -->
     <div class="row g-3 mb-3">
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
@@ -143,7 +165,6 @@
         </div>
     </div>
 
-    <!-- ===== Recent Activity ===== -->
     <div class="row g-3 mb-3">
         <div class="col-12">
             <div class="card shadow-sm">

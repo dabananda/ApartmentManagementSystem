@@ -39,6 +39,12 @@ namespace ApartmentManagementSystem.Controllers
                 .Select(b => b.Name)
                 .FirstOrDefaultAsync() ?? "(Building)";
 
+            // --- 1. Define Time Anchors ---
+            var todayUtc = DateTime.UtcNow.Date;
+            var firstOfThisMonthUtc = new DateTime(todayUtc.Year, todayUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var last7dUtc = todayUtc.AddDays(-6);
+
+            // --- 2. Aggregate Stats (All Time & Monthly) ---
             var totalBills = await _context.CommonBills.AsNoTracking()
                 .CountAsync(b => b.BuildingId == buildingId);
 
@@ -54,6 +60,20 @@ namespace ApartmentManagementSystem.Controllers
                 .Select(p => (decimal?)p.Amount)
                 .SumAsync() ?? 0m;
 
+            // NEW: Collected This Month
+            var collectedThisMonth = await (
+                from p in _context.ExpenseAllocationPayments.AsNoTracking()
+                join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
+                where b.BuildingId == buildingId && p.CreatedAtUtc >= firstOfThisMonthUtc
+                select (decimal?)p.Amount
+            ).SumAsync() ?? 0m;
+
+            // NEW: Payments This Month
+            var paymentsThisMonth = await _context.ExpensePayments.AsNoTracking()
+                .Where(p => p.BuildingId == buildingId && p.CreatedAtUtc >= firstOfThisMonthUtc)
+                .Select(p => (decimal?)p.Amount)
+                .SumAsync() ?? 0m;
+
             var totalFlats = await _context.Flats.AsNoTracking()
                 .CountAsync(f => f.BuildingId == buildingId);
 
@@ -64,9 +84,6 @@ namespace ApartmentManagementSystem.Controllers
                 .Distinct()
                 .CountAsync();
 
-            var todayUtc = DateTime.UtcNow.Date;
-            var last7dUtc = todayUtc.AddDays(-6);
-
             var todayEntries = await _context.EntryLogs.AsNoTracking()
                 .Where(e => e.BuildingId == buildingId && e.EntryTime.Date == todayUtc)
                 .CountAsync();
@@ -75,6 +92,7 @@ namespace ApartmentManagementSystem.Controllers
                 .Where(e => e.BuildingId == buildingId && e.EntryTime.Date >= last7dUtc)
                 .CountAsync();
 
+            // --- 3. Recent Activity Lists ---
             var recentOwnerPayments = await (
                 from p in _context.ExpenseAllocationPayments.AsNoTracking()
                 join b in _context.CommonBills.AsNoTracking() on p.CommonBillId equals b.Id
@@ -149,7 +167,7 @@ namespace ApartmentManagementSystem.Controllers
                 .Take(25)
                 .ToList();
 
-            var firstOfThisMonthUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            // --- 4. Chart Data: Cashflow ---
             var startMonthUtc = firstOfThisMonthUtc.AddMonths(-11);
 
             var labels = new List<string>(12);
@@ -188,6 +206,7 @@ namespace ApartmentManagementSystem.Controllers
                 if (idx >= 0 && idx < 12) outSeries[idx] = row.Amount;
             }
 
+            // --- 5. Chart Data: Aging & Top Owners ---
             var allocations = await _context.ExpenseAllocations.AsNoTracking()
                 .Include(a => a.CommonBill)
                 .Where(a => a.CommonBill!.BuildingId == buildingId)
@@ -253,12 +272,18 @@ namespace ApartmentManagementSystem.Controllers
                 topValues.Add(kv.Value);
             }
 
+            // --- 6. Construct ViewModel ---
             var vm = new PresidentDashboardViewModel
             {
                 BuildingName = buildingName,
                 TotalBills = totalBills,
                 TotalCollected = totalCollected,
                 TotalPayments = totalPayments,
+
+                // New Properties
+                CollectedThisMonth = collectedThisMonth,
+                PaymentsThisMonth = paymentsThisMonth,
+
                 TotalFlats = totalFlats,
                 OccupiedFlats = occupiedFlats,
                 TodayEntries = todayEntries,
