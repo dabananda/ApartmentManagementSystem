@@ -30,6 +30,8 @@ namespace ApartmentManagementSystem.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasDefaultSchema("ams");
+
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Building>()
