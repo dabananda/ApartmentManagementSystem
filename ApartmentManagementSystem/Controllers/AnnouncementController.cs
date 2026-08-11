@@ -3,20 +3,20 @@ using ApartmentManagementSystem.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ApartmentManagementSystem.Features.Announcements.Services;
 
 namespace ApartmentManagementSystem.Controllers
 {
     [Authorize(Roles = Roles.President)]
     public class AnnouncementController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IAnnouncementService _announcements;
 
-        public AnnouncementController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public AnnouncementController(UserManager<ApplicationUser> userManager, IAnnouncementService announcements)
         {
-            _context = context;
             _userManager = userManager;
+            _announcements = announcements;
         }
 
         public async Task<IActionResult> Index()
@@ -26,11 +26,7 @@ namespace ApartmentManagementSystem.Controllers
 
             var buildingId = user.BuildingId.Value;
 
-            var items = await _context.Announcements
-                .AsNoTracking()
-                .Where(a => a.BuildingId == buildingId)
-                .OrderByDescending(a => a.CreatedAt)
-                .ToListAsync();
+            var items = await _announcements.GetForBuildingAsync(buildingId);
 
             return View(items);
         }
@@ -47,12 +43,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (!ModelState.IsValid) return View(model);
 
-            model.Id = Guid.NewGuid();
-            model.BuildingId = user.BuildingId.Value;
-            model.CreatedAt = DateTime.UtcNow;
-
-            _context.Announcements.Add(model);
-            await _context.SaveChangesAsync();
+            await _announcements.PublishAsync(model, user.BuildingId.Value);
 
             TempData["Ok"] = "Notice published to your building.";
             return RedirectToAction(nameof(Index));

@@ -4,20 +4,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
+using ApartmentManagementSystem.Features.Expenses.Services;
 
 namespace ApartmentManagementSystem.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class ExpensePaymentController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IExpensePaymentService _payments;
 
-        public ExpensePaymentController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public ExpensePaymentController(UserManager<ApplicationUser> userManager, IExpensePaymentService payments)
         {
-            _context = context;
             _userManager = userManager;
+            _payments = payments;
         }
 
         public async Task<IActionResult> Index(Guid? buildingId)
@@ -26,11 +26,7 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            var payments = await _context.ExpensePayments
-                                         .Include(p => p.CommonBill)
-                                         .Where(p => p.BuildingId == buildingId)
-                                         .OrderByDescending(p => p.PaymentDate)
-                                         .ToListAsync();
+            var payments = await _payments.GetForBuildingAsync(buildingId.Value);
 
             ViewData["BuildingId"] = buildingId;
             return View(payments);
@@ -42,25 +38,7 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
 
-            // Get a list of all payments for the building, grouped by CommonBillId
-            var paidAmounts = await _context.ExpensePayments
-                                            .Where(p => p.BuildingId == buildingId)
-                                            .GroupBy(p => p.CommonBillId)
-                                            .Select(g => new { CommonBillId = g.Key, PaidAmount = g.Sum(p => p.Amount) })
-                                            .ToListAsync();
-
-            // Get all common bills for the building and calculate the outstanding amount
-            var bills = await _context.CommonBills
-                                      .Where(b => b.BuildingId == buildingId)
-                                      .ToListAsync();
-
-            var unpaidBills = bills.Select(b => new
-            {
-                b.Id,
-                b.Name,
-                Outstanding = b.TotalAmount - (paidAmounts.FirstOrDefault(p => p.CommonBillId == b.Id)?.PaidAmount ?? 0)
-            })
-            .Where(b => b.Outstanding > 0)
+            var unpaidBills = (await _payments.GetOutstandingBillsAsync(buildingId.Value))
             .Select(b => new SelectListItem
             {
                 Value = b.Id.ToString(),
@@ -82,13 +60,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (ModelState.IsValid)
             {
-                // Calculate the remaining balance of the bill
-                var paidSoFar = await _context.ExpensePayments
-                                              .Where(p => p.CommonBillId == payment.CommonBillId)
-                                              .SumAsync(p => p.Amount);
-
-                var bill = await _context.CommonBills.FindAsync(payment.CommonBillId);
-                var remainingAmount = bill.TotalAmount - paidSoFar;
+                var remainingAmount = await _payments.GetRemainingAmountAsync(payment.CommonBillId);
 
                 if (payment.Amount > remainingAmount)
                 {
@@ -97,31 +69,13 @@ namespace ApartmentManagementSystem.Controllers
 
                 if (ModelState.IsValid)
                 {
-                    _context.Add(payment);
-                    await _context.SaveChangesAsync();
+                    await _payments.RecordAsync(payment);
                     TempData["Success"] = "Payment recorded successfully.";
                     return RedirectToAction(nameof(Index), new { buildingId = payment.BuildingId });
                 }
             }
 
-            // Repopulate the dropdown if model state is invalid
-            var paidAmountsOnFail = await _context.ExpensePayments
-                                                  .Where(p => p.BuildingId == payment.BuildingId)
-                                                  .GroupBy(p => p.CommonBillId)
-                                                  .Select(g => new { CommonBillId = g.Key, PaidAmount = g.Sum(p => p.Amount) })
-                                                  .ToListAsync();
-
-            var billsOnFail = await _context.CommonBills
-                                            .Where(b => b.BuildingId == payment.BuildingId)
-                                            .ToListAsync();
-
-            var unpaidBillsOnFail = billsOnFail.Select(b => new
-            {
-                b.Id,
-                b.Name,
-                Outstanding = b.TotalAmount - (paidAmountsOnFail.FirstOrDefault(p => p.CommonBillId == b.Id)?.PaidAmount ?? 0)
-            })
-            .Where(b => b.Outstanding > 0)
+            var unpaidBillsOnFail = (await _payments.GetOutstandingBillsAsync(payment.BuildingId))
             .Select(b => new SelectListItem
             {
                 Value = b.Id.ToString(),
@@ -137,9 +91,7 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null) return NotFound();
-            var payment = await _context.ExpensePayments
-                                        .Include(p => p.CommonBill)
-                                        .FirstOrDefaultAsync(m => m.Id == id);
+            var payment = await _payments.GetAsync(id.Value);
             if (payment == null) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId != payment.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();

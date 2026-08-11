@@ -3,20 +3,20 @@ using ApartmentManagementSystem.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ApartmentManagementSystem.Features.Expenses.Services;
 
 namespace ApartmentManagementSystem.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class ExpenseAllocationController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IExpenseAllocationService _allocations;
 
-        public ExpenseAllocationController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public ExpenseAllocationController(UserManager<ApplicationUser> userManager, IExpenseAllocationService allocations)
         {
-            _context = context;
             _userManager = userManager;
+            _allocations = allocations;
         }
 
         public async Task<IActionResult> Index(Guid? commonBillId)
@@ -26,23 +26,17 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Forbid();
 
-            var commonBill = await _context.CommonBills
-                                            .Include(b => b.Building)
-                                            .FirstOrDefaultAsync(b => b.Id == commonBillId);
+            var result = await _allocations.GetAsync(commonBillId.Value);
+            var commonBill = result.CommonBill;
 
             if (commonBill == null || (commonBill.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin")))
             {
                 return Forbid();
             }
 
-            var allocations = await _context.ExpenseAllocations
-                                            .Include(a => a.Owner)
-                                            .Where(a => a.CommonBillId == commonBillId)
-                                            .ToListAsync();
-
             ViewData["CommonBillName"] = commonBill.Name;
             ViewData["BuildingId"] = commonBill.BuildingId;
-            return View(allocations);
+            return View(result.Allocations);
         }
     }
 }

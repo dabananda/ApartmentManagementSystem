@@ -3,20 +3,20 @@ using ApartmentManagementSystem.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ApartmentManagementSystem.Features.Maintenance.Services;
 
 namespace ApartmentManagementSystem.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class MaintenanceController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IMaintenanceService _maintenance;
 
-        public MaintenanceController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public MaintenanceController(UserManager<ApplicationUser> userManager, IMaintenanceService maintenance)
         {
-            _context = context;
             _userManager = userManager;
+            _maintenance = maintenance;
         }
 
         public async Task<IActionResult> Index(string status = "Open")
@@ -25,17 +25,7 @@ namespace ApartmentManagementSystem.Controllers
             if (user?.BuildingId == null) return Forbid();
             var buildingId = user.BuildingId.Value;
 
-            var q = _context.MaintenanceTickets
-                .AsNoTracking()
-                .Where(t => t.BuildingId == buildingId);
-
-            if (!string.IsNullOrWhiteSpace(status))
-                q = q.Where(t => t.Status == status);
-
-            var items = await q
-                .OrderBy(t => t.Status)
-                .ThenByDescending(t => t.CreatedAt)
-                .ToListAsync();
+            var items = await _maintenance.GetForBuildingAsync(buildingId, status);
 
             ViewBag.SelectedStatus = status;
             return View(items);
@@ -52,13 +42,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (!ModelState.IsValid) return View(model);
 
-            model.Id = Guid.NewGuid();
-            model.BuildingId = buildingId;
-            model.Status = "Open";
-            model.CreatedAt = DateTime.UtcNow;
-
-            _context.MaintenanceTickets.Add(model);
-            await _context.SaveChangesAsync();
+            await _maintenance.CreateAsync(model, buildingId);
             return RedirectToAction(nameof(Index));
         }
 
@@ -69,21 +53,10 @@ namespace ApartmentManagementSystem.Controllers
             if (user?.BuildingId == null) return Forbid();
             var buildingId = user.BuildingId.Value;
 
-            var ticket = await _context.MaintenanceTickets
-                .Where(t => t.Id == id && t.BuildingId == buildingId)
-                .FirstOrDefaultAsync();
+            var ticket = await _maintenance.AdvanceAsync(id, buildingId);
 
             if (ticket == null) return NotFound();
 
-            ticket.Status = ticket.Status switch
-            {
-                "Open" => "InProgress",
-                "InProgress" => "Closed",
-                _ => "Closed"
-            };
-            if (ticket.Status == "Closed") ticket.ClosedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index), new { status = ticket.Status });
         }
     }

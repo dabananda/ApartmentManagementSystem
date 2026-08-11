@@ -3,6 +3,7 @@ using System.Text;
 using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.ViewModels.Reports;
+using ApartmentManagementSystem.Features.Reports.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,17 @@ namespace ApartmentManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IPresidentFinancialReportService _financialReports;
+        private readonly IPresidentOccupancyReportService _occupancyReports;
+        private readonly IPresidentVisitorReportService _visitorReports;
 
-        public PresidentReportsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public PresidentReportsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IPresidentFinancialReportService financialReports, IPresidentOccupancyReportService occupancyReports, IPresidentVisitorReportService visitorReports)
         {
             _context = context;
             _userManager = userManager;
+            _financialReports = financialReports;
+            _occupancyReports = occupancyReports;
+            _visitorReports = visitorReports;
         }
 
         private async Task<(Guid buildingId, string buildingName)> RequireBuilding()
@@ -64,80 +71,23 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> Financial(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            var (start, endExclusive) = filter.ToBoundsOrDefault(60);
-
-            var bills = await _context.CommonBills.AsNoTracking()
-                .Where(b => b.BuildingId == buildingId && b.BillDate >= start && b.BillDate < endExclusive)
-                .OrderByDescending(b => b.BillDate)
-                .ToListAsync();
-
-            var billIds = bills.Select(b => b.Id).ToList();
-
-            var collectedByBill = await _context.ExpenseAllocationPayments.AsNoTracking()
-                .Where(p => billIds.Contains(p.CommonBillId) && p.Status == PaymentStatus.Succeeded)
-                .GroupBy(p => p.CommonBillId)
-                .Select(g => new { BillId = g.Key, Collected = g.Sum(x => x.Amount) })
-                .ToListAsync();
-            var collectedLookup = collectedByBill.ToDictionary(x => x.BillId, x => x.Collected);
-
-            var paymentsTotal = await _context.ExpensePayments.AsNoTracking()
-                .Where(p => p.BuildingId == buildingId && p.PaymentDate >= start && p.PaymentDate < endExclusive)
-                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
-
-            var rows = bills
-                .Select(b => new FinancialReportRow
-                {
-                    CommonBillId = b.Id,
-                    Title = BillTitle(b),
-                    BillDate = b.BillDate,
-                    TotalAmount = b.TotalAmount,
-                    Collected = collectedLookup.TryGetValue(b.Id, out var c) ? c : 0m,
-                    Payments = 0m
-                })
-                .ToList();
-
-            var vm = new FinancialReportViewModel
-            {
-                BuildingName = buildingName,
-                Filter = filter,
-                TotalBills = rows.Sum(r => r.TotalAmount),
-                TotalCollected = rows.Sum(r => r.Collected),
-                TotalPayments = paymentsTotal,
-                Rows = rows
-            };
-
-            return View(vm);
+            return View(await _financialReports.GetAsync(buildingId, buildingName, filter));
         }
 
         public async Task<IActionResult> FinancialCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
             var (buildingId, buildingName) = await RequireBuilding();
-            var (start, endExclusive) = filter.ToBoundsOrDefault(60);
-
-            var bills = await _context.CommonBills.AsNoTracking()
-                .Where(b => b.BuildingId == buildingId && b.BillDate >= start && b.BillDate < endExclusive)
-                .OrderBy(b => b.BillDate)
-                .ToListAsync();
-
-            var billIds = bills.Select(b => b.Id).ToList();
-
-            var collectedByBill = await _context.ExpenseAllocations.AsNoTracking()
-                .Where(a => billIds.Contains(a.CommonBillId) && a.IsPaid)
-                .GroupBy(a => a.CommonBillId)
-                .Select(g => new { BillId = g.Key, Collected = g.Sum(x => x.AmountDue) })
-                .ToListAsync();
-            var collectedLookup = collectedByBill.ToDictionary(x => x.BillId, x => x.Collected);
+            var rows = await _financialReports.GetCsvAsync(buildingId, filter);
 
             var sb = new StringBuilder();
             sb.AppendLine($"Building,{Csv(buildingName)}");
             sb.AppendLine("BillDate,Title,TotalAmount,Collected,Outstanding");
 
-            foreach (var b in bills)
+            foreach (var row in rows)
             {
-                var collected = collectedLookup.TryGetValue(b.Id, out var c) ? c : 0m;
-                var outstanding = Math.Max(b.TotalAmount - collected, 0m);
-                sb.AppendLine($"{b.BillDate:yyyy-MM-dd},{Csv(BillTitle(b))},{b.TotalAmount},{collected},{outstanding}");
+                var outstanding = Math.Max(row.TotalAmount - row.Collected, 0m);
+                sb.AppendLine($"{row.BillDate:yyyy-MM-dd},{Csv(row.Title)},{row.TotalAmount},{row.Collected},{outstanding}");
             }
 
             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "financial_report.csv");
@@ -147,93 +97,33 @@ namespace ApartmentManagementSystem.Controllers
         {
             var (buildingId, buildingName) = await RequireBuilding();
 
-            var totalFlats = await _context.Flats.AsNoTracking().CountAsync(f => f.BuildingId == buildingId);
-            var occupiedFlats = await _context.Flats.AsNoTracking().CountAsync(f => f.BuildingId == buildingId && f.IsOccupied);
-
-            var ownersCount = await _context.Flats.AsNoTracking()
-                .Where(f => f.BuildingId == buildingId && f.OwnerId != null)
-                .Select(f => f.OwnerId)
-                .Distinct()
-                .CountAsync();
-
-            var tenantsCount = await (from ta in _context.TenantAssignments.AsNoTracking()
-                                      join f in _context.Flats.AsNoTracking() on ta.FlatId equals f.Id
-                                      where f.BuildingId == buildingId && (ta.EndDate == null || ta.EndDate >= DateTime.Today)
-                                      select ta)
-                                     .CountAsync();
-
-            var vm = new OccupancyReportViewModel
-            {
-                BuildingName = buildingName,
-                TotalFlats = totalFlats,
-                OccupiedFlats = occupiedFlats,
-                OwnersCount = ownersCount,
-                TenantsCount = tenantsCount
-            };
-            return View(vm);
+            return View(await _occupancyReports.GetAsync(buildingId, buildingName));
         }
 
         public async Task<IActionResult> OccupancyCsv()
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            var flats = await _context.Flats.AsNoTracking()
-                .Where(f => f.BuildingId == buildingId)
-                .Select(f => new { f.FlatNumber, f.IsOccupied, f.OwnerId })
-                .OrderBy(f => f.FlatNumber)
-                .ToListAsync();
+            var flats = await _occupancyReports.GetCsvAsync(buildingId);
 
             var sb = new StringBuilder();
             sb.AppendLine($"Building,{Csv(buildingName)}");
             sb.AppendLine("FlatNumber,IsOccupied,HasOwner");
             foreach (var f in flats)
-                sb.AppendLine($"{Csv(f.FlatNumber)}, {(f.IsOccupied ? "Yes" : "No")}, {(f.OwnerId != null ? "Yes" : "No")}");
+                sb.AppendLine($"{Csv(f.FlatNumber)}, {(f.IsOccupied ? "Yes" : "No")}, {(f.HasOwner ? "Yes" : "No")}");
             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "occupancy_report.csv");
         }
 
         public async Task<IActionResult> Visitors(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            var (start, endExclusive) = filter.ToBoundsOrDefault(30);
-
-            var query = _context.EntryLogs.AsNoTracking()
-                .Where(e => e.BuildingId == buildingId && e.EntryTime >= start && e.EntryTime < endExclusive);
-
-            var cats = await query
-                .GroupBy(e => e.EntryType)
-                .Select(g => new { Type = g.Key, Count = g.Count() })
-                .ToListAsync();
-
-            var byCategory = cats.ToDictionary(x => x.Type.ToString(), x => x.Count);
-
-            var inRange = await query.Select(e => new { e.EntryTime }).ToListAsync();
-            var daily = inRange
-                .GroupBy(x => x.EntryTime.Date)
-                .OrderBy(g => g.Key)
-                .Select(g => (Day: g.Key, Count: g.Count()))
-                .ToList();
-
-            var vm = new VisitorReportViewModel
-            {
-                BuildingName = buildingName,
-                Filter = filter,
-                TotalEntries = inRange.Count,
-                ByCategory = byCategory,
-                DailyCounts = daily
-            };
-            return View(vm);
+            return View(await _visitorReports.GetAsync(buildingId, buildingName, filter));
         }
 
         public async Task<IActionResult> VisitorsCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
             var (buildingId, buildingName) = await RequireBuilding();
-            var (start, endExclusive) = filter.ToBoundsOrDefault(30);
-
-            var rows = await _context.EntryLogs.AsNoTracking()
-                .Where(e => e.BuildingId == buildingId && e.EntryTime >= start && e.EntryTime < endExclusive)
-                .Select(e => new { e.EntryTime, e.EntryType, e.Fullname, e.FlatId })
-                .OrderBy(e => e.EntryTime)
-                .ToListAsync();
+            var rows = await _visitorReports.GetCsvAsync(buildingId, filter);
 
             var sb = new StringBuilder();
             sb.AppendLine($"Building,{Csv(buildingName)}");

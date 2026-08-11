@@ -4,43 +4,25 @@ using ApartmentManagementSystem.ViewModels.Flat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ApartmentManagementSystem.Features.Tenancy.Services;
 
 namespace ApartmentManagementSystem.Controllers
 {
     [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class FlatBillingProfileController : Controller
     {
-        private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _users;
-        public FlatBillingProfileController(ApplicationDbContext db, UserManager<ApplicationUser> users)
+        private readonly IFlatBillingProfileService _profiles;
+        public FlatBillingProfileController(UserManager<ApplicationUser> users, IFlatBillingProfileService profiles)
         {
-            _db = db; _users = users;
+            _users = users; _profiles = profiles;
         }
 
         public async Task<IActionResult> Index()
         {
             var me = await _users.GetUserAsync(User);
 
-            var flats = _db.Flats.AsQueryable();
-            if (User.IsInRole("Owner"))
-                flats = flats.Where(f => f.OwnerId == me!.Id);
-
-            var rows = await flats
-                .GroupJoin(_db.FlatBillingProfiles,
-                           f => f.Id, p => p.FlatId,
-                           (f, ps) => new { f, p = ps.FirstOrDefault() })
-                .OrderBy(x => x.f.FlatNumber)
-                .Select(x => new FlatProfileRow
-                {
-                    FlatId = x.f.Id,
-                    FlatNumber = x.f.FlatNumber,
-                    HasProfile = x.p != null,
-                    Title = x.p != null ? x.p.Title : "",
-                    Amount = x.p != null ? x.p.MonthlyAmount : 0m,
-                    DueDay = x.p != null ? x.p.DueDayOfMonth : 1,
-                    IsActive = x.p != null && x.p.IsActive
-                }).ToListAsync();
+            var rows = await _profiles.GetRowsAsync(User.IsInRole("Owner") ? me!.Id : null);
 
             return View(rows);
         }
@@ -48,11 +30,11 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> Edit(Guid flatId)
         {
             var me = await _users.GetUserAsync(User);
-            var flat = await _db.Flats.FindAsync(flatId);
+            var flat = await _profiles.GetFlatAsync(flatId);
             if (flat == null) return NotFound();
             if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
 
-            var p = await _db.FlatBillingProfiles.FirstOrDefaultAsync(x => x.FlatId == flatId)
+            var p = await _profiles.GetProfileAsync(flatId)
                 ?? new FlatBillingProfile { FlatId = flatId };
 
             return View(p);
@@ -66,69 +48,12 @@ namespace ApartmentManagementSystem.Controllers
                 return View(vm);
 
             var me = await _users.GetUserAsync(User);
-            var flat = await _db.Flats.FindAsync(vm.FlatId);
+            var flat = await _profiles.GetFlatAsync(vm.FlatId);
             if (flat == null) return NotFound("Flat not found.");
 
             if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
 
-            var existing = await _db.FlatBillingProfiles.FirstOrDefaultAsync(x => x.FlatId == vm.FlatId);
-            if (existing == null)
-            {
-                existing = new FlatBillingProfile
-                {
-                    FlatId = vm.FlatId,
-                    Title = string.IsNullOrWhiteSpace(vm.Title) ? "Monthly Rent" : vm.Title,
-                    MonthlyAmount = vm.MonthlyAmount,
-                    DueDayOfMonth = vm.DueDayOfMonth <= 0 ? 1 : vm.DueDayOfMonth,
-                    IsActive = vm.IsActive
-                };
-                _db.FlatBillingProfiles.Add(existing);
-            }
-            else
-            {
-                existing.Title = string.IsNullOrWhiteSpace(vm.Title) ? "Monthly Rent" : vm.Title;
-                existing.MonthlyAmount = vm.MonthlyAmount;
-                existing.DueDayOfMonth = vm.DueDayOfMonth <= 0 ? 1 : vm.DueDayOfMonth;
-                existing.IsActive = vm.IsActive;
-            }
-
-            await _db.SaveChangesAsync();
-
-            if (existing.IsActive)
-            {
-                var today = DateTime.Today;
-                var firstOfMonth = new DateTime(today.Year, today.Month, 1);
-
-                var assignment = await _db.TenantAssignments
-                    .Where(a => a.FlatId == vm.FlatId && (a.EndDate == null || a.EndDate >= today))
-                    .OrderByDescending(a => a.StartDate)
-                    .FirstOrDefaultAsync();
-
-                if (assignment != null)
-                {
-                    var assignmentStartMonth = new DateTime(assignment.StartDate.Year, assignment.StartDate.Month, 1);
-                    if (assignmentStartMonth <= firstOfMonth)
-                    {
-                        var existsBill = await _db.TenantBills.AnyAsync(b =>
-                            b.FlatId == vm.FlatId &&
-                            b.TenantUserId == assignment.TenantUserId &&
-                            b.BillDate == firstOfMonth);
-
-                        if (!existsBill)
-                        {
-                            await _db.TenantBills.AddAsync(new TenantBill
-                            {
-                                FlatId = vm.FlatId,
-                                TenantUserId = assignment.TenantUserId,
-                                Title = string.IsNullOrWhiteSpace(existing.Title) ? "Monthly Rent" : existing.Title,
-                                BillDate = firstOfMonth,
-                                Amount = existing.MonthlyAmount
-                            });
-                            await _db.SaveChangesAsync();
-                        }
-                    }
-                }
-            }
+            await _profiles.SaveAsync(vm);
 
             TempData["Success"] = "Billing profile saved.";
             return RedirectToAction(nameof(Index));

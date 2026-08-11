@@ -1,5 +1,6 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Features.Flats.Services;
 using ApartmentManagementSystem.ViewModels.President;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,26 +13,19 @@ namespace ApartmentManagementSystem.Controllers
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class FlatController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IFlatService _flats;
 
-        public FlatController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public FlatController(UserManager<ApplicationUser> userManager, IFlatService flats)
         {
-            _context = context;
             _userManager = userManager;
+            _flats = flats;
         }
 
         public async Task<IActionResult> AllFlats()
         {
-            var flats = await _context.Flats
-                            .Include(f => f.Owner)
-                            .Include(f => f.Building)
-                            .ToListAsync();
-
-            var activeAssignments = await _context.TenantAssignments
-                .Include(ta => ta.TenantUser)
-                .Where(ta => ta.EndDate == null)
-                .ToListAsync();
+            var flats = await _flats.GetAllWithReferencesAsync();
+            var activeAssignments = await _flats.GetActiveAssignmentsAsync();
 
             var tenantMap = activeAssignments
                 .GroupBy(ta => ta.FlatId)
@@ -51,7 +45,7 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
-            var building = await _context.Buildings.FindAsync(buildingId);
+            var building = await _flats.GetBuildingAsync(buildingId.Value);
             if (building == null) return NotFound();
 
             // Authorization check for President role
@@ -62,11 +56,7 @@ namespace ApartmentManagementSystem.Controllers
             }
 
             // Retrieve the flats for the specific building, including the owner information
-            var flats = await _context.Flats
-                            .Include(f => f.Owner)
-                            .Include(f => f.Tenants)
-                            .Where(f => f.BuildingId == buildingId)
-                            .ToListAsync();
+            var flats = await _flats.GetForBuildingAsync(buildingId.Value);
 
             ViewData["BuildingId"] = building.Id;
             ViewData["BuildingName"] = building.Name;
@@ -77,7 +67,7 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
-            var building = await _context.Buildings.FindAsync(buildingId);
+            var building = await _flats.GetBuildingAsync(buildingId.Value);
             if (building == null) return NotFound();
             ViewData["BuildingId"] = buildingId;
             ViewData["BuildingName"] = building.Name;
@@ -90,12 +80,11 @@ namespace ApartmentManagementSystem.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _context.Flats.AddAsync(flat);
-                await _context.SaveChangesAsync();
+                await _flats.CreateAsync(flat);
                 return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
             }
 
-            var building = await _context.Buildings.FindAsync(flat.BuildingId);
+            var building = await _flats.GetBuildingAsync(flat.BuildingId);
             if (building != null)
             {
                 ViewData["BuildingId"] = building.Id;
@@ -108,9 +97,7 @@ namespace ApartmentManagementSystem.Controllers
         public async Task<IActionResult> AssignOwner(Guid? flatId)
         {
             if (flatId == null) return NotFound();
-            var flat = await _context.Flats
-                .Include(f => f.Building)
-                .FirstOrDefaultAsync(f => f.Id == flatId);
+            var flat = await _flats.GetAsync(flatId.Value, includeReferences: true);
             if (flat == null) return NotFound();
 
             if (User.IsInRole("President"))
@@ -143,14 +130,10 @@ namespace ApartmentManagementSystem.Controllers
         {
             if (ModelState.IsValid)
             {
-                var flat = await _context.Flats.FindAsync(model.FlatId);
+                var flat = await _flats.GetAsync(model.FlatId);
                 if (flat == null) return NotFound();
 
-                flat.OwnerId = model.OwnerId;
-                flat.IsOccupied = !string.IsNullOrEmpty(model.OwnerId);
-
-                _context.Update(flat);
-                await _context.SaveChangesAsync();
+                await _flats.AssignOwnerAsync(flat, model.OwnerId);
 
                 TempData["SuccessMessage"] = "Owner assigned successfully.";
                 return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
@@ -158,17 +141,14 @@ namespace ApartmentManagementSystem.Controllers
 
             var owners = await _userManager.GetUsersInRoleAsync("Owner");
             model.Owners = new SelectList(owners, "Id", "Fullname");
-            model.Flats = new SelectList(_context.Flats.ToList(), "Id", "FlatNumber");
+            model.Flats = new SelectList(await _flats.GetAllWithReferencesAsync(), "Id", "FlatNumber");
 
             return View(model);
         }
 
         public async Task<IActionResult> Delete(Guid id)
         {
-            var flat = await _context.Flats
-                .Include(f => f.Building)
-                .Include(f => f.Owner)
-                .FirstOrDefaultAsync(f => f.Id == id);
+            var flat = await _flats.GetAsync(id, includeReferences: true);
 
             if (flat == null) return NotFound();
 
@@ -185,9 +165,7 @@ namespace ApartmentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id, bool confirmed = false)
         {
-            var flat = await _context.Flats
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.Id == id);
+            var flat = await _flats.GetAsync(id, asNoTracking: true);
 
             if (flat == null) return NotFound();
 
@@ -197,18 +175,15 @@ namespace ApartmentManagementSystem.Controllers
                 if (user?.BuildingId != flat.BuildingId) return Forbid();
             }
 
-            var hasBills = await _context.TenantBills.AnyAsync(b => b.FlatId == id);
-            var hasTenants = await _context.Tenants.AnyAsync(t => t.FlatId == id);
-            var hasActiveAssign = await _context.TenantAssignments.AnyAsync(a => a.FlatId == id && a.EndDate == null);
-            var hasEntryLogs = await _context.EntryLogs.AnyAsync(e => e.FlatId == id);
+            var deletionCheck = await _flats.GetDeletionCheckAsync(id);
 
-            if (hasBills || hasTenants || hasActiveAssign || hasEntryLogs)
+            if (deletionCheck.HasRelatedRecords)
             {
                 var reasons = new List<string>();
-                if (hasBills) reasons.Add("tenant bills");
-                if (hasTenants) reasons.Add("tenants");
-                if (hasActiveAssign) reasons.Add("active tenant assignment");
-                if (hasEntryLogs) reasons.Add("entry logs");
+                if (deletionCheck.HasBills) reasons.Add("tenant bills");
+                if (deletionCheck.HasTenants) reasons.Add("tenants");
+                if (deletionCheck.HasActiveAssignments) reasons.Add("active tenant assignment");
+                if (deletionCheck.HasEntryLogs) reasons.Add("entry logs");
 
                 TempData["Error"] = "Cannot delete this flat because it has " +
                                     string.Join(", ", reasons) +
@@ -218,8 +193,7 @@ namespace ApartmentManagementSystem.Controllers
 
             try
             {
-                _context.Flats.Remove(new Flat { Id = id });
-                await _context.SaveChangesAsync();
+                await _flats.DeleteAsync(flat);
                 TempData["Success"] = "Flat deleted successfully.";
             }
             catch (DbUpdateException)

@@ -1,23 +1,23 @@
 ﻿using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Features.EntryLogs.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
     [Authorize(Roles = Roles.StaffOrOwnerOrPresidentOrSuperAdmin)]
     public class EntryLogController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IEntryLogService _entries;
 
-        public EntryLogController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public EntryLogController(UserManager<ApplicationUser> userManager, IEntryLogService entries)
         {
-            _context = context;
             _userManager = userManager;
+            _entries = entries;
         }
 
         public async Task<IActionResult> Index()
@@ -25,23 +25,8 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            IQueryable<EntryLog> entryLogsQuery = _context.EntryLogs
-                .Include(x => x.Building)
-                .Include(x => x.Flat);
-
-            if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-            {
-                if (user.BuildingId.HasValue)
-                {
-                    entryLogsQuery = entryLogsQuery.Where(el => el.BuildingId == user.BuildingId.Value);
-                }
-                else
-                {
-                    entryLogsQuery = entryLogsQuery.Where(el => false);
-                }
-            }
-
-            var entryLogs = await entryLogsQuery.ToListAsync();
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+            var entryLogs = await _entries.GetForBuildingAsync(isSuperAdmin ? null : user.BuildingId);
             return View(entryLogs);
         }
 
@@ -136,8 +121,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
             {
-                var flatExists = await _context.Flats
-                    .AnyAsync(f => f.Id == model.FlatId && f.BuildingId == model.BuildingId);
+                var flatExists = await _entries.FlatBelongsToBuildingAsync(model.FlatId, model.BuildingId);
 
                 if (!flatExists)
                 {
@@ -160,9 +144,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (ModelState.IsValid)
             {
-                model.Id = Guid.NewGuid();
-                await _context.EntryLogs.AddAsync(model);
-                await _context.SaveChangesAsync();
+                await _entries.CreateAsync(model);
 
                 TempData["SuccessMessage"] = "Entry log created successfully.";
                 return RedirectToAction("Index");
@@ -178,10 +160,7 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _context.EntryLogs
-                .Include(e => e.Building)
-                .Include(e => e.Flat)
-                .FirstOrDefaultAsync(e => e.Id == id.Value);
+            var entry = await _entries.GetAsync(id.Value, includeReferences: true);
 
             if (entry == null) return NotFound();
 
@@ -199,7 +178,7 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _context.EntryLogs.FindAsync(id.Value);
+            var entry = await _entries.GetAsync(id.Value);
             if (entry == null) return NotFound();
 
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
@@ -245,7 +224,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
             {
-                var flatExists = await _context.Flats.AnyAsync(f => f.Id == model.FlatId && f.BuildingId == model.BuildingId);
+                var flatExists = await _entries.FlatBelongsToBuildingAsync(model.FlatId, model.BuildingId);
                 if (!flatExists) ModelState.AddModelError("FlatId", "Selected flat does not belong to the selected building.");
             }
 
@@ -256,7 +235,7 @@ namespace ApartmentManagementSystem.Controllers
 
             if (ModelState.IsValid)
             {
-                var existing = await _context.EntryLogs.FindAsync(id);
+                var existing = await _entries.GetAsync(id);
                 if (existing == null) return NotFound();
 
                 if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
@@ -264,18 +243,7 @@ namespace ApartmentManagementSystem.Controllers
                     if (user.BuildingId != existing.BuildingId) return Forbid();
                 }
 
-                existing.Fullname = model.Fullname;
-                existing.PhoneNumber = model.PhoneNumber;
-                existing.BuildingId = model.BuildingId;
-                existing.FlatId = model.FlatId;
-                existing.EntryType = model.EntryType;
-                existing.NumberOfPerson = model.NumberOfPerson;
-                existing.Purpose = model.Purpose;
-                existing.EntryTime = model.EntryTime;
-                existing.ExitTime = model.ExitTime;
-
-                _context.Entry(existing).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
+                await _entries.UpdateAsync(existing, model);
 
                 TempData["SuccessMessage"] = "Entry log updated successfully.";
                 return RedirectToAction("Index");
@@ -291,10 +259,7 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _context.EntryLogs
-                .Include(e => e.Building)
-                .Include(e => e.Flat)
-                .FirstOrDefaultAsync(e => e.Id == id.Value);
+            var entry = await _entries.GetAsync(id.Value, includeReferences: true);
 
             if (entry == null) return NotFound();
 
@@ -313,7 +278,7 @@ namespace ApartmentManagementSystem.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _context.EntryLogs.FindAsync(id);
+            var entry = await _entries.GetAsync(id);
             if (entry == null) return NotFound();
 
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
@@ -321,8 +286,7 @@ namespace ApartmentManagementSystem.Controllers
                 if (user.BuildingId != entry.BuildingId) return Forbid();
             }
 
-            _context.EntryLogs.Remove(entry);
-            await _context.SaveChangesAsync();
+            await _entries.DeleteAsync(entry);
 
             TempData["SuccessMessage"] = "Entry log deleted successfully.";
             return RedirectToAction("Index");
@@ -342,52 +306,26 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            var flats = await _context.Flats
-                .Where(f => f.BuildingId == buildingId)
-                .Select(f => new { id = f.Id, flatNumber = f.FlatNumber })
-                .OrderBy(f => f.flatNumber)
-                .ToListAsync();
+            var flats = (await _entries.GetFlatsAsync(buildingId))
+                .Select(f => new { id = f.Id, flatNumber = f.FlatNumber });
 
             return Json(flats);
         }
 
         private async Task PopulateDropdowns(ApplicationUser user, Guid? selectedBuildingId = null, Guid? selectedFlatId = null)
         {
-            IQueryable<Building> buildingsQuery = _context.Buildings;
-
-            if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-            {
-                if (user.BuildingId.HasValue)
-                {
-                    buildingsQuery = buildingsQuery.Where(b => b.Id == user.BuildingId.Value);
-                }
-                else
-                {
-                    buildingsQuery = buildingsQuery.Where(b => false);
-                }
-            }
-
-            var buildings = await buildingsQuery.OrderBy(b => b.Name).ToListAsync();
+            var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+            var buildings = await _entries.GetBuildingsAsync(isSuperAdmin ? null : user.BuildingId);
             ViewBag.BuildingId = new SelectList(buildings, "Id", "Name", selectedBuildingId);
 
-            var flats = new List<Flat>();
+            IReadOnlyList<Flat> flats = [];
             if (selectedBuildingId.HasValue && selectedBuildingId != Guid.Empty)
             {
-                flats = await _context.Flats
-                    .Where(f => f.BuildingId == selectedBuildingId.Value)
-                    .OrderBy(f => f.FlatNumber)
-                    .ToListAsync();
+                flats = await _entries.GetFlatsAsync(selectedBuildingId);
             }
             else if (user.BuildingId.HasValue)
             {
-                flats = await _context.Flats
-                    .Where(f => f.BuildingId == user.BuildingId.Value)
-                    .OrderBy(f => f.FlatNumber)
-                    .ToListAsync();
-            }
-            else if (await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-            {
-                flats = new List<Flat>();
+                flats = await _entries.GetFlatsAsync(user.BuildingId);
             }
 
             ViewBag.FlatId = new SelectList(flats, "Id", "FlatNumber", selectedFlatId);
