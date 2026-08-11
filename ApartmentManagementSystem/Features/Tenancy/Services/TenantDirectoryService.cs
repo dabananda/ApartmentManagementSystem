@@ -1,7 +1,9 @@
 using ApartmentManagementSystem.Features.Tenancy.Repositories;
-using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels.Building;
-using ApartmentManagementSystem.ViewModels.Flat;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Buildings.ViewModels;
+using ApartmentManagementSystem.Features.Flats.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Tenancy.Services;
 

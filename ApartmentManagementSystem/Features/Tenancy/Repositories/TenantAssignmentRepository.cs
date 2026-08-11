@@ -1,4 +1,7 @@
-using ApartmentManagementSystem.Data; using ApartmentManagementSystem.Models; using ApartmentManagementSystem.ViewModels.Tenant; using Microsoft.EntityFrameworkCore;
+using ApartmentManagementSystem.Infrastructure.Data;
+using ApartmentManagementSystem.Domain.Constants; using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels; using ApartmentManagementSystem.Features.Tenancy.ViewModels; using Microsoft.EntityFrameworkCore;
 namespace ApartmentManagementSystem.Features.Tenancy.Repositories;
 public sealed class TenantAssignmentRepository(ApplicationDbContext db) : ITenantAssignmentRepository {
  public async Task<IReadOnlyList<Flat>> GetFlatsAsync(string? ownerId) { var q=db.Flats.AsQueryable(); if(ownerId!=null)q=q.Where(f=>f.OwnerId==ownerId);return await q.OrderBy(f=>f.FlatNumber).ToListAsync(); }

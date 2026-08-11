@@ -1,5 +1,7 @@
 using ApartmentManagementSystem.Features.Flats.Repositories;
-using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
 using ApartmentManagementSystem.Features.Flats.Models;
 
 namespace ApartmentManagementSystem.Features.Flats.Services;

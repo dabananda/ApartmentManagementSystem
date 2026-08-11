@@ -1,6 +1,8 @@
 using ApartmentManagementSystem.Features.Administration.Repositories;
-using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels.Admin;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Administration.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 

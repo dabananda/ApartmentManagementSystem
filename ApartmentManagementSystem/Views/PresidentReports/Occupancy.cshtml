@@ -1,10 +1,10 @@
-﻿@using System.Text.Json
-@model ApartmentManagementSystem.ViewModels.Reports.OccupancyReportViewModel
+@using System.Text.Json
+@model ApartmentManagementSystem.Features.Reports.ViewModels.OccupancyReportViewModel
 @{
     ViewData["Title"] = "Occupancy Report";
 }
 <div class="d-flex justify-content-between">
-    <h2 class="h4 mb-3">Occupancy Report — @Model.BuildingName</h2>
+    <h2 class="h4 mb-3">Occupancy Report � @Model.BuildingName</h2>
     <div>
         <a asp-action="OccupancyCsv" class="btn btn-outline-secondary">Export CSV</a>
     </div>

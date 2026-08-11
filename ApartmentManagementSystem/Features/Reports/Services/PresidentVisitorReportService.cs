@@ -1,6 +1,8 @@
 using ApartmentManagementSystem.Features.Reports.Repositories;
-using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels.Reports;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Reports.ViewModels;
 namespace ApartmentManagementSystem.Features.Reports.Services;
 public sealed class PresidentVisitorReportService(IPresidentVisitorReportRepository reports) : IPresidentVisitorReportService
 {

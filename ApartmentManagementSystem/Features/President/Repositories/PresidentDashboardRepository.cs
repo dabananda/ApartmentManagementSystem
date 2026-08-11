@@ -1,5 +1,6 @@
-using ApartmentManagementSystem.Data;
-using ApartmentManagementSystem.ViewModels.President;
+using ApartmentManagementSystem.Infrastructure.Data;
+using ApartmentManagementSystem.Domain.Constants;
+using ApartmentManagementSystem.Features.President.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Features.President.Repositories;

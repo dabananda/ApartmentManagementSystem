@@ -1,5 +1,7 @@
-using ApartmentManagementSystem.ViewModels.Reports;
-using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Features.Reports.ViewModels;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
 namespace ApartmentManagementSystem.Features.Reports.Services;
 public interface IPresidentVisitorReportService
 {

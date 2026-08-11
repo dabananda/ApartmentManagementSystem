@@ -1,4 +1,4 @@
-ï»¿@page
+@page
 @model RegisterModel
 @{
     Layout = null;
@@ -362,13 +362,13 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label asp-for="Input.Password">Password</label>
-                            <input asp-for="Input.Password" class="form-control" autocomplete="new-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" />
+                            <input asp-for="Input.Password" class="form-control" autocomplete="new-password" placeholder="••••••••" />
                             <span asp-validation-for="Input.Password" class="text-danger"></span>
                         </div>
 
                         <div class="form-group">
                             <label asp-for="Input.ConfirmPassword">Confirm Password</label>
-                            <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" />
+                            <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="••••••••" />
                             <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
                         </div>
                     </div>

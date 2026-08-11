@@ -1,4 +1,4 @@
-ï»¿@model IEnumerable<ApartmentManagementSystem.Models.MaintenanceTicket>
+@model IEnumerable<ApartmentManagementSystem.Domain.Entities.MaintenanceTicket>
 @{
     ViewData["Title"] = "Maintenance";
     var status = (string)ViewBag.SelectedStatus ?? "Open";
@@ -20,10 +20,10 @@
             <div class="d-flex justify-content-between">
                 <strong>@t.Title</strong>
                 <small class="text-muted">
-                    @t.Status â€¢ @t.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                    @t.Status • @t.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
                     @if (t.ClosedAt.HasValue)
                     {
-                        <text> â€¢ Closed @t.ClosedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</text>
+                        <text> • Closed @t.ClosedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</text>
                     }
                 </small>
             </div>

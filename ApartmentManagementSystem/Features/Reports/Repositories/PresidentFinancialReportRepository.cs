@@ -1,5 +1,8 @@
-using ApartmentManagementSystem.Data;
-using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Infrastructure.Data;
+using ApartmentManagementSystem.Domain.Constants;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Features.Reports.Repositories;

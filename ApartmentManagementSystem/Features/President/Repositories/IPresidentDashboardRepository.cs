@@ -1,4 +1,4 @@
-using ApartmentManagementSystem.ViewModels.President;
+using ApartmentManagementSystem.Features.President.ViewModels;
 
 namespace ApartmentManagementSystem.Features.President.Repositories;
 public interface IPresidentDashboardRepository

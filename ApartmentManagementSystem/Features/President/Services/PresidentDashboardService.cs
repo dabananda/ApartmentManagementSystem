@@ -1,5 +1,5 @@
 using ApartmentManagementSystem.Features.President.Repositories;
-using ApartmentManagementSystem.ViewModels.President;
+using ApartmentManagementSystem.Features.President.ViewModels;
 
 namespace ApartmentManagementSystem.Features.President.Services;
 public sealed class PresidentDashboardService(IPresidentDashboardRepository dashboard) : IPresidentDashboardService

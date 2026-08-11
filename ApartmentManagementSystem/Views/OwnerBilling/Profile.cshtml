@@ -1,8 +1,8 @@
-﻿@model ApartmentManagementSystem.Models.OwnerBillingProfile
+@model ApartmentManagementSystem.Domain.Entities.OwnerBillingProfile
 @{
     ViewData["Title"] = "Billing Profile"; var flatNumber = ViewData["FlatNumber"] as string;
 }
-<h1>Billing Profile — Flat @flatNumber</h1>
+<h1>Billing Profile � Flat @flatNumber</h1>
 @if (TempData["Ok"] is string ok)
 {
     <div class="alert alert-success">@ok</div>

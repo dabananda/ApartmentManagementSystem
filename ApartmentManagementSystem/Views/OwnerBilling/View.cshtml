@@ -1,4 +1,4 @@
-ï»¿@using ApartmentManagementSystem.ViewModels.Owner
+@using ApartmentManagementSystem.Features.Owner.ViewModels
 @model OwnerBillsPage
 
 @{
@@ -7,7 +7,7 @@
 }
 
 
-<h2 class="mb-1">Owner Billing â€” @Model.OwnerName</h2>
+<h2 class="mb-1">Owner Billing — @Model.OwnerName</h2>
 
 @if (TempData["Success"] != null)
 {
@@ -191,7 +191,7 @@
                   if(parseFloat(a.value)>
                 m){ alert('Amount exceeds due.'); return false; }">
                 <div class="modal-header">
-                    <h5 class="modal-title">Record Payment â€” @Model.OwnerName</h5>
+                    <h5 class="modal-title">Record Payment — @Model.OwnerName</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

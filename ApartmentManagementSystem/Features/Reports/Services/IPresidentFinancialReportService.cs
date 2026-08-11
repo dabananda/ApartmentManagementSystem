@@ -1,4 +1,4 @@
-using ApartmentManagementSystem.ViewModels.Reports;
+using ApartmentManagementSystem.Features.Reports.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Reports.Services;
 public interface IPresidentFinancialReportService

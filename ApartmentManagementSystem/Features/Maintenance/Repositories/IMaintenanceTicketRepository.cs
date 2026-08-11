@@ -1,4 +1,6 @@
-using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Maintenance.Repositories;
 

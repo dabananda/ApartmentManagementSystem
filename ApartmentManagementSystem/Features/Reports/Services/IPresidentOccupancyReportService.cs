@@ -1,4 +1,4 @@
-using ApartmentManagementSystem.ViewModels.Reports;
+using ApartmentManagementSystem.Features.Reports.ViewModels;
 using ApartmentManagementSystem.Features.Reports.Repositories;
 
 namespace ApartmentManagementSystem.Features.Reports.Services;

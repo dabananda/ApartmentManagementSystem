@@ -1,10 +1,10 @@
-ï»¿@using System.Text.Json
-@model ApartmentManagementSystem.ViewModels.Reports.FinancialReportViewModel
+@using System.Text.Json
+@model ApartmentManagementSystem.Features.Reports.ViewModels.FinancialReportViewModel
 @{
     ViewData["Title"] = "Financial Report";
 }
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="h4 mb-0">Financial Report â€” @Model.BuildingName</h2>
+    <h2 class="h4 mb-0">Financial Report — @Model.BuildingName</h2>
     <a asp-action="FinancialCsv" asp-route-from="@Model.Filter.From?.ToString("yyyy-MM-dd")"
        asp-route-to="@Model.Filter.To?.ToString("yyyy-MM-dd")"
        class="btn btn-outline-secondary">Export CSV</a>
@@ -100,7 +100,7 @@
     <script>
         (function() {
           var labels = @Html.Raw(JsonSerializer.Serialize(
-                        Model.Rows.Select(r => $"{r.BillDate:yyyy-MM-dd} â€” {r.Title}")));
+                        Model.Rows.Select(r => $"{r.BillDate:yyyy-MM-dd} — {r.Title}")));
       var collected = @Html.Raw(JsonSerializer.Serialize(
                     Model.Rows.Select(r => r.Collected)));
       var outstanding = @Html.Raw(JsonSerializer.Serialize(

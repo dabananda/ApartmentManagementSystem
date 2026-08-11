@@ -1,4 +1,5 @@
-using ApartmentManagementSystem.Data;
+using ApartmentManagementSystem.Infrastructure.Data;
+using ApartmentManagementSystem.Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Features.Reports.Repositories;

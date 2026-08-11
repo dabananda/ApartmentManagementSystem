@@ -22,6 +22,13 @@ request binding and authorization attributes remain its public contract.
 | President dashboard | `PresidentController` | `IPresidentDashboardService` | `IPresidentDashboardRepository` |
 
 These feature implementations reside beneath `ApartmentManagementSystem/Features`.
+- President Dashboard & Reports (`Features/President/`) -> **Migrated**
+- Admin Panel (`Features/Administration/`) -> **Migrated**
+- Owner Billing/Payments (`Features/Owner/`) -> **Migrated**
+- Tenant Rent/Payments (`Features/TenantBilling/`) -> **Migrated**
+- Tenant Portal (`Features/TenantPortal/`) -> **Migrated**
+- Stripe Payments/Webhooks (`Features/Payments/`) -> **Migrated**
+
 Controllers now retain only HTTP concerns: current-user resolution, model-state
 handling, result selection and presentation state. Services own workflows and
 repositories own EF Core queries and persistence.

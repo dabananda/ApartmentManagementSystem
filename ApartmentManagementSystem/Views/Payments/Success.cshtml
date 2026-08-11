@@ -1,18 +1,18 @@
-ï»¿@model ApartmentManagementSystem.ViewModels.Payments.CheckoutResultVm
+@model ApartmentManagementSystem.Features.Payments.ViewModels.CheckoutResultVm
 @{
     ViewData["Title"] = "Payment successful";
 }
 
 <div class="card mt-4">
     <div class="card-body">
-        <h3 class="card-title">âœ… Payment completed</h3>
+        <h3 class="card-title">? Payment completed</h3>
         @if (Model is null)
         {
-            <p class="text-muted">Your payment session completed, but we couldnâ€™t load details.</p>
+            <p class="text-muted">Your payment session completed, but we couldn’t load details.</p>
         }
         else
         {
-            <p>Thanks! Weâ€™ve received confirmation from Stripe.</p>
+            <p>Thanks! We’ve received confirmation from Stripe.</p>
             <dl class="row">
                 <dt class="col-sm-3">Amount</dt>
                 <dd class="col-sm-9">@((Model.Amount).ToString("C")) @Model.Currency</dd>
@@ -36,7 +36,7 @@
 
         <div class="alert alert-info mt-3">
             <strong>Note:</strong> The official payment record is stored via a secure Stripe <em>webhook</em>.
-            If your records donâ€™t appear instantly, make sure the webhook is configured (see instructions below).
+            If your records don’t appear instantly, make sure the webhook is configured (see instructions below).
         </div>
 
         <a asp-controller="TenantPortal" asp-action="Bills" class="btn btn-primary me-2">Back to my bills</a>

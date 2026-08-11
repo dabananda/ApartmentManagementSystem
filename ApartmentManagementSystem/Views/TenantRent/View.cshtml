@@ -1,13 +1,12 @@
-ï»¿@model TenantBillsPage
-@using ApartmentManagementSystem.ViewModels
-@using ApartmentManagementSystem.ViewModels.Tenant
+@model TenantBillsPage
+@using ApartmentManagementSystem.Features.Tenancy.ViewModels
 @{
-    ViewData["Title"] = "Tenant Rent â€” " + Model.TenantName;
+    ViewData["Title"] = "Tenant Rent — " + Model.TenantName;
     var canPay = User.IsInRole("Owner") || User.IsInRole("President") || User.IsInRole("SuperAdmin");
     var history = ViewData["History"] as List<TenantPaymentRecord> ?? new List<TenantPaymentRecord>();
 }
 
-<h2 class="mb-1">Tenant Rent â€” @Model.TenantName</h2>
+<h2 class="mb-1">Tenant Rent — @Model.TenantName</h2>
 <div class="text-muted mb-3">@Model.Email</div>
 
 @if (TempData["Success"] != null)
@@ -184,7 +183,7 @@
                 m){ alert('Amount exceeds due.'); return false; }">
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
-                    <h5 class="modal-title">Record Payment â€” @Model.TenantName</h5>
+                    <h5 class="modal-title">Record Payment — @Model.TenantName</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

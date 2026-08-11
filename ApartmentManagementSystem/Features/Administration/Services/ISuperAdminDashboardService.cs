@@ -1,4 +1,4 @@
-using ApartmentManagementSystem.ViewModels.Admin;
+using ApartmentManagementSystem.Features.Administration.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Administration.Services;
 public interface ISuperAdminDashboardService

@@ -1,5 +1,7 @@
 using ApartmentManagementSystem.Features.Announcements.Repositories;
-using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Announcements.Services;
 

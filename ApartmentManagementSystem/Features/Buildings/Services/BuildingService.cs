@@ -1,6 +1,8 @@
 using ApartmentManagementSystem.Features.Buildings.Repositories;
-using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels.Building;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Buildings.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Buildings.Services;
 public sealed class BuildingService(IBuildingRepository buildings) : IBuildingService

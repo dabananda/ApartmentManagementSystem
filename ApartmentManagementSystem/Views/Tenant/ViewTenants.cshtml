@@ -1,5 +1,5 @@
-ï»¿@using ApartmentManagementSystem.ViewModels.Flat
-@model IEnumerable<ApartmentManagementSystem.ViewModels.Flat.FlatTenantRow>
+@using ApartmentManagementSystem.Features.Flats.ViewModels
+@model IEnumerable<ApartmentManagementSystem.Features.Flats.ViewModels.FlatTenantRow>
 
 @{
     ViewData["Title"] = "Tenants for Flat " + ViewData["FlatNumber"];
@@ -30,7 +30,7 @@
                     else
                     {
 
-                        <span class="text-muted">â€”</span>
+                        <span class="text-muted">—</span>
                     }
                 </td>
                 <td>
@@ -41,7 +41,7 @@
                     else
                     {
 
-                        <span class="text-muted">â€”</span>
+                        <span class="text-muted">—</span>
                     }
                 </td>
                 <td>

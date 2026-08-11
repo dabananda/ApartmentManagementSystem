@@ -1,6 +1,6 @@
-ï»¿@using System.Text.Json
+@using System.Text.Json
 @using Microsoft.AspNetCore.Identity
-@model ApartmentManagementSystem.ViewModels.President.PresidentDashboardViewModel
+@model ApartmentManagementSystem.Features.President.ViewModels.PresidentDashboardViewModel
 @inject UserManager<ApplicationUser> UserManager
 
 @{
@@ -17,7 +17,7 @@
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <h1 class="h3 mb-1">Dashboard â€” <span class="text-primary">@Model.BuildingName</span></h1>
+            <h1 class="h3 mb-1">Dashboard — <span class="text-primary">@Model.BuildingName</span></h1>
             <div class="text-muted small">Overview of billing, payments, occupancy and recent activity</div>
         </div>
         <div class="d-flex gap-2">
@@ -141,7 +141,7 @@
                 <div class="card-header fw-semibold">Cashflow (last 12 months)</div>
                 <div class="card-body">
                     <div class="chart-wrap"><canvas id="cfChart"></canvas></div>
-                    <div class="small text-muted mt-2">In = Owners' payments Â· Out = Expense payments</div>
+                    <div class="small text-muted mt-2">In = Owners' payments · Out = Expense payments</div>
                 </div>
             </div>
         </div>
@@ -350,7 +350,7 @@
                 new Chart(ctx2, {
                     type: 'doughnut',
                     data: {
-                        labels: ['0â€“30', '31â€“60', '61â€“90', '90+'],
+                        labels: ['0–30', '31–60', '61–90', '90+'],
                         datasets: [{ data: vals }]
                     },
                     options: { responsive: true, maintainAspectRatio: false }

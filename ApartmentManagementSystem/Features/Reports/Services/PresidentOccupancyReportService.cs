@@ -1,5 +1,5 @@
 using ApartmentManagementSystem.Features.Reports.Repositories;
-using ApartmentManagementSystem.ViewModels.Reports;
+using ApartmentManagementSystem.Features.Reports.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Reports.Services;
 public sealed class PresidentOccupancyReportService(IPresidentOccupancyReportRepository reports) : IPresidentOccupancyReportService

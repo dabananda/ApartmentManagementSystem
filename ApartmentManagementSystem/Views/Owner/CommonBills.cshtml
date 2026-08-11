@@ -1,10 +1,10 @@
-﻿@using ApartmentManagementSystem.ViewModels.Owner
+@using ApartmentManagementSystem.Features.Owner.ViewModels
 @model OwnerBillsPage
 @{
     ViewData["Title"] = "My Common Bills";
 }
 
-<h2 class="mb-1">My Common Bills — @Model.OwnerName</h2>
+<h2 class="mb-1">My Common Bills � @Model.OwnerName</h2>
 
 @if (TempData["Success"] != null)
 {

@@ -1,6 +1,8 @@
 using ApartmentManagementSystem.Features.Tenancy.Repositories;
-using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels.Flat;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Flats.ViewModels;
 namespace ApartmentManagementSystem.Features.Tenancy.Services;
 public sealed class FlatBillingProfileService(IFlatBillingProfileRepository profiles) : IFlatBillingProfileService
 {

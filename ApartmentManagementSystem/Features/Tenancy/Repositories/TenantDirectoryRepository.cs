@@ -1,7 +1,10 @@
-using ApartmentManagementSystem.Data;
-using ApartmentManagementSystem.Models;
-using ApartmentManagementSystem.ViewModels.Building;
-using ApartmentManagementSystem.ViewModels.Flat;
+using ApartmentManagementSystem.Infrastructure.Data;
+using ApartmentManagementSystem.Domain.Constants;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Buildings.ViewModels;
+using ApartmentManagementSystem.Features.Flats.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Features.Tenancy.Repositories;

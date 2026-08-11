@@ -1,8 +1,11 @@
-Ôªø// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
-using ApartmentManagementSystem.Data;
-using ApartmentManagementSystem.Models;
+using ApartmentManagementSystem.Infrastructure.Data;
+using ApartmentManagementSystem.Domain.Constants;
+using ApartmentManagementSystem.Domain.Entities;
+using ApartmentManagementSystem.Features.Payments;
+using ApartmentManagementSystem.Features.Home.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -139,7 +142,7 @@ namespace ApartmentManagementSystem.Areas.Identity.Pages.Account
             //await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
             //    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
-            // Always redirect to ‚Äúcheck your email‚Äù
+            // Always redirect to ìcheck your emailî
             return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
         }
     }

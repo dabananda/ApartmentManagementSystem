@@ -1,11 +1,11 @@
-﻿@using ApartmentManagementSystem.ViewModels.TenantPortal
+@using ApartmentManagementSystem.Features.TenantPortal.ViewModels
 @model TenantDashboardVM
 @{
     ViewData["Title"] = "My Dashboard";
 }
 
 <h2 class="mb-1">Welcome, @Model.TenantName</h2>
-<div class="text-muted mb-3">@Model.BuildingName — Flat @Model.FlatNumber</div>
+<div class="text-muted mb-3">@Model.BuildingName � Flat @Model.FlatNumber</div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">

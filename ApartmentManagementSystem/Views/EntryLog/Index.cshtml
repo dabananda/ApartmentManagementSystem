@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ApartmentManagementSystem.Models.EntryLog>
+@model IEnumerable<ApartmentManagementSystem.Domain.Entities.EntryLog>
 
 @{
     ViewData["Title"] = "Entry Logs";
@@ -87,7 +87,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-subtitle mb-2 text-white-50">Visitors</h6>
-                            <h4 class="card-title mb-0">@Model.Count(e => e.EntryType == ApartmentManagementSystem.Models.EntryType.Visitor)</h4>
+                            <h4 class="card-title mb-0">@Model.Count(e => e.EntryType == ApartmentManagementSystem.Domain.Entities.EntryType.Visitor)</h4>
                         </div>
                         <div class="align-self-center">
                             <i class="fas fa-user-friends fa-2x opacity-75"></i>
@@ -203,10 +203,10 @@
                                         @{
                                             var badgeClass = item.EntryType switch
                                             {
-                                                ApartmentManagementSystem.Models.EntryType.Visitor => "bg-primary",
-                                                ApartmentManagementSystem.Models.EntryType.Delivery => "bg-success",
-                                                ApartmentManagementSystem.Models.EntryType.Teacher => "bg-info",
-                                                ApartmentManagementSystem.Models.EntryType.Maintenance => "bg-warning",
+                                                ApartmentManagementSystem.Domain.Entities.EntryType.Visitor => "bg-primary",
+                                                ApartmentManagementSystem.Domain.Entities.EntryType.Delivery => "bg-success",
+                                                ApartmentManagementSystem.Domain.Entities.EntryType.Teacher => "bg-info",
+                                                ApartmentManagementSystem.Domain.Entities.EntryType.Maintenance => "bg-warning",
                                                 _ => "bg-secondary"
                                             };
                                         }
