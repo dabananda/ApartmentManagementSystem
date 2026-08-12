@@ -1,9 +1,8 @@
 using AMS.Application.Features.Payments.DTOs;
 using AMS.Application.Interfaces.Payments;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using AMS.Application.Configuration;
 using Stripe;
+using Microsoft.Extensions.Logging;
 using Stripe.Checkout;
 
 namespace AMS.Infrastructure.Services;
@@ -12,11 +11,10 @@ public sealed class StripePaymentService(
     IPaymentRepository repository,
     IPaymentEmailService paymentEmailService,
     StripeClient stripeClient,
-    IOptions<StripeOptions> opts,
-    IConfiguration cfg,
+    AppSettings appSettings,
     ILogger<StripePaymentService> log) : IStripePaymentService
 {
-    private readonly StripeOptions _opts = opts.Value;
+    private readonly StripeSettings _opts = appSettings.Stripe;
 
     public async Task<(bool success, string message, string? checkoutUrl)> CreateTenantCheckoutSessionAsync(Guid billId, string tenantUserId, decimal? amountRequested, string successUrlTemplate, string cancelUrl)
     {
@@ -159,7 +157,7 @@ public sealed class StripePaymentService(
 
     public async Task ProcessWebhookEventAsync(string json, string signature)
     {
-        var endpointSecret = cfg["Stripe:WebhookSecret"];
+        var endpointSecret = appSettings.Stripe.WebhookSecret;
         var stripeEvent = EventUtility.ConstructEvent(json, signature, endpointSecret);
         log.LogInformation("Stripe webhook received: {Type} ({Id})", stripeEvent.Type, stripeEvent.Id);
 

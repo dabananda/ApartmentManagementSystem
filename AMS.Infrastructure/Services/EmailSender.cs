@@ -1,26 +1,26 @@
 using System.Net;
 using System.Net.Mail;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.Extensions.Configuration;
+using AMS.Application.Configuration;
 
 namespace AMS.Infrastructure.Services;
 
 public class EmailSender : IEmailSender
 {
-    private readonly IConfiguration _config;
+    private readonly AppSettings _config;
 
-    public EmailSender(IConfiguration config)
+    public EmailSender(AppSettings config)
     {
         _config = config;
     }
 
     public async Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
-        var smtpServer = _config["Smtp:Host"];
-        if (!int.TryParse(_config["Smtp:Port"], out var port)) port = 0;
-        var senderEmail = _config["Smtp:From"];
-        var username = _config["Smtp:User"];
-        var password = _config["Smtp:Password"];
+        var smtpServer = _config.Smtp.Host;
+        var port = _config.Smtp.Port;
+        var senderEmail = _config.Smtp.From;
+        var username = _config.Smtp.User;
+        var password = _config.Smtp.Password;
 
         if (string.IsNullOrWhiteSpace(smtpServer) || port <= 0 ||
             string.IsNullOrWhiteSpace(senderEmail) ||
