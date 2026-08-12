@@ -1,6 +1,4 @@
-using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Features.Home.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -30,10 +28,10 @@ namespace ApartmentManagementSystem.Features.Home
         [HttpGet("/dashboard")]
         public IActionResult Dashboard()
         {
-            if (User.IsInRole("SuperAdmin")) return RedirectToAction("Dashboard", "SuperAdmin");
-            if (User.IsInRole("President")) return RedirectToAction("Dashboard", "President");
-            if (User.IsInRole("Owner")) return RedirectToAction("Dashboard", "Owner");
-            if (User.IsInRole("Tenant")) return RedirectToAction("Dashboard", "TenantPortal");
+            if (User.IsInRole(Roles.SuperAdmin)) return RedirectToAction("Dashboard", "SuperAdmin");
+            if (User.IsInRole(Roles.President)) return RedirectToAction("Dashboard", "President");
+            if (User.IsInRole(Roles.Owner)) return RedirectToAction("Dashboard", "Owner");
+            if (User.IsInRole(Roles.Tenant)) return RedirectToAction("Dashboard", "TenantPortal");
 
             return RedirectToAction("Index", "Home");
         }

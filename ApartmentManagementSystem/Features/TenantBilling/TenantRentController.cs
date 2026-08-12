@@ -1,16 +1,14 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
-using ApartmentManagementSystem.Features.TenantBilling.Services;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
-using ApartmentManagementSystem.Infrastructure.Services;
+using ApartmentManagementSystem.Features.Shared;
+using ApartmentManagementSystem.Features.TenantBilling.Services;
 using ApartmentManagementSystem.Features.Tenancy.ViewModels;
+using ApartmentManagementSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Mvc;
 
 namespace ApartmentManagementSystem.Features.TenantBilling
 {
@@ -21,7 +19,7 @@ namespace ApartmentManagementSystem.Features.TenantBilling
         private readonly ITenantRentService _tenantRentService;
         private readonly IPaymentEmailService _paymentEmailService;
         private readonly IUrlHelperFactory _urlHelperFactory;
-        private readonly Microsoft.AspNetCore.Mvc.Infrastructure.IActionContextAccessor _actionContextAccessor;
+        private readonly IActionContextAccessor _actionContextAccessor;
         private readonly ILogger<TenantRentController> _log;
 
         public TenantRentController(
@@ -29,7 +27,7 @@ namespace ApartmentManagementSystem.Features.TenantBilling
             ITenantRentService tenantRentService,
             IPaymentEmailService paymentEmailService,
             IUrlHelperFactory urlHelperFactory,
-            Microsoft.AspNetCore.Mvc.Infrastructure.IActionContextAccessor actionContextAccessor,
+            IActionContextAccessor actionContextAccessor,
             ILogger<TenantRentController> log)
         {
             _userManager = userManager;
@@ -40,23 +38,10 @@ namespace ApartmentManagementSystem.Features.TenantBilling
             _log = log;
         }
 
-        private string AbsoluteUrl(string action, object? routeValues = null)
-        {
-            var actionContext = _actionContextAccessor.ActionContext!;
-            var urlHelper = _urlHelperFactory.GetUrlHelper(actionContext);
-            return urlHelper.Action(action, "TenantRent", routeValues, actionContext.HttpContext.Request.Scheme)!;
-        }
-
-        private async Task<(ApplicationUser me, bool isOwner)> GetCallerInfoAsync()
-        {
-            var me = await _userManager.GetUserAsync(User);
-            return (me!, User.IsInRole("Owner"));
-        }
-
         public async Task<IActionResult> List()
         {
-            var (me, isOwner) = await GetCallerInfoAsync();
-            var restrictToOwnerId = isOwner ? me.Id : null;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
             var tenants = await _tenantRentService.GetTenantRentListAsync(restrictToOwnerId);
             return View(tenants);
@@ -64,11 +49,11 @@ namespace ApartmentManagementSystem.Features.TenantBilling
 
         public async Task<IActionResult> View(string tenantUserId)
         {
-            var (me, isOwner) = await GetCallerInfoAsync();
+            var ctx = await this.GetCallerContextAsync(_userManager);
 
-            if (isOwner)
+            if (User.IsInRole(Roles.Owner))
             {
-                var allowed = await _tenantRentService.IsTenantVisibleToOwnerAsync(tenantUserId, me.Id);
+                var allowed = await _tenantRentService.IsTenantVisibleToOwnerAsync(tenantUserId, ctx!.Me.Id);
                 if (!allowed) return Forbid();
             }
 
@@ -86,56 +71,60 @@ namespace ApartmentManagementSystem.Features.TenantBilling
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var (me, isOwner) = await GetCallerInfoAsync();
-            var restrictToOwnerId = isOwner ? me.Id : null;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
             var (success, message, created, tenantUserId) = await _tenantRentService.PayAsync(vm, restrictToOwnerId);
 
             if (!success)
             {
                 TempData["Error"] = message;
-                return !string.IsNullOrEmpty(tenantUserId) ? RedirectToAction(nameof(View), new { tenantUserId }) : RedirectToAction(nameof(List));
+                return !string.IsNullOrEmpty(tenantUserId)
+                    ? RedirectToAction(nameof(View), new { tenantUserId })
+                    : RedirectToAction(nameof(List));
             }
 
             if (created.Count > 0 && !string.IsNullOrEmpty(tenantUserId))
-            {
                 await SafeSendEmailAsync(tenantUserId, created);
-            }
 
             TempData["Success"] = message;
-            return !string.IsNullOrEmpty(tenantUserId) ? RedirectToAction(nameof(View), new { tenantUserId }) : RedirectToAction(nameof(List));
+            return !string.IsNullOrEmpty(tenantUserId)
+                ? RedirectToAction(nameof(View), new { tenantUserId })
+                : RedirectToAction(nameof(List));
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> FullPay(Guid billId)
         {
-            var (me, isOwner) = await GetCallerInfoAsync();
-            var restrictToOwnerId = isOwner ? me.Id : null;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
             var (success, message, created, tenantUserId) = await _tenantRentService.FullPayAsync(billId, restrictToOwnerId);
 
             if (!success)
             {
                 TempData["Error"] = message;
-                return !string.IsNullOrEmpty(tenantUserId) ? RedirectToAction(nameof(View), new { tenantUserId }) : RedirectToAction(nameof(List));
+                return !string.IsNullOrEmpty(tenantUserId)
+                    ? RedirectToAction(nameof(View), new { tenantUserId })
+                    : RedirectToAction(nameof(List));
             }
 
             if (created.Count > 0 && !string.IsNullOrEmpty(tenantUserId))
-            {
                 await SafeSendEmailAsync(tenantUserId, created);
-            }
 
             TempData["Success"] = message;
-            return !string.IsNullOrEmpty(tenantUserId) ? RedirectToAction(nameof(View), new { tenantUserId }) : RedirectToAction(nameof(List));
+            return !string.IsNullOrEmpty(tenantUserId)
+                ? RedirectToAction(nameof(View), new { tenantUserId })
+                : RedirectToAction(nameof(List));
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> PayAll(string tenantUserId)
         {
-            var (me, isOwner) = await GetCallerInfoAsync();
-            var restrictToOwnerId = isOwner ? me.Id : null;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
-            var (success, message, created, tId) = await _tenantRentService.PayAllAsync(tenantUserId, restrictToOwnerId);
+            var (success, message, created, _) = await _tenantRentService.PayAllAsync(tenantUserId, restrictToOwnerId);
 
             if (!success)
             {
@@ -144,9 +133,7 @@ namespace ApartmentManagementSystem.Features.TenantBilling
             }
 
             if (created.Count > 0)
-            {
                 await SafeSendEmailAsync(tenantUserId, created);
-            }
 
             TempData["Success"] = message;
             return RedirectToAction(nameof(View), new { tenantUserId });
@@ -157,13 +144,13 @@ namespace ApartmentManagementSystem.Features.TenantBilling
             var (payment, ownerId) = await _tenantRentService.GetReceiptDataAsync(id);
             if (payment == null) return NotFound();
 
-            var (me, isOwner) = await GetCallerInfoAsync();
-            if (isOwner && ownerId != me.Id) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (User.IsInRole(Roles.Owner) && ownerId != ctx?.Me.Id) return Forbid();
 
             var vm = new ReceiptViewModel
             {
                 Id = payment.Id,
-                ReceiptNo = "RC-" + payment.Id.ToString().Substring(0, 8).ToUpper(),
+                ReceiptNo = $"RC-{payment.Id.ToString()[..8].ToUpper()}",
                 PaidOn = payment.PaymentDate,
                 OwnerName = payment.TenantBill!.TenantUser!.Fullname ?? payment.TenantBill!.TenantUser!.UserName!,
                 OwnerEmail = payment.TenantBill!.TenantUser!.Email,
@@ -174,6 +161,7 @@ namespace ApartmentManagementSystem.Features.TenantBilling
                 BuildingName = payment.TenantBill!.Flat!.Building!.Name,
                 FlatNumber = payment.TenantBill!.Flat!.FlatNumber
             };
+
             return View("~/Views/Shared/Receipt.cshtml", vm);
         }
 
@@ -183,11 +171,11 @@ namespace ApartmentManagementSystem.Features.TenantBilling
             var (payment, ownerId) = await _tenantRentService.GetReceiptDataAsync(id);
             if (payment == null) return NotFound();
 
-            var (me, isOwner) = await GetCallerInfoAsync();
-            if (isOwner && ownerId != me.Id) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (User.IsInRole(Roles.Owner) && ownerId != ctx?.Me.Id) return Forbid();
 
             await SafeSendEmailAsync(payment.TenantBill!.TenantUserId, [payment]);
-            
+
             TempData["Success"] = "Receipt email sent.";
             return RedirectToAction(nameof(View), new { tenantUserId = payment.TenantBill!.TenantUserId });
         }
@@ -196,7 +184,6 @@ namespace ApartmentManagementSystem.Features.TenantBilling
         {
             try
             {
-                // We haven't implemented receipt URLs for tenants in PaymentEmailService yet, but that wasn't in original either.
                 await _paymentEmailService.SendTenantPaymentEmailAsync(tenantUserId, payments);
             }
             catch (System.Net.Mail.SmtpException ex)

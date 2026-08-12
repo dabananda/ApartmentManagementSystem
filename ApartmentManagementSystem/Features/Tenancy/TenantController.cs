@@ -1,14 +1,10 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
-using ApartmentManagementSystem.Features.Buildings.ViewModels;
-using ApartmentManagementSystem.Features.Flats.ViewModels;
+using ApartmentManagementSystem.Features.Shared;
+using ApartmentManagementSystem.Features.Tenancy.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ApartmentManagementSystem.Features.Tenancy.Services;
 
 namespace ApartmentManagementSystem.Features.Tenancy
 {
@@ -28,34 +24,32 @@ namespace ApartmentManagementSystem.Features.Tenancy
         {
             if (flatId == null) return NotFound();
 
-            var me = await _userManager.GetUserAsync(User);
-            if (me == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx == null) return Forbid();
 
             var flat = await _tenants.GetFlatAsync(flatId.Value);
             if (flat == null) return NotFound();
 
-            var isOwner = flat.OwnerId == me.Id;
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
-            var isPresidentOfThisBuilding = User.IsInRole("President") && me.BuildingId == flat.BuildingId;
+            var isOwner = flat.OwnerId == ctx.Me.Id;
+            var isPresidentOfThisBuilding = User.IsInRole(Roles.President) && ctx.BuildingId == flat.BuildingId;
 
-            if (!(isOwner || isSuperAdmin || isPresidentOfThisBuilding))
+            if (!(isOwner || ctx.IsSuperAdmin || isPresidentOfThisBuilding))
                 return Forbid();
 
             ViewData["FlatNumber"] = flat.FlatNumber;
             ViewData["FlatId"] = flat.Id;
 
             var rows = await _tenants.GetFlatTenantsAsync(flat);
-
             return View(rows);
         }
 
         public async Task<IActionResult> BuildingTenants()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
-            if (User.IsInRole("President") && user.BuildingId == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx == null) return Forbid();
+            if (User.IsInRole(Roles.President) && ctx.BuildingId == null) return Forbid();
 
-            var buildingId = user.BuildingId!.Value;
+            var buildingId = ctx.BuildingId!.Value;
 
             var building = await _tenants.GetBuildingAsync(buildingId);
             if (building == null) return NotFound();

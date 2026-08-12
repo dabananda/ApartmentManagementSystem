@@ -2,9 +2,6 @@ using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Features.Administration.Repositories;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
-using ApartmentManagementSystem.Infrastructure.Services;
 using ApartmentManagementSystem.Features.Administration.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -18,30 +15,62 @@ public sealed class UserManagementService(
     IUserManagementRepository repository,
     IEmailSender email) : IUserManagementService
 {
+    // ─── Constants ────────────────────────────────────────────────────────────
+
+    private static readonly string[] AllRoles =
+        [Roles.User, Roles.Staff, Roles.Tenant, Roles.Owner, Roles.President];
+
+    private static readonly string[] ApprovableRoles =
+        [Roles.Owner, Roles.Tenant, Roles.Staff];
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    private static readonly string[] AllRoles = ["User", "Staff", "Tenant", "Owner", "President"];
-
+    /// <summary>Strips all known roles from <paramref name="user"/> then adds exactly <paramref name="rolesToKeep"/>.</summary>
     private async Task EnsureOnlyRolesAsync(ApplicationUser user, params string[] rolesToKeep)
     {
         foreach (var r in AllRoles)
             if (await userManager.IsInRoleAsync(user, r))
                 await userManager.RemoveFromRoleAsync(user, r);
+
         foreach (var r in rolesToKeep.Distinct())
             await userManager.AddToRoleAsync(user, r);
     }
 
     private static bool IsValidApprovalRole(string role) =>
-        role is "Owner" or "Tenant" or "Staff";
+        ApprovableRoles.Contains(role, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Handles the common pattern of updating a president user's roles when a non-SuperAdmin caller
+    /// attempts to change their role. Presidents always keep President + Owner unless SuperAdmin overrides.
+    /// </summary>
+    private async Task HandlePresidentRoleChangeAsync(
+        ApplicationUser user, string role, bool callerIsSuperAdmin)
+    {
+        if (callerIsSuperAdmin)
+        {
+            await EnsureOnlyRolesAsync(user, role);
+        }
+        else
+        {
+            if (!await userManager.IsInRoleAsync(user, Roles.President))
+                await userManager.AddToRoleAsync(user, Roles.President);
+            if (!await userManager.IsInRoleAsync(user, Roles.Owner))
+                await userManager.AddToRoleAsync(user, Roles.Owner);
+        }
+    }
 
     // ─── Buildings dropdown ───────────────────────────────────────────────────
 
-    public Task<List<SelectListItem>> GetBuildingSelectItemsAsync(Guid? restrictToBuildingId = null, CancellationToken cancellationToken = default) =>
+    public Task<List<SelectListItem>> GetBuildingSelectItemsAsync(
+        Guid? restrictToBuildingId = null,
+        CancellationToken cancellationToken = default) =>
         repository.GetBuildingSelectItemsAsync(restrictToBuildingId, cancellationToken);
 
     // ─── President assignment ─────────────────────────────────────────────────
 
-    public async Task<List<SelectListItem>> GetOwnersForBuildingSelectAsync(Guid buildingId, CancellationToken cancellationToken = default)
+    public async Task<List<SelectListItem>> GetOwnersForBuildingSelectAsync(
+        Guid buildingId,
+        CancellationToken cancellationToken = default)
     {
         var ownerUsers = await userManager.GetUsersInRoleAsync(Roles.Owner);
         return ownerUsers
@@ -55,21 +84,26 @@ public sealed class UserManagementService(
             .ToList();
     }
 
-    public async Task<(bool success, string message)> AssignPresidentAsync(Guid buildingId, string ownerUserId, string approvedByUserId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message)> AssignPresidentAsync(
+        Guid buildingId,
+        string ownerUserId,
+        string approvedByUserId,
+        CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByIdAsync(ownerUserId);
         if (user == null) return (false, "Invalid owner.");
         if (user.BuildingId != buildingId) return (false, "Selected owner does not belong to the chosen building.");
-        if (!await userManager.IsInRoleAsync(user, "Owner")) return (false, "Selected user is not an Owner.");
+        if (!await userManager.IsInRoleAsync(user, Roles.Owner)) return (false, "Selected user is not an Owner.");
 
-        foreach (var r in new[] { "User", "Tenant" })
+        // Remove non-admin roles that should not coexist with President
+        foreach (var r in new[] { Roles.User, Roles.Tenant })
             if (await userManager.IsInRoleAsync(user, r))
                 await userManager.RemoveFromRoleAsync(user, r);
 
-        if (!await userManager.IsInRoleAsync(user, "President"))
-            await userManager.AddToRoleAsync(user, "President");
-        if (!await userManager.IsInRoleAsync(user, "Owner"))
-            await userManager.AddToRoleAsync(user, "Owner");
+        if (!await userManager.IsInRoleAsync(user, Roles.President))
+            await userManager.AddToRoleAsync(user, Roles.President);
+        if (!await userManager.IsInRoleAsync(user, Roles.Owner))
+            await userManager.AddToRoleAsync(user, Roles.Owner);
 
         user.IsApproved = true;
         user.ApprovedAt = DateTime.UtcNow;
@@ -81,8 +115,13 @@ public sealed class UserManagementService(
 
     // ─── Create / Edit user ───────────────────────────────────────────────────
 
-    public async Task<(bool success, IEnumerable<string> errors)> CreateUserAsync(CreateUserViewModel model, string createdByUserId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, IEnumerable<string> errors)> CreateUserAsync(
+        CreateUserViewModel model,
+        string createdByUserId,
+        CancellationToken cancellationToken = default)
     {
+        var isAutoApproved = model.Role != Roles.User;
+
         var user = new ApplicationUser
         {
             Fullname = model.Fullname,
@@ -91,36 +130,37 @@ public sealed class UserManagementService(
             PhoneNumber = model.PhoneNumber,
             BuildingId = model.BuildingId,
             EmailConfirmed = true,
-            IsApproved = model.Role != "User",
-            ApprovedAt = model.Role == "User" ? null : DateTime.UtcNow,
-            ApprovedByUserId = model.Role == "User" ? null : createdByUserId,
+            IsApproved = isAutoApproved,
+            ApprovedAt = isAutoApproved ? DateTime.UtcNow : null,
+            ApprovedByUserId = isAutoApproved ? createdByUserId : null,
             CreatedAt = DateTime.UtcNow
         };
 
-        var createRes = await userManager.CreateAsync(user, model.Password);
-        if (!createRes.Succeeded)
-            return (false, createRes.Errors.Select(e => e.Description));
+        var createResult = await userManager.CreateAsync(user, model.Password);
+        if (!createResult.Succeeded)
+            return (false, createResult.Errors.Select(e => e.Description));
 
-        var rolesToKeep = model.Role switch
+        var rolesToAssign = model.Role switch
         {
-            "Tenant" => new[] { "Tenant" },
-            "Owner" => new[] { "Owner" },
-            "Staff" => new[] { "Staff" },
-            _ => new[] { "User" }
+            Roles.Tenant => new[] { Roles.Tenant },
+            Roles.Owner  => new[] { Roles.Owner },
+            Roles.Staff  => new[] { Roles.Staff },
+            _            => new[] { Roles.User }
         };
-        await EnsureOnlyRolesAsync(user, rolesToKeep);
-
-        user.IsApproved = model.Role != "User";
-        user.ApprovedAt = model.Role == "User" ? null : DateTime.UtcNow;
-        user.ApprovedByUserId = model.Role == "User" ? null : createdByUserId;
-        await userManager.UpdateAsync(user);
+        await EnsureOnlyRolesAsync(user, rolesToAssign);
 
         return (true, []);
     }
 
-    public async Task<(bool success, IEnumerable<string> errors)> UpdateUserAsync(EditUserViewModel model, bool callerIsSuperAdmin, CancellationToken cancellationToken = default)
+    public async Task<(bool success, IEnumerable<string> errors)> UpdateUserAsync(
+        EditUserViewModel model,
+        bool callerIsSuperAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var user = await userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == model.Id, cancellationToken);
+        var user = await userManager.Users
+            .Include(u => u.Building)
+            .FirstOrDefaultAsync(u => u.Id == model.Id, cancellationToken);
+
         if (user == null) return (false, ["User not found."]);
 
         user.Fullname = model.Fullname?.Trim() ?? user.Fullname;
@@ -135,18 +175,22 @@ public sealed class UserManagementService(
 
     // ─── Approvals ────────────────────────────────────────────────────────────
 
-    public async Task<ApprovalsPageViewModel> GetApprovalsPageAsync(ApprovalsFilterViewModel filter, Guid? callerBuildingId, bool callerIsSuperAdmin, CancellationToken cancellationToken = default)
+    public async Task<ApprovalsPageViewModel> GetApprovalsPageAsync(
+        ApprovalsFilterViewModel filter,
+        Guid? callerBuildingId,
+        bool callerIsSuperAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var pendingIds = (await userManager.GetUsersInRoleAsync("User")).Select(u => u.Id).ToHashSet();
+        var pendingIds = (await userManager.GetUsersInRoleAsync(Roles.User))
+            .Select(u => u.Id)
+            .ToHashSet();
 
         IQueryable<ApplicationUser> q = userManager.Users
             .Include(u => u.Building)
             .Where(u => pendingIds.Contains(u.Id) || !u.IsApproved);
 
         if (!callerIsSuperAdmin && callerBuildingId != null)
-        {
             filter.BuildingId ??= callerBuildingId;
-        }
 
         if (filter.BuildingId != null)
             q = q.Where(u => u.BuildingId == filter.BuildingId);
@@ -166,7 +210,11 @@ public sealed class UserManagementService(
         var total = await q.CountAsync(cancellationToken);
         var pageSize = Math.Clamp(filter.PageSize, 5, 100);
         var page = Math.Max(1, filter.Page);
-        var users = await q.OrderBy(u => u.Fullname).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        var users = await q
+            .OrderBy(u => u.Fullname)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
 
         var roleMap = new Dictionary<string, IList<string>>();
         foreach (var u in users) roleMap[u.Id] = await userManager.GetRolesAsync(u);
@@ -194,41 +242,41 @@ public sealed class UserManagementService(
                 BuildingName = u.Building?.Name,
                 CreatedAt = u.CreatedAt,
                 CurrentStatus = u.IsApproved ? "Approved" : "Pending",
-                IsPresident = roleMap[u.Id].Contains("President")
+                IsPresident = roleMap[u.Id].Contains(Roles.President)
             }).ToList()
         };
     }
 
-    public async Task<(bool success, string message)> ApproveUserAsync(string userId, string role, string approvedByUserId, bool callerIsSuperAdmin, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message)> ApproveUserAsync(
+        string userId,
+        string role,
+        string approvedByUserId,
+        bool callerIsSuperAdmin,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
         if (!IsValidApprovalRole(role)) return (false, "Invalid role.");
 
-        var user = await userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        var user = await userManager.Users
+            .Include(u => u.Building)
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user == null) return (false, "User not found.");
 
         if (!callerIsSuperAdmin && callerBuildingId != null && user.BuildingId != callerBuildingId)
             return (false, "Forbidden.");
 
-        var targetIsPresident = await userManager.IsInRoleAsync(user, "President");
+        var targetIsPresident = await userManager.IsInRoleAsync(user, Roles.President);
 
         if (targetIsPresident)
         {
-            if (callerIsSuperAdmin)
-            {
-                await EnsureOnlyRolesAsync(user, role);
-            }
-            else
-            {
-                if (role == "Tenant") return (false, "A President cannot be assigned the Tenant role.");
-                if (!await userManager.IsInRoleAsync(user, "President"))
-                    await userManager.AddToRoleAsync(user, "President");
-                if (!await userManager.IsInRoleAsync(user, "Owner"))
-                    await userManager.AddToRoleAsync(user, "Owner");
-            }
+            if (!callerIsSuperAdmin && role == Roles.Tenant)
+                return (false, "A President cannot be assigned the Tenant role.");
+
+            await HandlePresidentRoleChangeAsync(user, role, callerIsSuperAdmin);
         }
         else
         {
-            foreach (var r in new[] { "User", "Staff", "Owner", "Tenant" })
+            foreach (var r in new[] { Roles.User, Roles.Staff, Roles.Owner, Roles.Tenant })
                 if (await userManager.IsInRoleAsync(user, r)) await userManager.RemoveFromRoleAsync(user, r);
             await userManager.AddToRoleAsync(user, role);
         }
@@ -242,23 +290,33 @@ public sealed class UserManagementService(
         {
             try
             {
-                var roleText = targetIsPresident && !callerIsSuperAdmin ? "President + " + role : role;
+                var roleText = targetIsPresident && !callerIsSuperAdmin ? $"{Roles.President} + {role}" : role;
                 await email.SendEmailAsync(user.Email,
                     "Your account has been approved",
-                    $@"<p>Hi {user.Fullname},</p><p>Your role is now <strong>{roleText}</strong>. You can log in now.</p>");
+                    $"<p>Hi {user.Fullname},</p><p>Your role is now <strong>{roleText}</strong>. You can log in now.</p>");
             }
             catch { /* email failure must not block the approval */ }
         }
 
-        var displayRole = targetIsPresident && !callerIsSuperAdmin ? "President + " + role : role;
+        var displayRole = targetIsPresident && !callerIsSuperAdmin ? $"{Roles.President} + {role}" : role;
         return (true, $"Approved {user.Fullname} as {displayRole}.");
     }
 
-    public async Task<int> BulkApproveAsync(string[] ids, string role, string approvedByUserId, bool callerIsSuperAdmin, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<int> BulkApproveAsync(
+        string[] ids,
+        string role,
+        string approvedByUserId,
+        bool callerIsSuperAdmin,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
         if (!IsValidApprovalRole(role)) return 0;
 
-        var users = await userManager.Users.Include(u => u.Building).Where(u => ids.Contains(u.Id)).ToListAsync(cancellationToken);
+        var users = await userManager.Users
+            .Include(u => u.Building)
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+
         int applied = 0;
 
         foreach (var user in users)
@@ -266,25 +324,15 @@ public sealed class UserManagementService(
             if (!callerIsSuperAdmin && callerBuildingId != null && user.BuildingId != callerBuildingId)
                 continue;
 
-            var targetIsPresident = await userManager.IsInRoleAsync(user, "President");
+            var targetIsPresident = await userManager.IsInRoleAsync(user, Roles.President);
             if (targetIsPresident)
             {
-                if (callerIsSuperAdmin)
-                {
-                    await EnsureOnlyRolesAsync(user, role);
-                }
-                else
-                {
-                    if (role == "Tenant") continue;
-                    if (!await userManager.IsInRoleAsync(user, "President"))
-                        await userManager.AddToRoleAsync(user, "President");
-                    if (!await userManager.IsInRoleAsync(user, "Owner"))
-                        await userManager.AddToRoleAsync(user, "Owner");
-                }
+                if (!callerIsSuperAdmin && role == Roles.Tenant) continue;
+                await HandlePresidentRoleChangeAsync(user, role, callerIsSuperAdmin);
             }
             else
             {
-                foreach (var r in new[] { "User", "Staff", "Owner", "Tenant" })
+                foreach (var r in new[] { Roles.User, Roles.Staff, Roles.Owner, Roles.Tenant })
                     if (await userManager.IsInRoleAsync(user, r)) await userManager.RemoveFromRoleAsync(user, r);
                 await userManager.AddToRoleAsync(user, role);
             }
@@ -299,21 +347,27 @@ public sealed class UserManagementService(
         return applied;
     }
 
-    public async Task<(bool success, string message)> ResetUserAsync(string userId, bool callerIsSuperAdmin, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message)> ResetUserAsync(
+        string userId,
+        bool callerIsSuperAdmin,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
-        var user = await userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        var user = await userManager.Users
+            .Include(u => u.Building)
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user == null) return (false, "User not found.");
 
         if (!callerIsSuperAdmin && callerBuildingId != null && user.BuildingId != callerBuildingId)
             return (false, "Forbidden.");
 
-        var targetIsPresident = await userManager.IsInRoleAsync(user, "President");
+        var targetIsPresident = await userManager.IsInRoleAsync(user, Roles.President);
         if (targetIsPresident && !callerIsSuperAdmin)
             return (false, "Only SuperAdmin can reset a President.");
 
-        foreach (var r in new[] { "Owner", "Tenant", "President", "User" })
+        foreach (var r in new[] { Roles.Owner, Roles.Tenant, Roles.President, Roles.User })
             if (await userManager.IsInRoleAsync(user, r)) await userManager.RemoveFromRoleAsync(user, r);
-        await userManager.AddToRoleAsync(user, "User");
+        await userManager.AddToRoleAsync(user, Roles.User);
 
         user.IsApproved = false;
         user.ApprovedAt = null;
@@ -325,9 +379,15 @@ public sealed class UserManagementService(
 
     // ─── Manage users ─────────────────────────────────────────────────────────
 
-    public async Task<ManageUsersPageViewModel> GetUsersPageAsync(ManageUsersFilterViewModel filter, Guid? callerBuildingId, bool callerIsSuperAdmin, CancellationToken cancellationToken = default)
+    public async Task<ManageUsersPageViewModel> GetUsersPageAsync(
+        ManageUsersFilterViewModel filter,
+        Guid? callerBuildingId,
+        bool callerIsSuperAdmin,
+        CancellationToken cancellationToken = default)
     {
-        IQueryable<ApplicationUser> q = userManager.Users.Where(u => u.IsApproved).Include(u => u.Building);
+        IQueryable<ApplicationUser> q = userManager.Users
+            .Where(u => u.IsApproved)
+            .Include(u => u.Building);
 
         if (!callerIsSuperAdmin && callerBuildingId != null)
             filter.BuildingId ??= callerBuildingId;
@@ -357,7 +417,11 @@ public sealed class UserManagementService(
         var total = await q.CountAsync(cancellationToken);
         var pageSize = Math.Clamp(filter.PageSize, 5, 100);
         var page = Math.Max(1, filter.Page);
-        var users = await q.OrderBy(u => u.Fullname).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        var users = await q
+            .OrderBy(u => u.Fullname)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
 
         var roleMap = new Dictionary<string, IList<string>>();
         foreach (var u in users) roleMap[u.Id] = await userManager.GetRolesAsync(u);
@@ -384,42 +448,41 @@ public sealed class UserManagementService(
                 EmailConfirmed = u.EmailConfirmed,
                 IsApproved = u.IsApproved,
                 IsLockedOut = u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow,
-                IsPresident = roleMap[u.Id].Contains("President"),
+                IsPresident = roleMap[u.Id].Contains(Roles.President),
                 CreatedAt = u.CreatedAt,
                 Roles = roleMap[u.Id].ToList()
             }).ToList()
         };
     }
 
-    public async Task<(bool success, string message)> ChangeRoleAsync(string userId, string role, bool callerIsSuperAdmin, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message)> ChangeRoleAsync(
+        string userId,
+        string role,
+        bool callerIsSuperAdmin,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
-        if (role is not ("Owner" or "Tenant" or "Staff")) return (false, "Invalid role.");
+        if (!IsValidApprovalRole(role)) return (false, "Invalid role.");
 
-        var user = await userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        var user = await userManager.Users
+            .Include(u => u.Building)
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user == null) return (false, "User not found.");
 
         if (!callerIsSuperAdmin && callerBuildingId != null && user.BuildingId != callerBuildingId)
             return (false, "Forbidden.");
 
-        var targetIsPresident = await userManager.IsInRoleAsync(user, "President");
+        var targetIsPresident = await userManager.IsInRoleAsync(user, Roles.President);
         if (targetIsPresident)
         {
-            if (callerIsSuperAdmin)
-            {
-                await EnsureOnlyRolesAsync(user, role);
-            }
-            else
-            {
-                if (role == "Tenant") return (false, "A President cannot be assigned the Tenant role.");
-                if (!await userManager.IsInRoleAsync(user, "President"))
-                    await userManager.AddToRoleAsync(user, "President");
-                if (!await userManager.IsInRoleAsync(user, "Owner"))
-                    await userManager.AddToRoleAsync(user, "Owner");
-            }
+            if (!callerIsSuperAdmin && role == Roles.Tenant)
+                return (false, "A President cannot be assigned the Tenant role.");
+
+            await HandlePresidentRoleChangeAsync(user, role, callerIsSuperAdmin);
         }
         else
         {
-            foreach (var r in new[] { "Owner", "Tenant", "Staff", "User" })
+            foreach (var r in new[] { Roles.Owner, Roles.Tenant, Roles.Staff, Roles.User })
                 if (await userManager.IsInRoleAsync(user, r)) await userManager.RemoveFromRoleAsync(user, r);
             await userManager.AddToRoleAsync(user, role);
         }
@@ -427,15 +490,25 @@ public sealed class UserManagementService(
         user.IsApproved = true;
         await userManager.UpdateAsync(user);
 
-        var displayRole = callerIsSuperAdmin && targetIsPresident ? role : (targetIsPresident ? "President + " + role : role);
+        var displayRole = callerIsSuperAdmin && targetIsPresident ? role : (targetIsPresident ? $"{Roles.President} + {role}" : role);
         return (true, $"Changed role for {user.Fullname} to {displayRole}.");
     }
 
-    public async Task<int> BulkChangeRoleAsync(string[] ids, string role, bool callerIsSuperAdmin, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<int> BulkChangeRoleAsync(
+        string[] ids,
+        string role,
+        bool callerIsSuperAdmin,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
-        if (role is not ("Owner" or "Tenant")) return 0;
+        // Bulk role change only supports Owner or Tenant targets
+        if (role is not (Roles.Owner or Roles.Tenant)) return 0;
 
-        var users = await userManager.Users.Include(u => u.Building).Where(u => ids.Contains(u.Id)).ToListAsync(cancellationToken);
+        var users = await userManager.Users
+            .Include(u => u.Building)
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+
         int changed = 0;
 
         foreach (var user in users)
@@ -443,27 +516,15 @@ public sealed class UserManagementService(
             if (!callerIsSuperAdmin && callerBuildingId != null && user.BuildingId != callerBuildingId)
                 continue;
 
-            var targetIsPresident = await userManager.IsInRoleAsync(user, "President");
+            var targetIsPresident = await userManager.IsInRoleAsync(user, Roles.President);
             if (targetIsPresident)
             {
-                if (callerIsSuperAdmin)
-                {
-                    foreach (var r in new[] { "User", "Owner", "Tenant", "President" })
-                        if (await userManager.IsInRoleAsync(user, r)) await userManager.RemoveFromRoleAsync(user, r);
-                    await userManager.AddToRoleAsync(user, role);
-                }
-                else
-                {
-                    if (role == "Tenant") continue;
-                    if (!await userManager.IsInRoleAsync(user, "President"))
-                        await userManager.AddToRoleAsync(user, "President");
-                    if (!await userManager.IsInRoleAsync(user, "Owner"))
-                        await userManager.AddToRoleAsync(user, "Owner");
-                }
+                if (!callerIsSuperAdmin && role == Roles.Tenant) continue;
+                await HandlePresidentRoleChangeAsync(user, role, callerIsSuperAdmin);
             }
             else
             {
-                foreach (var r in new[] { "Owner", "Tenant", "User" })
+                foreach (var r in new[] { Roles.Owner, Roles.Tenant, Roles.User })
                     if (await userManager.IsInRoleAsync(user, r)) await userManager.RemoveFromRoleAsync(user, r);
                 await userManager.AddToRoleAsync(user, role);
             }
@@ -478,26 +539,40 @@ public sealed class UserManagementService(
 
     // ─── Block / Unblock ──────────────────────────────────────────────────────
 
-    public async Task<(bool success, string message)> BlockUserAsync(string userId, bool callerIsSuperAdmin, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message)> BlockUserAsync(
+        string userId,
+        bool callerIsSuperAdmin,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
-        var user = await userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        var user = await userManager.Users
+            .Include(u => u.Building)
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user == null) return (false, "User not found.");
 
         if (!callerIsSuperAdmin && callerBuildingId != null && user.BuildingId != callerBuildingId)
             return (false, "Forbidden.");
 
         var roles = await userManager.GetRolesAsync(user);
-        if (roles.Contains("SuperAdmin")) return (false, "Cannot block a SuperAdmin.");
-        if (roles.Contains("President") && !callerIsSuperAdmin) return (false, "Only SuperAdmin can block a President.");
+        if (roles.Contains(Roles.SuperAdmin)) return (false, "Cannot block a SuperAdmin.");
+        if (roles.Contains(Roles.President) && !callerIsSuperAdmin) return (false, "Only SuperAdmin can block a President.");
 
         await userManager.SetLockoutEnabledAsync(user, true);
         await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
         return (true, $"Blocked {user.Fullname}.");
     }
 
-    public async Task<int> BulkBlockAsync(string[] ids, bool callerIsSuperAdmin, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<int> BulkBlockAsync(
+        string[] ids,
+        bool callerIsSuperAdmin,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
-        var users = await userManager.Users.Include(u => u.Building).Where(u => ids.Contains(u.Id)).ToListAsync(cancellationToken);
+        var users = await userManager.Users
+            .Include(u => u.Building)
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+
         int blocked = 0;
 
         foreach (var user in users)
@@ -506,8 +581,8 @@ public sealed class UserManagementService(
                 continue;
 
             var roles = await userManager.GetRolesAsync(user);
-            if (roles.Contains("SuperAdmin")) continue;
-            if (roles.Contains("President") && !callerIsSuperAdmin) continue;
+            if (roles.Contains(Roles.SuperAdmin)) continue;
+            if (roles.Contains(Roles.President) && !callerIsSuperAdmin) continue;
 
             await userManager.SetLockoutEnabledAsync(user, true);
             await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
@@ -517,9 +592,14 @@ public sealed class UserManagementService(
         return blocked;
     }
 
-    public async Task<(bool success, string message)> UnblockUserAsync(string userId, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message)> UnblockUserAsync(
+        string userId,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
-        var user = await userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        var user = await userManager.Users
+            .Include(u => u.Building)
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user == null) return (false, "User not found.");
 
         if (callerBuildingId != null && user.BuildingId != callerBuildingId) return (false, "Forbidden.");
@@ -529,9 +609,16 @@ public sealed class UserManagementService(
         return (true, $"Unblocked {user.Fullname}.");
     }
 
-    public async Task<int> BulkUnblockAsync(string[] ids, Guid? callerBuildingId, CancellationToken cancellationToken = default)
+    public async Task<int> BulkUnblockAsync(
+        string[] ids,
+        Guid? callerBuildingId,
+        CancellationToken cancellationToken = default)
     {
-        var users = await userManager.Users.Include(u => u.Building).Where(u => ids.Contains(u.Id)).ToListAsync(cancellationToken);
+        var users = await userManager.Users
+            .Include(u => u.Building)
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+
         int unblocked = 0;
 
         foreach (var user in users)
@@ -547,7 +634,9 @@ public sealed class UserManagementService(
 
     // ─── Delete ───────────────────────────────────────────────────────────────
 
-    public async Task<(bool success, string message)> DeleteUserAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message)> DeleteUserAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByIdAsync(userId);
         if (user == null) return (false, "User not found.");
@@ -562,15 +651,20 @@ public sealed class UserManagementService(
         return (true, "User deleted.");
     }
 
-    public async Task<int> BulkDeleteAsync(string[] ids, CancellationToken cancellationToken = default)
+    public async Task<int> BulkDeleteAsync(
+        string[] ids,
+        CancellationToken cancellationToken = default)
     {
-        var users = await userManager.Users.Where(u => ids.Contains(u.Id)).ToListAsync(cancellationToken);
+        var users = await userManager.Users
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+
         int deleted = 0;
 
         foreach (var user in users)
         {
             var roles = await userManager.GetRolesAsync(user);
-            if (roles.Contains("SuperAdmin") || roles.Contains("President")) continue;
+            if (roles.Contains(Roles.SuperAdmin) || roles.Contains(Roles.President)) continue;
 
             var res = await userManager.DeleteAsync(user);
             if (res.Succeeded) deleted++;

@@ -1,15 +1,14 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
-using ApartmentManagementSystem.Features.Owner.Services;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
-using ApartmentManagementSystem.Infrastructure.Services;
+using ApartmentManagementSystem.Features.Owner.Services;
 using ApartmentManagementSystem.Features.Owner.ViewModels;
+using ApartmentManagementSystem.Features.Shared;
 using ApartmentManagementSystem.Features.Tenancy.ViewModels;
+using ApartmentManagementSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 
 namespace ApartmentManagementSystem.Features.Owner
@@ -21,14 +20,14 @@ namespace ApartmentManagementSystem.Features.Owner
         private readonly IOwnerBillingService _ownerBillingService;
         private readonly IPaymentEmailService _paymentEmailService;
         private readonly IUrlHelperFactory _urlHelperFactory;
-        private readonly Microsoft.AspNetCore.Mvc.Infrastructure.IActionContextAccessor _actionContextAccessor;
+        private readonly IActionContextAccessor _actionContextAccessor;
 
         public OwnerBillingController(
             UserManager<ApplicationUser> userManager,
             IOwnerBillingService ownerBillingService,
             IPaymentEmailService paymentEmailService,
             IUrlHelperFactory urlHelperFactory,
-            Microsoft.AspNetCore.Mvc.Infrastructure.IActionContextAccessor actionContextAccessor)
+            IActionContextAccessor actionContextAccessor)
         {
             _userManager = userManager;
             _ownerBillingService = ownerBillingService;
@@ -37,29 +36,15 @@ namespace ApartmentManagementSystem.Features.Owner
             _actionContextAccessor = actionContextAccessor;
         }
 
-        private string AbsoluteUrl(string action, object? routeValues = null)
-        {
-            var actionContext = _actionContextAccessor.ActionContext!;
-            var urlHelper = _urlHelperFactory.GetUrlHelper(actionContext);
-            return urlHelper.Action(action, "OwnerBilling", routeValues, actionContext.HttpContext.Request.Scheme)!;
-        }
-
-        private async Task<(ApplicationUser me, bool isSuperAdmin)> GetCallerInfoAsync()
-        {
-            var me = await _userManager.GetUserAsync(User);
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
-            return (me!, isSuperAdmin);
-        }
-
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
 
-            var (me, isSuperAdmin) = await GetCallerInfoAsync();
-            if (me?.BuildingId != buildingId && !isSuperAdmin) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx?.BuildingId != buildingId && !ctx!.IsSuperAdmin) return Forbid();
 
             var rows = await _ownerBillingService.GetIndexRowsAsync(buildingId.Value);
-            
+
             ViewData["BuildingId"] = buildingId;
             return View(rows);
         }
@@ -68,12 +53,12 @@ namespace ApartmentManagementSystem.Features.Owner
         {
             if (string.IsNullOrWhiteSpace(ownerId)) return NotFound();
 
-            var (me, isSuperAdmin) = await GetCallerInfoAsync();
-            if (me?.BuildingId == null && !isSuperAdmin) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx?.BuildingId == null && !ctx!.IsSuperAdmin) return Forbid();
 
-            var restrictToBuildingId = (User.IsInRole("President")) ? me?.BuildingId : null;
+            var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx?.BuildingId : null;
             var page = await _ownerBillingService.GetBillsPageAsync(ownerId, restrictToBuildingId);
-            
+
             if (page == null) return NotFound("No bills found for this owner.");
 
             return View(page);
@@ -84,10 +69,10 @@ namespace ApartmentManagementSystem.Features.Owner
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var (me, isSuperAdmin) = await GetCallerInfoAsync();
-            if (me == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx == null) return Forbid();
 
-            var restrictToBuildingId = (User.IsInRole("President")) ? me.BuildingId : null;
+            var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx.BuildingId : null;
 
             var (success, message, created) = await _ownerBillingService.PayAsync(
                 vm.OwnerId, vm.CommonBillId, vm, restrictToBuildingId);
@@ -101,7 +86,8 @@ namespace ApartmentManagementSystem.Features.Owner
 
             if (created.Count > 0)
             {
-                await _paymentEmailService.SendOwnerPaymentEmailAsync(vm.OwnerId, created, id => AbsoluteUrl(nameof(Receipt), new { id }));
+                await _paymentEmailService.SendOwnerPaymentEmailAsync(vm.OwnerId, created,
+                    id => this.BuildAbsoluteUrl(_urlHelperFactory, _actionContextAccessor, nameof(Receipt), "OwnerBilling", new { id }));
             }
 
             TempData["Success"] = message;
@@ -113,13 +99,12 @@ namespace ApartmentManagementSystem.Features.Owner
         {
             if (string.IsNullOrWhiteSpace(ownerId)) return BadRequest();
 
-            var (me, isSuperAdmin) = await GetCallerInfoAsync();
-            if (me == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx == null) return Forbid();
 
-            var restrictToBuildingId = (User.IsInRole("President")) ? me.BuildingId : null;
+            var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx.BuildingId : null;
 
-            var (success, message, created) = await _ownerBillingService.PayAllAsync(
-                ownerId, restrictToBuildingId);
+            var (success, message, created) = await _ownerBillingService.PayAllAsync(ownerId, restrictToBuildingId);
 
             if (!success)
             {
@@ -127,7 +112,8 @@ namespace ApartmentManagementSystem.Features.Owner
                 return RedirectToAction(nameof(View), new { ownerId });
             }
 
-            await _paymentEmailService.SendOwnerPaymentEmailAsync(ownerId, created, id => AbsoluteUrl(nameof(Receipt), new { id }));
+            await _paymentEmailService.SendOwnerPaymentEmailAsync(ownerId, created,
+                id => this.BuildAbsoluteUrl(_urlHelperFactory, _actionContextAccessor, nameof(Receipt), "OwnerBilling", new { id }));
 
             TempData["Success"] = message;
             return RedirectToAction(nameof(View), new { ownerId });
@@ -139,10 +125,10 @@ namespace ApartmentManagementSystem.Features.Owner
             if (string.IsNullOrWhiteSpace(ownerId) || commonBillId == Guid.Empty)
                 return BadRequest();
 
-            var (me, isSuperAdmin) = await GetCallerInfoAsync();
-            if (me == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx == null) return Forbid();
 
-            var restrictToBuildingId = (User.IsInRole("President")) ? me.BuildingId : null;
+            var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx.BuildingId : null;
 
             var (success, message, created) = await _ownerBillingService.FullPayAsync(
                 ownerId, commonBillId, restrictToBuildingId);
@@ -153,7 +139,8 @@ namespace ApartmentManagementSystem.Features.Owner
                 return RedirectToAction(nameof(View), new { ownerId });
             }
 
-            await _paymentEmailService.SendOwnerPaymentEmailAsync(ownerId, created, id => AbsoluteUrl(nameof(Receipt), new { id }));
+            await _paymentEmailService.SendOwnerPaymentEmailAsync(ownerId, created,
+                id => this.BuildAbsoluteUrl(_urlHelperFactory, _actionContextAccessor, nameof(Receipt), "OwnerBilling", new { id }));
 
             TempData["Success"] = message;
             return RedirectToAction(nameof(View), new { ownerId });
@@ -164,13 +151,13 @@ namespace ApartmentManagementSystem.Features.Owner
             var (payment, buildingId) = await _ownerBillingService.GetReceiptDataAsync(id);
             if (payment == null) return NotFound();
 
-            var me = await _userManager.GetUserAsync(User);
-            if (User.IsInRole("President") && me?.BuildingId != buildingId) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (User.IsInRole(Roles.President) && ctx?.BuildingId != buildingId) return Forbid();
 
             var vm = new ReceiptViewModel
             {
                 Id = payment.Id,
-                ReceiptNo = "RC-" + payment.Id.ToString().Substring(0, 8).ToUpper(),
+                ReceiptNo = $"RC-{payment.Id.ToString()[..8].ToUpper()}",
                 PaidOn = payment.PaymentDate,
                 OwnerName = payment.ExpenseAllocation?.Owner?.Fullname ?? payment.ExpenseAllocation?.Owner?.UserName!,
                 OwnerEmail = payment.ExpenseAllocation?.Owner?.Email,
@@ -181,6 +168,7 @@ namespace ApartmentManagementSystem.Features.Owner
                 BuildingName = payment.ExpenseAllocation?.CommonBill?.Building?.Name ?? "(building)",
                 FlatNumber = "-"
             };
+
             return View("~/Views/Shared/Receipt.cshtml", vm);
         }
 
@@ -190,11 +178,12 @@ namespace ApartmentManagementSystem.Features.Owner
             var (payment, buildingId) = await _ownerBillingService.GetReceiptDataAsync(id);
             if (payment == null) return NotFound();
 
-            var me = await _userManager.GetUserAsync(User);
-            if (User.IsInRole("President") && me?.BuildingId != buildingId) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (User.IsInRole(Roles.President) && ctx?.BuildingId != buildingId) return Forbid();
 
-            await _paymentEmailService.SendOwnerPaymentEmailAsync(payment.OwnerId, [payment], id => AbsoluteUrl(nameof(Receipt), new { id }));
-            
+            await _paymentEmailService.SendOwnerPaymentEmailAsync(payment.OwnerId, [payment],
+                id => this.BuildAbsoluteUrl(_urlHelperFactory, _actionContextAccessor, nameof(Receipt), "OwnerBilling", new { id }));
+
             TempData["Success"] = "Receipt email sent.";
             return RedirectToAction(nameof(View), new { ownerId = payment.OwnerId });
         }

@@ -1,10 +1,8 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
 using ApartmentManagementSystem.Features.Flats.Services;
 using ApartmentManagementSystem.Features.President.ViewModels;
+using ApartmentManagementSystem.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -39,8 +37,8 @@ namespace ApartmentManagementSystem.Features.Flats
 
             ViewData["ActiveTenantsMap"] = tenantMap;
 
-            var currentUser = await _userManager.GetUserAsync(User);
-            ViewData["BuildingId"] = currentUser?.BuildingId;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            ViewData["BuildingId"] = ctx?.BuildingId;
 
             return View(flats);
         }
@@ -48,17 +46,16 @@ namespace ApartmentManagementSystem.Features.Flats
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
+
             var building = await _flats.GetBuildingAsync(buildingId.Value);
             if (building == null) return NotFound();
 
-            // Authorization check for President role
-            if (User.IsInRole("President"))
+            if (User.IsInRole(Roles.President))
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user.BuildingId != buildingId) return Forbid();
+                var ctx = await this.GetCallerContextAsync(_userManager);
+                if (ctx?.BuildingId != buildingId) return Forbid();
             }
 
-            // Retrieve the flats for the specific building, including the owner information
             var flats = await _flats.GetForBuildingAsync(buildingId.Value);
 
             ViewData["BuildingId"] = building.Id;
@@ -70,15 +67,16 @@ namespace ApartmentManagementSystem.Features.Flats
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
+
             var building = await _flats.GetBuildingAsync(buildingId.Value);
             if (building == null) return NotFound();
+
             ViewData["BuildingId"] = buildingId;
             ViewData["BuildingName"] = building.Name;
             return View();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("FlatNumber,BuildingId")] Flat flat)
         {
             if (ModelState.IsValid)
@@ -100,18 +98,18 @@ namespace ApartmentManagementSystem.Features.Flats
         public async Task<IActionResult> AssignOwner(Guid? flatId)
         {
             if (flatId == null) return NotFound();
+
             var flat = await _flats.GetAsync(flatId.Value, includeReferences: true);
             if (flat == null) return NotFound();
 
-            if (User.IsInRole("President"))
+            if (User.IsInRole(Roles.President))
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user.BuildingId != flat.BuildingId) return Forbid();
+                var ctx = await this.GetCallerContextAsync(_userManager);
+                if (ctx?.BuildingId != flat.BuildingId) return Forbid();
             }
 
-            var ownersInRole = await _userManager.GetUsersInRoleAsync("Owner");
-
-            var owners = await _userManager.GetUsersInRoleAsync("Owner");
+            // Fetch owners only once
+            var owners = await _userManager.GetUsersInRoleAsync(Roles.Owner);
 
             var viewModel = new AssignOwnerViewModel
             {
@@ -127,8 +125,7 @@ namespace ApartmentManagementSystem.Features.Flats
             return View(viewModel);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignOwner(AssignOwnerViewModel model)
         {
             if (ModelState.IsValid)
@@ -142,7 +139,7 @@ namespace ApartmentManagementSystem.Features.Flats
                 return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
             }
 
-            var owners = await _userManager.GetUsersInRoleAsync("Owner");
+            var owners = await _userManager.GetUsersInRoleAsync(Roles.Owner);
             model.Owners = new SelectList(owners, "Id", "Fullname");
             model.Flats = new SelectList(await _flats.GetAllWithReferencesAsync(), "Id", "FlatNumber");
 
@@ -152,30 +149,27 @@ namespace ApartmentManagementSystem.Features.Flats
         public async Task<IActionResult> Delete(Guid id)
         {
             var flat = await _flats.GetAsync(id, includeReferences: true);
-
             if (flat == null) return NotFound();
 
-            if (User.IsInRole("President"))
+            if (User.IsInRole(Roles.President))
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user.BuildingId != flat.BuildingId) return Forbid();
+                var ctx = await this.GetCallerContextAsync(_userManager);
+                if (ctx?.BuildingId != flat.BuildingId) return Forbid();
             }
 
             return View(flat);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id, bool confirmed = false)
         {
             var flat = await _flats.GetAsync(id, asNoTracking: true);
-
             if (flat == null) return NotFound();
 
-            if (User.IsInRole("President"))
+            if (User.IsInRole(Roles.President))
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user?.BuildingId != flat.BuildingId) return Forbid();
+                var ctx = await this.GetCallerContextAsync(_userManager);
+                if (ctx?.BuildingId != flat.BuildingId) return Forbid();
             }
 
             var deletionCheck = await _flats.GetDeletionCheckAsync(id);

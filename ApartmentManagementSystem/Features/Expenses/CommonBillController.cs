@@ -1,12 +1,10 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Expenses.Services;
+using ApartmentManagementSystem.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ApartmentManagementSystem.Features.Expenses.Services;
 
 namespace ApartmentManagementSystem.Features.Expenses
 {
@@ -22,11 +20,18 @@ namespace ApartmentManagementSystem.Features.Expenses
             _bills = bills;
         }
 
+        /// <summary>Returns true if the current user is authorised to manage bills for <paramref name="buildingId"/>.</summary>
+        private async Task<bool> IsAuthorizedForBuildingAsync(Guid buildingId)
+        {
+            if (User.IsInRole(Roles.SuperAdmin)) return true;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            return ctx?.BuildingId == buildingId;
+        }
+
         public async Task<IActionResult> Index(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
-            var user = await _userManager.GetUserAsync(User);
-            if (user?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(buildingId.Value)) return Forbid();
 
             var bills = await _bills.GetForBuildingAsync(buildingId.Value);
 
@@ -37,8 +42,7 @@ namespace ApartmentManagementSystem.Features.Expenses
         public async Task<IActionResult> Create(Guid? buildingId)
         {
             if (buildingId == null) return NotFound();
-            var user = await _userManager.GetUserAsync(User);
-            if (user?.BuildingId != buildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(buildingId.Value)) return Forbid();
 
             ViewData["BuildingId"] = buildingId;
             return View(new CommonBill
@@ -48,17 +52,14 @@ namespace ApartmentManagementSystem.Features.Expenses
             });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,TotalAmount,Notes,BuildingId")] CommonBill bill)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
             if (ModelState.IsValid)
             {
                 await _bills.CreateAsync(bill);
-
                 return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
             }
 
@@ -69,11 +70,8 @@ namespace ApartmentManagementSystem.Features.Expenses
         public async Task<IActionResult> Details(Guid id)
         {
             var bill = await _bills.GetAsync(id, includeBuilding: true);
-
             if (bill == null) return NotFound();
-
-            var me = await _userManager.GetUserAsync(User);
-            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
             ViewData["BuildingId"] = bill.BuildingId;
             return View(bill);
@@ -83,25 +81,20 @@ namespace ApartmentManagementSystem.Features.Expenses
         {
             var bill = await _bills.GetAsync(id);
             if (bill == null) return NotFound();
-
-            var me = await _userManager.GetUserAsync(User);
-            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
             ViewData["BuildingId"] = bill.BuildingId;
             return View(bill);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,TotalAmount,Notes,BuildingId")] CommonBill input)
         {
             if (id != input.Id) return NotFound();
 
             var bill = await _bills.GetAsync(id);
             if (bill == null) return NotFound();
-
-            var me = await _userManager.GetUserAsync(User);
-            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
             if (!ModelState.IsValid)
             {
@@ -119,13 +112,9 @@ namespace ApartmentManagementSystem.Features.Expenses
         {
             var bill = await _bills.GetAsync(id, includeBuilding: true);
             if (bill == null) return NotFound();
+            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
-            var me = await _userManager.GetUserAsync(User);
-            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
-
-            var hasPayments = await _bills.HasPaymentsAsync(bill.Id);
-            ViewData["HasPayments"] = hasPayments;
-
+            ViewData["HasPayments"] = await _bills.HasPaymentsAsync(bill.Id);
             return View(bill);
         }
 
@@ -135,12 +124,9 @@ namespace ApartmentManagementSystem.Features.Expenses
         {
             var bill = await _bills.GetAsync(id);
             if (bill == null) return NotFound();
+            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
-            var me = await _userManager.GetUserAsync(User);
-            if (me?.BuildingId != bill.BuildingId && !User.IsInRole("SuperAdmin")) return Forbid();
-
-            var hasPayments = await _bills.HasPaymentsAsync(bill.Id);
-            if (hasPayments)
+            if (await _bills.HasPaymentsAsync(bill.Id))
             {
                 TempData["Error"] = "Cannot delete this common bill because there are recorded payments against it.";
                 return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });

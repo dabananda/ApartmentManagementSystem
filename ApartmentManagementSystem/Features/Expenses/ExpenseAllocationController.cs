@@ -1,12 +1,10 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Expenses.Services;
+using ApartmentManagementSystem.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ApartmentManagementSystem.Features.Expenses.Services;
 
 namespace ApartmentManagementSystem.Features.Expenses
 {
@@ -26,16 +24,14 @@ namespace ApartmentManagementSystem.Features.Expenses
         {
             if (commonBillId == null) return NotFound();
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (ctx == null) return Forbid();
 
             var result = await _allocations.GetAsync(commonBillId.Value);
             var commonBill = result.CommonBill;
 
-            if (commonBill == null || (commonBill.BuildingId != user.BuildingId && !User.IsInRole("SuperAdmin")))
-            {
+            if (commonBill == null || !ctx.IsAuthorizedForBuilding(commonBill.BuildingId))
                 return Forbid();
-            }
 
             ViewData["CommonBillName"] = commonBill.Name;
             ViewData["BuildingId"] = commonBill.BuildingId;

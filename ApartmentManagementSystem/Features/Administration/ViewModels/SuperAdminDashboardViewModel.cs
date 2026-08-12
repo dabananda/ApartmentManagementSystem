@@ -1,13 +1,11 @@
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
 
 namespace ApartmentManagementSystem.Features.Administration.ViewModels
 {
     public class SuperAdminDashboardViewModel
     {
         public int TotalBuildings { get; set; }
-        public List<BuildingSummaryViewModel> BuildingsSummary { get; set; } = new List<BuildingSummaryViewModel>();
+        public List<BuildingSummaryViewModel> BuildingsSummary { get; set; } = [];
 
         public int TotalUsers { get; set; }
         public int TotalSuperAdmins { get; set; }
@@ -29,8 +27,8 @@ namespace ApartmentManagementSystem.Features.Administration.ViewModels
         public decimal TotalPendingCollection { get; set; }
         public decimal OverallBalance { get; set; }
 
-        public List<CommonBill> RecentBills { get; set; } = new List<CommonBill>();
-        public List<ExpensePayment> RecentPayments { get; set; } = new List<ExpensePayment>();
+        public List<CommonBill> RecentBills { get; set; } = [];
+        public List<ExpensePayment> RecentPayments { get; set; } = [];
     }
 
     public class BuildingSummaryViewModel

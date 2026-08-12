@@ -1,14 +1,12 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Shared;
+using ApartmentManagementSystem.Features.Tenancy.Services;
 using ApartmentManagementSystem.Features.Tenancy.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ApartmentManagementSystem.Features.Tenancy.Services;
 
 namespace ApartmentManagementSystem.Features.Tenancy
 {
@@ -20,39 +18,36 @@ namespace ApartmentManagementSystem.Features.Tenancy
 
         public TenantAssignmentController(UserManager<ApplicationUser> users, ITenantAssignmentService assignments)
         {
-            _users = users; _assignments = assignments;
+            _users = users;
+            _assignments = assignments;
         }
 
         public async Task<IActionResult> Assign()
         {
-            var me = await _users.GetUserAsync(User);
-
-            var vm = await _assignments.GetAssignmentFormAsync(User.IsInRole("Owner") ? me!.Id : null);
+            var ctx = await this.GetCallerContextAsync(_users);
+            var vm = await _assignments.GetAssignmentFormAsync(User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null);
             return View(vm);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(AssignTenantVM vm)
         {
             if (!ModelState.IsValid) return await Assign();
 
-            var me = await _users.GetUserAsync(User);
+            var ctx = await this.GetCallerContextAsync(_users);
             var flat = await _assignments.GetFlatAsync(vm.FlatId);
             if (flat == null) return NotFound("Flat not found.");
 
-            if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
+            if (User.IsInRole(Roles.Owner) && flat.OwnerId != ctx?.Me.Id) return Forbid();
 
             if (!await _assignments.TenantExistsAsync(vm.TenantUserId)) return NotFound("Tenant user not found.");
 
             var activeForTenant = await _assignments.GetActiveAssignmentAsync(vm.TenantUserId);
-
             if (activeForTenant != null)
             {
-                if (activeForTenant.FlatId == vm.FlatId)
-                    ModelState.AddModelError(string.Empty, "This tenant is already assigned to this flat.");
-                else
-                    ModelState.AddModelError(string.Empty, "This tenant is already assigned to another flat.");
+                ModelState.AddModelError(string.Empty, activeForTenant.FlatId == vm.FlatId
+                    ? "This tenant is already assigned to this flat."
+                    : "This tenant is already assigned to another flat.");
                 return await Assign();
             }
 
@@ -74,12 +69,9 @@ namespace ApartmentManagementSystem.Features.Tenancy
 
         public async Task<IActionResult> MyTenants()
         {
-            var me = await _users.GetUserAsync(User);
-
-            var data = await _assignments.GetActiveAsync(User.IsInRole("Owner") ? me!.Id : null);
-
+            var ctx = await this.GetCallerContextAsync(_users);
+            var data = await _assignments.GetActiveAsync(User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null);
             return View(data);
         }
     }
 }
-

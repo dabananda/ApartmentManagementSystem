@@ -1,11 +1,9 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
 using ApartmentManagementSystem.Features.Buildings.Services;
-using ApartmentManagementSystem.Infrastructure.Services;
 using ApartmentManagementSystem.Features.Buildings.ViewModels;
+using ApartmentManagementSystem.Features.Shared;
+using ApartmentManagementSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -40,11 +38,12 @@ namespace ApartmentManagementSystem.Features.Buildings
             var building = await _buildings.GetAsync(id, includeFlats: true);
             if (building == null) return NotFound();
 
-            if (User.IsInRole("President"))
+            if (User.IsInRole(Roles.President))
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user.BuildingId != building.Id) return Forbid();
+                var ctx = await this.GetCallerContextAsync(_userManager);
+                if (ctx?.BuildingId != building.Id) return Forbid();
             }
+
             return View(building);
         }
 
@@ -77,8 +76,7 @@ namespace ApartmentManagementSystem.Features.Buildings
             return View(building);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Address")] Building building)
         {
             if (id != building.Id) return NotFound();
@@ -96,16 +94,17 @@ namespace ApartmentManagementSystem.Features.Buildings
                 }
                 return RedirectToAction(nameof(Index));
             }
+
             return View(building);
         }
 
         public async Task<IActionResult> Delete(Guid id)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
-            if (!User.IsInRole("SuperAdmin")) return Forbid();
+            if (!User.IsInRole(Roles.SuperAdmin)) return Forbid();
+
             var building = await _buildings.GetAsync(id);
             if (building == null) return NotFound();
+
             return View(building);
         }
 
@@ -113,16 +112,12 @@ namespace ApartmentManagementSystem.Features.Buildings
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
-            if (!User.IsInRole("SuperAdmin")) return Forbid();
+            if (!User.IsInRole(Roles.SuperAdmin)) return Forbid();
 
             var building = await _buildings.GetAsync(id);
             if (building == null) return NotFound();
 
-            var hasBlocking = await _buildings.HasBlockingRecordsAsync(id);
-
-            if (hasBlocking)
+            if (await _buildings.HasBlockingRecordsAsync(id))
             {
                 TempData["Error"] =
                     "Cannot delete this building because one or more flats have related records " +

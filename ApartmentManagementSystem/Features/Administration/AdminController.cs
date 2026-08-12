@@ -1,13 +1,12 @@
-using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
-using ApartmentManagementSystem.Features.Administration.Services;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Administration.Services;
 using ApartmentManagementSystem.Features.Administration.ViewModels;
+using ApartmentManagementSystem.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Features.Administration
@@ -25,12 +24,14 @@ namespace ApartmentManagementSystem.Features.Administration
 
         // ─── Helpers ─────────────────────────────────────────────────────────
 
-        private async Task<(ApplicationUser me, bool isSuperAdmin, Guid? buildingId)> GetCallerInfoAsync()
-        {
-            var me = await _userManager.GetUserAsync(User);
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
-            return (me!, isSuperAdmin, me?.BuildingId);
-        }
+        /// <summary>Returns a standard set of role <see cref="SelectListItem"/>s for user creation/editing.</summary>
+        private static List<SelectListItem> GetUserRoleSelectItems() =>
+        [
+            new(Roles.User,   Roles.User),
+            new(Roles.Staff,  Roles.Staff),
+            new(Roles.Tenant, Roles.Tenant),
+            new(Roles.Owner,  Roles.Owner)
+        ];
 
         // ─── President assignment ─────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ namespace ApartmentManagementSystem.Features.Administration
             var buildings = await _userManagement.GetBuildingSelectItemsAsync();
             var owners = buildingId.HasValue
                 ? await _userManagement.GetOwnersForBuildingSelectAsync(buildingId.Value)
-                : new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+                : [];
 
             var vm = new AssignPresidentViewModel
             {
@@ -51,7 +52,6 @@ namespace ApartmentManagementSystem.Features.Administration
 
             return View(vm);
         }
-
 
         [Authorize(Roles = Roles.SuperAdmin)]
         [HttpPost, ValidateAntiForgeryToken]
@@ -83,7 +83,6 @@ namespace ApartmentManagementSystem.Features.Administration
             return RedirectToAction(nameof(AssignPresident), new { buildingId = model.BuildingId });
         }
 
-
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> OwnersForBuilding(Guid buildingId)
         {
@@ -97,23 +96,20 @@ namespace ApartmentManagementSystem.Features.Administration
         [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
         public async Task<IActionResult> CreateUser()
         {
-            var me = await _userManager.GetUserAsync(User);
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
-
-            var buildingItems = isSuperAdmin
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var buildingItems = ctx!.IsSuperAdmin
                 ? await _userManagement.GetBuildingSelectItemsAsync()
-                : me?.BuildingId != null
-                    ? await _userManagement.GetBuildingSelectItemsAsync(me.BuildingId)
+                : ctx.BuildingId != null
+                    ? await _userManagement.GetBuildingSelectItemsAsync(ctx.BuildingId)
                     : [];
 
             ViewBag.Buildings = buildingItems;
-            ViewBag.Roles = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
-            {
-                new("User", "User"), new("Staff", "Staff"), new("Tenant", "Tenant"), new("Owner", "Owner")
-            };
+            ViewBag.Roles = GetUserRoleSelectItems();
 
             var vm = new CreateUserViewModel();
-            if (User.IsInRole("President") && me?.BuildingId != null) vm.BuildingId = me.BuildingId.Value;
+            if (User.IsInRole(Roles.President) && ctx.BuildingId != null)
+                vm.BuildingId = ctx.BuildingId.Value;
+
             return View(vm);
         }
 
@@ -121,20 +117,16 @@ namespace ApartmentManagementSystem.Features.Administration
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateUser(CreateUserViewModel model)
         {
-            var me = await _userManager.GetUserAsync(User);
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            var ctx = await this.GetCallerContextAsync(_userManager);
 
             async Task LoadListsAsync()
             {
-                ViewBag.Buildings = isSuperAdmin
+                ViewBag.Buildings = ctx!.IsSuperAdmin
                     ? await _userManagement.GetBuildingSelectItemsAsync()
-                    : me?.BuildingId != null
-                        ? await _userManagement.GetBuildingSelectItemsAsync(me.BuildingId)
+                    : ctx.BuildingId != null
+                        ? await _userManagement.GetBuildingSelectItemsAsync(ctx.BuildingId)
                         : [];
-                ViewBag.Roles = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
-                {
-                    new("User", "User"), new("Staff", "Staff"), new("Tenant", "Tenant"), new("Owner", "Owner")
-                };
+                ViewBag.Roles = GetUserRoleSelectItems();
             }
 
             if (!ModelState.IsValid)
@@ -143,7 +135,7 @@ namespace ApartmentManagementSystem.Features.Administration
                 return View(model);
             }
 
-            if (User.IsInRole("President") && (me?.BuildingId == null || me.BuildingId != model.BuildingId))
+            if (User.IsInRole(Roles.President) && (ctx?.BuildingId == null || ctx.BuildingId != model.BuildingId))
             {
                 ModelState.AddModelError(nameof(model.BuildingId), "You can only create users in your building.");
                 await LoadListsAsync();
@@ -157,7 +149,7 @@ namespace ApartmentManagementSystem.Features.Administration
                 return View(model);
             }
 
-            var (success, errors) = await _userManagement.CreateUserAsync(model, me!.Id);
+            var (success, errors) = await _userManagement.CreateUserAsync(model, ctx!.Me.Id);
             if (!success)
             {
                 foreach (var e in errors) ModelState.AddModelError(string.Empty, e);
@@ -174,17 +166,14 @@ namespace ApartmentManagementSystem.Features.Administration
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
-            var me = await _userManager.GetUserAsync(User);
+            var ctx = await this.GetCallerContextAsync(_userManager);
             var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return NotFound();
 
-            if (User.IsInRole("President"))
-            {
-                if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
-            }
+            if (User.IsInRole(Roles.President) && (ctx?.BuildingId == null || user.BuildingId != ctx.BuildingId))
+                return Forbid();
 
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
-            ViewBag.Buildings = isSuperAdmin
+            ViewBag.Buildings = ctx!.IsSuperAdmin
                 ? await _userManagement.GetBuildingSelectItemsAsync()
                 : user.BuildingId != null
                     ? await _userManagement.GetBuildingSelectItemsAsync(user.BuildingId)
@@ -198,7 +187,7 @@ namespace ApartmentManagementSystem.Features.Administration
                 PhoneNumber = user.PhoneNumber,
                 BuildingId = user.BuildingId,
                 BuildingName = user.Building?.Name,
-                IsSuperAdminCaller = isSuperAdmin
+                IsSuperAdminCaller = ctx.IsSuperAdmin
             };
 
             return View(vm);
@@ -208,12 +197,11 @@ namespace ApartmentManagementSystem.Features.Administration
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> EditUser(EditUserViewModel model)
         {
-            var me = await _userManager.GetUserAsync(User);
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            var ctx = await this.GetCallerContextAsync(_userManager);
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Buildings = isSuperAdmin
+                ViewBag.Buildings = ctx!.IsSuperAdmin
                     ? await _userManagement.GetBuildingSelectItemsAsync()
                     : model.BuildingId != null
                         ? await _userManagement.GetBuildingSelectItemsAsync(model.BuildingId)
@@ -224,16 +212,14 @@ namespace ApartmentManagementSystem.Features.Administration
             var user = await _userManager.Users.Include(u => u.Building).FirstOrDefaultAsync(u => u.Id == model.Id);
             if (user == null) return NotFound();
 
-            if (User.IsInRole("President"))
-            {
-                if (me?.BuildingId == null || user.BuildingId != me.BuildingId) return Forbid();
-            }
+            if (User.IsInRole(Roles.President) && (ctx?.BuildingId == null || user.BuildingId != ctx.BuildingId))
+                return Forbid();
 
-            var (success, errors) = await _userManagement.UpdateUserAsync(model, isSuperAdmin);
+            var (success, errors) = await _userManagement.UpdateUserAsync(model, ctx!.IsSuperAdmin);
             if (!success)
             {
                 foreach (var e in errors) ModelState.AddModelError(string.Empty, e);
-                ViewBag.Buildings = isSuperAdmin
+                ViewBag.Buildings = ctx.IsSuperAdmin
                     ? await _userManagement.GetBuildingSelectItemsAsync()
                     : user.BuildingId != null
                         ? await _userManagement.GetBuildingSelectItemsAsync(user.BuildingId)
@@ -250,10 +236,10 @@ namespace ApartmentManagementSystem.Features.Administration
         [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
         public async Task<IActionResult> Approvals([FromQuery] ApprovalsFilterViewModel filter)
         {
-            var (me, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            if (User.IsInRole("President") && buildingId == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (User.IsInRole(Roles.President) && ctx?.BuildingId == null) return Forbid();
 
-            var vm = await _userManagement.GetApprovalsPageAsync(filter, buildingId, isSuperAdmin);
+            var vm = await _userManagement.GetApprovalsPageAsync(filter, ctx!.BuildingId, ctx.IsSuperAdmin);
             return View(vm);
         }
 
@@ -263,8 +249,9 @@ namespace ApartmentManagementSystem.Features.Administration
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
-            var (me, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            var (success, message) = await _userManagement.ApproveUserAsync(id, role, me!.Id, isSuperAdmin, buildingId);
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var (success, message) = await _userManagement.ApproveUserAsync(
+                id, role, ctx!.Me.Id, ctx.IsSuperAdmin, ctx.BuildingId);
 
             TempData[success ? "Success" : "Error"] = message;
             return RedirectToAction(nameof(Approvals));
@@ -280,8 +267,8 @@ namespace ApartmentManagementSystem.Features.Administration
                 return RedirectToAction(nameof(Approvals));
             }
 
-            var (me, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            var applied = await _userManagement.BulkApproveAsync(ids, role, me!.Id, isSuperAdmin, buildingId);
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var applied = await _userManagement.BulkApproveAsync(ids, role, ctx!.Me.Id, ctx.IsSuperAdmin, ctx.BuildingId);
 
             TempData["Success"] = $"Applied {applied} update(s).";
             return RedirectToAction(nameof(Approvals));
@@ -293,8 +280,8 @@ namespace ApartmentManagementSystem.Features.Administration
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
-            var (_, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            var (success, message) = await _userManagement.ResetUserAsync(id, isSuperAdmin, buildingId);
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var (success, message) = await _userManagement.ResetUserAsync(id, ctx!.IsSuperAdmin, ctx.BuildingId);
 
             TempData[success ? "Success" : "Error"] = message;
             return RedirectToAction(nameof(Approvals));
@@ -306,10 +293,10 @@ namespace ApartmentManagementSystem.Features.Administration
         [HttpGet]
         public async Task<IActionResult> Users([FromQuery] ManageUsersFilterViewModel filter)
         {
-            var (_, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            if (User.IsInRole("President") && buildingId == null) return Forbid();
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            if (User.IsInRole(Roles.President) && ctx?.BuildingId == null) return Forbid();
 
-            var vm = await _userManagement.GetUsersPageAsync(filter, buildingId, isSuperAdmin);
+            var vm = await _userManagement.GetUsersPageAsync(filter, ctx!.BuildingId, ctx.IsSuperAdmin);
             return View(vm);
         }
 
@@ -319,8 +306,8 @@ namespace ApartmentManagementSystem.Features.Administration
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
-            var (_, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            var (success, message) = await _userManagement.ChangeRoleAsync(id, role, isSuperAdmin, buildingId);
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var (success, message) = await _userManagement.ChangeRoleAsync(id, role, ctx!.IsSuperAdmin, ctx.BuildingId);
 
             TempData[success ? "Success" : "Error"] = message;
             return RedirectToAction(nameof(Users));
@@ -336,8 +323,8 @@ namespace ApartmentManagementSystem.Features.Administration
                 return RedirectToAction(nameof(Users));
             }
 
-            var (_, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            var changed = await _userManagement.BulkChangeRoleAsync(ids, role, isSuperAdmin, buildingId);
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var changed = await _userManagement.BulkChangeRoleAsync(ids, role, ctx!.IsSuperAdmin, ctx.BuildingId);
 
             TempData["Success"] = $"Changed roles for {changed} user(s).";
             return RedirectToAction(nameof(Users));
@@ -351,8 +338,8 @@ namespace ApartmentManagementSystem.Features.Administration
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
-            var (_, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            var (success, message) = await _userManagement.BlockUserAsync(id, isSuperAdmin, buildingId);
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var (success, message) = await _userManagement.BlockUserAsync(id, ctx!.IsSuperAdmin, ctx.BuildingId);
 
             TempData[success ? "Success" : "Error"] = message;
             return RedirectToAction(nameof(Users));
@@ -368,8 +355,8 @@ namespace ApartmentManagementSystem.Features.Administration
                 return RedirectToAction(nameof(Users));
             }
 
-            var (_, isSuperAdmin, buildingId) = await GetCallerInfoAsync();
-            var blocked = await _userManagement.BulkBlockAsync(ids, isSuperAdmin, buildingId);
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var blocked = await _userManagement.BulkBlockAsync(ids, ctx!.IsSuperAdmin, ctx.BuildingId);
 
             TempData["Success"] = $"Blocked {blocked} user(s).";
             return RedirectToAction(nameof(Users));
@@ -381,10 +368,9 @@ namespace ApartmentManagementSystem.Features.Administration
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
-            var (_, _, buildingId) = await GetCallerInfoAsync();
-
-            // Presidents can only unblock within their building
-            var callerBuildingId = User.IsInRole("SuperAdmin") ? null : buildingId;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            // Presidents can only unblock within their building; SuperAdmins bypass all restrictions.
+            var callerBuildingId = ctx!.IsSuperAdmin ? null : ctx.BuildingId;
             var (success, message) = await _userManagement.UnblockUserAsync(id, callerBuildingId);
 
             TempData[success ? "Success" : "Error"] = message;
@@ -401,8 +387,8 @@ namespace ApartmentManagementSystem.Features.Administration
                 return RedirectToAction(nameof(Users));
             }
 
-            var (_, _, buildingId) = await GetCallerInfoAsync();
-            var callerBuildingId = User.IsInRole("SuperAdmin") ? null : buildingId;
+            var ctx = await this.GetCallerContextAsync(_userManager);
+            var callerBuildingId = ctx!.IsSuperAdmin ? null : ctx.BuildingId;
             var unblocked = await _userManagement.BulkUnblockAsync(ids, callerBuildingId);
 
             TempData["Success"] = $"Unblocked {unblocked} user(s).";
@@ -433,29 +419,6 @@ namespace ApartmentManagementSystem.Features.Administration
             var deleted = await _userManagement.BulkDeleteAsync(ids);
             TempData["Success"] = $"Deleted {deleted} user(s).";
             return RedirectToAction(nameof(Users));
-        }
-
-        // ─── Legacy actions (kept for backward compat, delegate to Users) ─────
-
-        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
-        public async Task<IActionResult> ApproveOwners()
-        {
-            var users = await _userManager.GetUsersInRoleAsync("User");
-            return View(users);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
-        public async Task<IActionResult> ApproveOwner(string id)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            var result = await _userManager.AddToRoleAsync(user, "Owner");
-            if (!result.Succeeded) TempData["Error"] = "Failed to approve owner.";
-
-            return RedirectToAction(nameof(ApproveOwners));
         }
     }
 }
