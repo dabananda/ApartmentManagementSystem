@@ -13,7 +13,7 @@ flowchart TD
     C --> D[Feature Repository]
     D --> E[(ApplicationDbContext / SQL Server)]
     
-    subgraph Cross-Cutting Concerns
+    subgraph CrossCuttingConcerns [Cross-Cutting Concerns]
     F[ASP.NET Identity]
     G[Stripe Payments]
     H[SMTP Email]
@@ -21,7 +21,7 @@ flowchart TD
     J[Hosted Billing Worker]
     end
     
-    C -.-> Cross-Cutting Concerns
+    C -.-> CrossCuttingConcerns
 ```
 
 ## Runtime Composition
