@@ -54,6 +54,10 @@ public class LoginModel : PageModel
         }
 
         returnUrl ??= Url.Content("~/");
+        if (returnUrl == "~/" || returnUrl == "/")
+        {
+            returnUrl = Url.Content("~/dashboard");
+        }
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
@@ -65,6 +69,10 @@ public class LoginModel : PageModel
     public async Task<IActionResult> OnPostAsync(string returnUrl = null)
     {
         returnUrl ??= Url.Content("~/");
+        if (returnUrl == "~/" || returnUrl == "/")
+        {
+            returnUrl = Url.Content("~/dashboard");
+        }
 
         if (!ModelState.IsValid)
             return Page();
