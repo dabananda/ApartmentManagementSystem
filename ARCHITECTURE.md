@@ -4,7 +4,7 @@
 
 Apartment Management System is a robust and feature rich ASP.NET Core MVC application. It leverages a feature-oriented application layer above shared infrastructure and a SQL Server database. Browser requests are served by Razor views; there is no separate public API or client application.
 
-### Request Flow
+## Request Flow
 
 ```mermaid
 flowchart TD
