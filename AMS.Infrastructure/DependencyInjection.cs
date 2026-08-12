@@ -21,16 +21,14 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
 
-        // Note: AddDatabaseDeveloperPageExceptionFilter is usually added in the Web project for development
-
         services.AddDefaultIdentity<ApplicationUser>(options =>
-        {
-            options.SignIn.RequireConfirmedAccount = true;
-            options.User.RequireUniqueEmail = true;
-        })
-        .AddRoles<IdentityRole>()
-        .AddEntityFrameworkStores<ApplicationDbContext>()
-        .AddDefaultTokenProviders();
+                {
+                    options.SignIn.RequireConfirmedAccount = true;
+                    options.User.RequireUniqueEmail = true;
+                })
+                .AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
 
         services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationUserClaimsPrincipalFactory>();
         services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInManager>();
@@ -53,7 +51,6 @@ public static class DependencyInjection
         });
         services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
 
-        // Register all repositories automatically
         var assembly = System.Reflection.Assembly.GetExecutingAssembly();
         var repositoryTypes = assembly.GetTypes()
             .Where(t => t.Name.EndsWith("Repository") && !t.IsAbstract && !t.IsInterface);

@@ -17,7 +17,7 @@ public class ExpenseAllocationConfiguration : IEntityTypeConfiguration<ExpenseAl
             .WithMany()
             .HasForeignKey(x => x.OwnerId)
             .OnDelete(DeleteBehavior.Cascade);
-            
+
         builder.HasQueryFilter(x => !x.CommonBill!.IsDeleted);
     }
 }

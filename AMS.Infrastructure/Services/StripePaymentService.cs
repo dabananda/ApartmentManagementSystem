@@ -46,7 +46,7 @@ public sealed class StripePaymentService(
             Mode = "payment",
             SuccessUrl = successUrlTemplate,
             CancelUrl = cancelUrl,
-            CustomerEmail = bill.TenantUser?.Email, // Assuming bill.TenantUser is not eagerly loaded, we might need customer email? Actually controller did: me.Email! Wait, GetTenantBillForCheckoutAsync does not include TenantUser. Let's rely on caller or just omit CustomerEmail (Stripe handles it).
+            CustomerEmail = bill.TenantUser?.Email,
             LineItems = new List<SessionLineItemOptions>
             {
                 new()

@@ -22,7 +22,7 @@ public class Flat : BaseEntity, IAggregateRoot
 
     public ICollection<Tenant> Tenants { get; private set; } = new List<Tenant>();
 
-    protected Flat() { } // For EF Core
+    protected Flat() { }
 
     public static Flat Create(string flatNumber, Guid buildingId, string? ownerId = null)
     {

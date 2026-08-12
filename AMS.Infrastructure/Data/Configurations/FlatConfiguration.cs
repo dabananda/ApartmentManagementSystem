@@ -10,7 +10,7 @@ public class FlatConfiguration : IEntityTypeConfiguration<Flat>
     {
         builder.HasIndex(f => new { f.BuildingId, f.FlatNumber }).IsUnique();
         builder.HasIndex(f => f.OwnerId);
-        
+
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

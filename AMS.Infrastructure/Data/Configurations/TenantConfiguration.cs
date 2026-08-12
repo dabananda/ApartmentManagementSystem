@@ -21,7 +21,7 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.HasIndex(t => t.UserId)
             .IsUnique()
             .HasFilter("[UserId] IS NOT NULL");
-            
+
         builder.HasQueryFilter(x => !x.Flat!.IsDeleted);
     }
 }

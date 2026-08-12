@@ -20,7 +20,7 @@ public class Building : BaseEntity, IAggregateRoot
     public ICollection<ExpensePayment>? ExpensePayments { get; private set; } = new List<ExpensePayment>();
     public ICollection<EntryLog> EntryLogs { get; private set; } = new List<EntryLog>();
 
-    protected Building() { } // For EF Core
+    protected Building() { }
 
     public static Building Create(string name, string code, string? address = null)
     {

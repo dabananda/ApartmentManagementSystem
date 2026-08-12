@@ -112,7 +112,6 @@ public class FlatController : Controller
             if (ctx?.BuildingId != flat.BuildingId) return Forbid();
         }
 
-        // Fetch owners only once
         var owners = await _userManager.GetUsersInRoleAsync(Roles.Owner);
 
         var viewModel = new AssignOwnerViewModel

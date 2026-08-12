@@ -1,5 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
 using AMS.Domain.Entities;
@@ -25,7 +23,6 @@ public class LogoutModel : PageModel
         await _signInManager.SignOutAsync();
         _logger.LogInformation("User logged out.");
 
-        // Always go to Login page after logout
         return RedirectToPage("/Account/Login");
     }
 }

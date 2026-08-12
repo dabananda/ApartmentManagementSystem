@@ -61,7 +61,6 @@ public class OwnerController : Controller
 
         var page = await _mediator.Send(new GetOwnerCommonBillsPageQuery(targetOwnerId, restrictToBuildingId));
 
-        // If allocations were 0, service returns an empty model with the user's name
         if (page == null)
         {
             var owner = await _userManager.FindByIdAsync(targetOwnerId);

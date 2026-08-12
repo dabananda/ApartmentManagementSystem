@@ -18,7 +18,7 @@ public class BuildingEditViewModel
     {
         building.UpdateDetails(
             name: Name,
-            code: building.Code, // Code is not edited in this view model, keep existing
+            code: building.Code,
             address: Address
         );
     }

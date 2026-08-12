@@ -12,7 +12,7 @@ public class ExpensePaymentConfiguration : IEntityTypeConfiguration<ExpensePayme
             .WithMany()
             .HasForeignKey(ep => ep.CommonBillId)
             .OnDelete(DeleteBehavior.NoAction);
-            
+
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

@@ -1,5 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
 using AMS.Domain.Entities;
@@ -26,28 +24,12 @@ public class ExternalLoginsModel : PageModel
         _userStore = userStore;
     }
 
-    /// <summary>
-    ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    ///     directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     public IList<UserLoginInfo> CurrentLogins { get; set; }
 
-    /// <summary>
-    ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    ///     directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     public IList<AuthenticationScheme> OtherLogins { get; set; }
 
-    /// <summary>
-    ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    ///     directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     public bool ShowRemoveButton { get; set; }
 
-    /// <summary>
-    ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    ///     directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     [TempData]
     public string StatusMessage { get; set; }
 
@@ -96,10 +78,9 @@ public class ExternalLoginsModel : PageModel
 
     public async Task<IActionResult> OnPostLinkLoginAsync(string provider)
     {
-        // Clear the existing external cookie to ensure a clean login process
+
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-        // Request a redirect to the external login provider to link a login for the current user
         var redirectUrl = Url.Page("./ExternalLogins", pageHandler: "LinkLoginCallback");
         var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl, _userManager.GetUserId(User));
         return new ChallengeResult(provider, properties);
@@ -127,7 +108,6 @@ public class ExternalLoginsModel : PageModel
             return RedirectToPage();
         }
 
-        // Clear the existing external cookie to ensure a clean login process
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
         StatusMessage = "The external login was added.";

@@ -15,7 +15,7 @@ public class MaintenanceTicketConfiguration : IEntityTypeConfiguration<Maintenan
 
         builder.HasIndex(t => new { t.BuildingId, t.CreatedByUserId });
         builder.HasIndex(t => new { t.BuildingId, t.FlatId, t.CreatedAt });
-        
+
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

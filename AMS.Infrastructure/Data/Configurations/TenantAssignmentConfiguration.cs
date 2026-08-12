@@ -29,7 +29,7 @@ public class TenantAssignmentConfiguration : IEntityTypeConfiguration<TenantAssi
             .WithMany()
             .HasForeignKey(x => x.TenantUserId)
             .OnDelete(DeleteBehavior.Restrict);
-            
+
         builder.HasQueryFilter(x => !x.Flat!.IsDeleted);
     }
 }

@@ -24,9 +24,6 @@ public class AdminController : Controller
         _mediator = mediator;
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────
-
-    /// <summary>Returns a standard set of role <see cref="SelectListItem"/>s for user creation/editing.</summary>
     private static List<SelectListItem> GetUserRoleSelectItems() =>
     [
         new(Roles.User,   Roles.User),
@@ -34,8 +31,6 @@ public class AdminController : Controller
         new(Roles.Tenant, Roles.Tenant),
         new(Roles.Owner,  Roles.Owner)
     ];
-
-    // ─── President assignment ─────────────────────────────────────────────
 
     [Authorize(Roles = Roles.SuperAdmin)]
     public async Task<IActionResult> AssignPresident(Guid? buildingId)
@@ -92,8 +87,6 @@ public class AdminController : Controller
             .Select(o => new { value = o.Value, text = o.Text });
         return Json(owners);
     }
-
-    // ─── Create / Edit user ───────────────────────────────────────────────
 
     [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public async Task<IActionResult> CreateUser()
@@ -233,8 +226,6 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Users), new { BuildingId = model.BuildingId });
     }
 
-    // ─── Approvals ────────────────────────────────────────────────────────
-
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public async Task<IActionResult> Approvals([FromQuery] ApprovalsFilterViewModel filter)
     {
@@ -289,8 +280,6 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Approvals));
     }
 
-    // ─── Manage users ─────────────────────────────────────────────────────
-
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     [HttpGet]
     public async Task<IActionResult> Users([FromQuery] ManageUsersFilterViewModel filter)
@@ -332,8 +321,6 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Users));
     }
 
-    // ─── Block / Unblock ──────────────────────────────────────────────────
-
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> BlockUser(string id)
@@ -371,7 +358,7 @@ public class AdminController : Controller
         if (string.IsNullOrWhiteSpace(id)) return BadRequest();
 
         var ctx = await this.GetCallerContextAsync(_userManager);
-        // Presidents can only unblock within their building; SuperAdmins bypass all restrictions.
+
         var callerBuildingId = ctx!.IsSuperAdmin ? null : ctx.BuildingId;
         var (success, message) = await _mediator.Send(new UnblockUserCommand(id, callerBuildingId));
 
@@ -396,8 +383,6 @@ public class AdminController : Controller
         TempData["Success"] = $"Unblocked {unblocked} user(s).";
         return RedirectToAction(nameof(Users));
     }
-
-    // ─── Delete ───────────────────────────────────────────────────────────
 
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     [HttpPost, ValidateAntiForgeryToken]

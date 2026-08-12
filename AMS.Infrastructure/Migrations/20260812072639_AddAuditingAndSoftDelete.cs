@@ -4,10 +4,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace AMS.Web.Migrations;
 
-/// <inheritdoc />
 public partial class AddAuditingAndSoftDelete : Migration
 {
-    /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.EnsureSchema(
@@ -917,7 +915,6 @@ public partial class AddAuditingAndSoftDelete : Migration
             filter: "[UserId] IS NOT NULL");
     }
 
-    /// <inheritdoc />
     protected override void Down(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.DropTable(

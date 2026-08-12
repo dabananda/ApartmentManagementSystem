@@ -26,7 +26,6 @@ public class ExpensePaymentController : Controller
         _mediator = mediator;
     }
 
-    /// <summary>Returns true if the current user is authorised to manage payments for <paramref name="buildingId"/>.</summary>
     private async Task<bool> IsAuthorizedForBuildingAsync(Guid buildingId)
     {
         if (User.IsInRole(Roles.SuperAdmin)) return true;

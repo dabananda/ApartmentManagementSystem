@@ -51,8 +51,6 @@ public class UserDetailsViewModel
     [Display(Name = "Account Status")]
     public string AccountStatus { get; set; } = default!;
 
-    // ─── Computed Properties (using Roles.* constants as SSOT) ────────────
-
     public string PrimaryRole => Roles.FirstOrDefault() ?? Domain.Constants.Roles.User;
     public bool HasMultipleRoles => Roles.Count > 1;
     public bool IsOwner => Roles.Contains(Domain.Constants.Roles.Owner);

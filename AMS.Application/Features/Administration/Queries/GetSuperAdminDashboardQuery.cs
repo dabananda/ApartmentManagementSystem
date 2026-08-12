@@ -17,7 +17,7 @@ public class GetSuperAdminDashboardQueryHandler(
 {
     public async Task<SuperAdminDashboardViewModel> Handle(GetSuperAdminDashboardQuery request, CancellationToken cancellationToken = default)
     {
-        // Load all data concurrently where possible
+
         var buildings = await dashboard.GetBuildingsAsync(cancellationToken);
         var allUsers = await users.Users.ToListAsync(cancellationToken);
 
@@ -49,11 +49,10 @@ public class GetSuperAdminDashboardQueryHandler(
 
         return new SuperAdminDashboardViewModel
         {
-            // Buildings
+
             TotalBuildings = buildings.Count,
             BuildingsSummary = buildingsSummary,
 
-            // Users
             TotalUsers = allUsers.Count,
             TotalSuperAdmins = superAdmins.Count,
             TotalPresidents = presidents.Count,
@@ -62,21 +61,18 @@ public class GetSuperAdminDashboardQueryHandler(
             TotalTenants = tenants.Count,
             PendingApprovals = pendingUsers.Count,
 
-            // Flats
             TotalFlats = totalFlats,
             OccupiedFlats = occupiedFlatIds.Count,
             VacantFlats = totalFlats - occupiedFlatIds.Count,
             FlatsWithOwners = flatsWithOwners,
             FlatsWithoutOwners = totalFlats - flatsWithOwners,
 
-            // Financials
             TotalBillsGenerated = bills,
             TotalPaymentsMade = payments,
             TotalAmountCollected = collected,
             TotalPendingCollection = allocated - collected,
             OverallBalance = collected - payments,
 
-            // Recent activity
             RecentBills = recentBills,
             RecentPayments = recentPayments
         };

@@ -2,11 +2,6 @@ using AMS.Domain.Entities;
 
 namespace AMS.Infrastructure.Services;
 
-/// <summary>
-/// Sends payment confirmation emails for both tenant rent payments and owner common bill payments.
-/// Unifies identical email logic that was previously duplicated across TenantRentController,
-/// OwnerBillingController and PaymentsController.
-/// </summary>
 public interface IPaymentEmailService
 {
     Task SendTenantPaymentEmailAsync(string tenantUserId, IEnumerable<TenantPayment> payments, CancellationToken cancellationToken = default);

@@ -12,12 +12,12 @@ public class EntryLogConfiguration : IEntityTypeConfiguration<EntryLog>
             .WithMany(b => b.EntryLogs)
             .HasForeignKey(el => el.BuildingId)
             .OnDelete(DeleteBehavior.Restrict);
-            
+
         builder.HasOne(el => el.Flat)
             .WithMany()
             .HasForeignKey(el => el.FlatId)
             .OnDelete(DeleteBehavior.Restrict);
-            
+
         builder.HasQueryFilter(x => !x.Building!.IsDeleted && !x.Flat!.IsDeleted);
     }
 }

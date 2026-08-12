@@ -9,7 +9,6 @@ public interface IOwnerBillingRepository
     Task<OwnerBillsPage?> GetBillsPageAsync(string ownerId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default);
     Task<(ExpenseAllocationPayment? payment, Guid? buildingId)> GetReceiptDataAsync(Guid paymentId, CancellationToken cancellationToken = default);
 
-    // Payment workflow
     Task<bool> IdempotencyKeyExistsAsync(string key, CancellationToken cancellationToken = default);
     Task<List<ExpenseAllocation>> GetAllocationsForPayAsync(string ownerId, Guid commonBillId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default);
     Task<decimal> GetPaidForAllocationAsync(Guid allocationId, CancellationToken cancellationToken = default);

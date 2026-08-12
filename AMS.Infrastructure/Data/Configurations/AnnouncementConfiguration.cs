@@ -11,7 +11,7 @@ public class AnnouncementConfiguration : IEntityTypeConfiguration<Announcement>
         builder.HasIndex(x => new { x.BuildingId, x.CreatedAt });
         builder.Property(x => x.Title).HasMaxLength(120).IsRequired();
         builder.Property(x => x.Body).HasMaxLength(2000).IsRequired();
-        
+
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

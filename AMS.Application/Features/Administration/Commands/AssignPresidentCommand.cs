@@ -17,7 +17,6 @@ public class AssignPresidentCommandHandler(UserManager<ApplicationUser> userMana
         if (user.BuildingId != request.BuildingId) return (false, "Selected owner does not belong to the chosen building.");
         if (!await userManager.IsInRoleAsync(user, Roles.Owner)) return (false, "Selected user is not an Owner.");
 
-        // Remove non-admin roles that should not coexist with President
         foreach (var r in new[] { Roles.User, Roles.Tenant })
             if (await userManager.IsInRoleAsync(user, r))
                 await userManager.RemoveFromRoleAsync(user, r);

@@ -21,7 +21,7 @@ public class TenantPaymentConfiguration : IEntityTypeConfiguration<TenantPayment
             .WithMany(b => b.Payments)
             .HasForeignKey(x => x.TenantBillId)
             .OnDelete(DeleteBehavior.Cascade);
-            
+
         builder.HasQueryFilter(x => !x.TenantBill!.IsDeleted);
     }
 }

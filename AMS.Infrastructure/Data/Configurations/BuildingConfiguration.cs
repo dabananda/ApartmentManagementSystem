@@ -15,7 +15,7 @@ public class BuildingConfiguration : IEntityTypeConfiguration<Building>
 
         builder.HasIndex(b => b.Name).IsUnique();
         builder.HasIndex(b => b.Code).IsUnique();
-        
+
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

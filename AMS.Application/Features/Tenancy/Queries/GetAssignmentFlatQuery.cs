@@ -11,7 +11,7 @@ public class GetAssignmentFlatQueryHandler(ITenantAssignmentRepository assignmen
 {
     public async Task<Flat?> Handle(GetAssignmentFlatQuery request, CancellationToken cancellationToken = default)
     {
-        // Try all three repositories since this query is used by multiple features
+
         var flat = await assignmentRepo.GetFlatAsync(request.FlatId);
         if (flat != null) return flat;
 

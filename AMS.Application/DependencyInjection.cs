@@ -32,9 +32,8 @@ public static class DependencyInjection
             }
         }
 
-        // Register all application services automatically
         var serviceTypes = assembly.GetTypes()
-            .Where(t => t.Name.EndsWith("Service") && !t.IsAbstract && !t.IsInterface);
+                    .Where(t => t.Name.EndsWith("Service") && !t.IsAbstract && !t.IsInterface);
 
         foreach (var serviceType in serviceTypes)
         {

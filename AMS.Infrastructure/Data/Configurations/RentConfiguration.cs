@@ -13,7 +13,7 @@ public class RentConfiguration : IEntityTypeConfiguration<Rent>
             .WithMany()
             .HasForeignKey(r => r.TenantBillId)
             .OnDelete(DeleteBehavior.SetNull);
-            
+
         builder.HasQueryFilter(x => !x.Tenant!.Flat!.IsDeleted);
     }
 }

@@ -1,5 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
@@ -96,7 +94,7 @@ public class RegisterModel : PageModel
             Fullname = Input.Fullname,
             PhoneNumber = Input.PhoneNumber,
             BuildingId = building.Id,
-            IsApproved = false // await president approval
+            IsApproved = false
         };
 
         await _emailStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
@@ -110,12 +108,10 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        // Put the user into "User" (pending) role
         await _userManager.AddToRoleAsync(user, "User");
 
         _logger.LogInformation("New user registered for building {Code}.", building.Code);
 
-        // Email confirmation
         var userId = await _userManager.GetUserIdAsync(user);
         var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -133,13 +129,9 @@ public class RegisterModel : PageModel
         catch (SmtpException ex)
         {
             _logger.LogError(ex, "Email send failed. Falling back to on-screen confirmation link.");
-            // Continue to RegisterConfirmation even if email fails
+
         }
 
-        //await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-        //    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-        // Always redirect to “check your email”
         return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
     }
 }

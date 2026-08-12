@@ -45,7 +45,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
-    
+
     public override int SaveChanges()
     {
         ApplyAuditAndSoftDeleteRules();

@@ -14,7 +14,7 @@ public class FlatBillingProfileConfiguration : IEntityTypeConfiguration<FlatBill
             .WithMany()
             .HasForeignKey(x => x.FlatId)
             .OnDelete(DeleteBehavior.Cascade);
-            
+
         builder.HasQueryFilter(x => !x.Flat!.IsDeleted);
     }
 }

@@ -10,19 +10,16 @@ using Microsoft.AspNetCore.Mvc.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
 
-// Encapsulated setup
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the localization options - set currency from $ to tk
 var customCulture = new CultureInfo("en-US");
 customCulture.NumberFormat.CurrencySymbol = "tk";
 customCulture.NumberFormat.CurrencyPositivePattern = 3;

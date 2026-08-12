@@ -21,7 +21,7 @@ public class TenantBillConfiguration : IEntityTypeConfiguration<TenantBill>
             .WithMany()
             .HasForeignKey(x => x.TenantUserId)
             .OnDelete(DeleteBehavior.Restrict);
-            
+
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }
