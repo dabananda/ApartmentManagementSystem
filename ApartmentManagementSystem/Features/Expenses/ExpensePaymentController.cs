@@ -1,7 +1,9 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Expenses.Services;
+using ApartmentManagementSystem.Features.Expenses.ViewModels;
 using ApartmentManagementSystem.Features.Shared;
+using ApartmentManagementSystem.Features.Buildings.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +16,19 @@ namespace ApartmentManagementSystem.Features.Expenses
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IExpensePaymentService _payments;
+        private readonly IBuildingService _buildings;
+        private readonly ICommonBillService _bills;
 
-        public ExpensePaymentController(UserManager<ApplicationUser> userManager, IExpensePaymentService payments)
+        public ExpensePaymentController(
+            UserManager<ApplicationUser> userManager, 
+            IExpensePaymentService payments,
+            IBuildingService buildings,
+            ICommonBillService bills)
         {
             _userManager = userManager;
             _payments = payments;
+            _buildings = buildings;
+            _bills = bills;
         }
 
         /// <summary>Returns true if the current user is authorised to manage payments for <paramref name="buildingId"/>.</summary>
@@ -60,27 +70,28 @@ namespace ApartmentManagementSystem.Features.Expenses
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,PaymentDate,Amount,Notes,BuildingId,CommonBillId")] ExpensePayment payment)
+        public async Task<IActionResult> Create(ExpensePaymentCreateViewModel model)
         {
-            if (!await IsAuthorizedForBuildingAsync(payment.BuildingId)) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(model.BuildingId)) return Forbid();
 
             if (ModelState.IsValid)
             {
-                var remainingAmount = await _payments.GetRemainingAmountAsync(payment.CommonBillId);
-                if (payment.Amount > remainingAmount)
+                var remainingAmount = await _payments.GetRemainingAmountAsync(model.CommonBillId);
+                if (model.Amount > remainingAmount)
                     ModelState.AddModelError("Amount", $"Payment amount cannot exceed the remaining balance of {remainingAmount:C}.");
             }
 
             if (ModelState.IsValid)
             {
+                var payment = model.ToEntity();
                 await _payments.RecordAsync(payment);
                 TempData["Success"] = "Payment recorded successfully.";
-                return RedirectToAction(nameof(Index), new { buildingId = payment.BuildingId });
+                return RedirectToAction(nameof(Index), new { buildingId = model.BuildingId });
             }
 
-            ViewData["CommonBillId"] = await GetOutstandingBillSelectItemsAsync(payment.BuildingId);
-            ViewData["BuildingId"] = payment.BuildingId;
-            return View(payment);
+            ViewData["CommonBillId"] = await GetOutstandingBillSelectItemsAsync(model.BuildingId);
+            ViewData["BuildingId"] = model.BuildingId;
+            return View(model);
         }
 
         public async Task<IActionResult> Details(Guid? id)

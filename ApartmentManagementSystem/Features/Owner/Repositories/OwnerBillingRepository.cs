@@ -122,6 +122,7 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
         var payment = await context.ExpenseAllocationPayments
             .Include(p => p.ExpenseAllocation)!.ThenInclude(a => a!.CommonBill)!.ThenInclude(b => b!.Building)
             .Include(p => p.ExpenseAllocation)!.ThenInclude(a => a!.Owner)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == paymentId, cancellationToken);
 
         return (payment, result.BuildingId);

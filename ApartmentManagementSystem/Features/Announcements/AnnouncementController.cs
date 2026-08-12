@@ -1,12 +1,12 @@
 using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Features.Announcements.Services;
+using ApartmentManagementSystem.Features.Announcements.ViewModels;
+using ApartmentManagementSystem.Features.Administration.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ApartmentManagementSystem.Features.Announcements.Services;
 
 namespace ApartmentManagementSystem.Features.Announcements
 {
@@ -34,19 +34,18 @@ namespace ApartmentManagementSystem.Features.Announcements
             return View(items);
         }
 
-        public IActionResult Create() => View(new Announcement());
+        public IActionResult Create() => View(new AnnouncementCreateViewModel());
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Title,Body")] Announcement model)
+        public async Task<IActionResult> Create(AnnouncementCreateViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user?.BuildingId == null) return Forbid();
 
-            ModelState.Remove(nameof(Announcement.BuildingId));
-
             if (!ModelState.IsValid) return View(model);
 
-            await _announcements.PublishAsync(model, user.BuildingId.Value);
+            var announcement = model.ToEntity();
+            await _announcements.PublishAsync(announcement, user.BuildingId.Value);
 
             TempData["Ok"] = "Notice published to your building.";
             return RedirectToAction(nameof(Index));

@@ -1,6 +1,7 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Flats.Services;
+using ApartmentManagementSystem.Features.Flats.ViewModels;
 using ApartmentManagementSystem.Features.President.ViewModels;
 using ApartmentManagementSystem.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -77,22 +78,23 @@ namespace ApartmentManagementSystem.Features.Flats
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("FlatNumber,BuildingId")] Flat flat)
+        public async Task<IActionResult> Create(FlatCreateViewModel model)
         {
             if (ModelState.IsValid)
             {
+                var flat = model.ToEntity();
                 await _flats.CreateAsync(flat);
-                return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
+                return RedirectToAction(nameof(Index), new { buildingId = model.BuildingId });
             }
 
-            var building = await _flats.GetBuildingAsync(flat.BuildingId);
+            var building = await _flats.GetBuildingAsync(model.BuildingId);
             if (building != null)
             {
                 ViewData["BuildingId"] = building.Id;
                 ViewData["BuildingName"] = building.Name;
             }
 
-            return View(flat);
+            return View(model);
         }
 
         public async Task<IActionResult> AssignOwner(Guid? flatId)

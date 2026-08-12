@@ -44,7 +44,7 @@ namespace ApartmentManagementSystem.Features.Buildings
                 if (ctx?.BuildingId != building.Id) return Forbid();
             }
 
-            return View(building);
+            return View(BuildingDetailsViewModel.FromEntity(building));
         }
 
         public async Task<IActionResult> Create()
@@ -54,17 +54,18 @@ namespace ApartmentManagementSystem.Features.Buildings
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Address,Code")] Building building)
+        public async Task<IActionResult> Create(BuildingCreateViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(building.Code))
-                building.Code = await _codeGen.GenerateAsync();
+            if (string.IsNullOrWhiteSpace(model.Code))
+                model.Code = await _codeGen.GenerateAsync();
 
-            if (await _buildings.CodeExistsAsync(building.Code))
-                ModelState.AddModelError(nameof(Building.Code), "Building code already exists.");
+            if (await _buildings.CodeExistsAsync(model.Code))
+                ModelState.AddModelError(nameof(BuildingCreateViewModel.Code), "Building code already exists.");
 
             if (!ModelState.IsValid)
-                return View(building);
+                return View(model);
 
+            var building = model.ToEntity();
             await _buildings.CreateAsync(building);
             return RedirectToAction(nameof(Index));
         }
@@ -73,16 +74,21 @@ namespace ApartmentManagementSystem.Features.Buildings
         {
             var building = await _buildings.GetAsync(id);
             if (building == null) return NotFound();
-            return View(building);
+            return View(BuildingEditViewModel.FromEntity(building));
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Address")] Building building)
+        public async Task<IActionResult> Edit(Guid id, BuildingEditViewModel model)
         {
-            if (id != building.Id) return NotFound();
+            if (id != model.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
+                var building = await _buildings.GetAsync(id);
+                if (building == null) return NotFound();
+                
+                model.UpdateEntity(building);
+
                 try
                 {
                     await _buildings.UpdateAsync(building);
@@ -95,7 +101,7 @@ namespace ApartmentManagementSystem.Features.Buildings
                 return RedirectToAction(nameof(Index));
             }
 
-            return View(building);
+            return View(model);
         }
 
         public async Task<IActionResult> Delete(Guid id)
@@ -105,7 +111,7 @@ namespace ApartmentManagementSystem.Features.Buildings
             var building = await _buildings.GetAsync(id);
             if (building == null) return NotFound();
 
-            return View(building);
+            return View(BuildingDetailsViewModel.FromEntity(building));
         }
 
         [HttpPost, ActionName("Delete")]

@@ -16,4 +16,10 @@ public interface IUserManagementRepository
 
     /// <summary>Returns whether a user has billing history (TenantBills) or active tenant assignments.</summary>
     Task<bool> HasBlockingRecordsAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns an IQueryable of users who are either unapproved or belong to a specific role.</summary>
+    IQueryable<ApplicationUser> GetUsersByRoleQuery(string roleName);
+
+    /// <summary>Retrieves a mapping of User IDs to their Roles for a given set of user IDs in a single query.</summary>
+    Task<Dictionary<string, IList<string>>> GetRolesForUsersAsync(IEnumerable<string> userIds, CancellationToken cancellationToken = default);
 }

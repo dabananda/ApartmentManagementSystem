@@ -182,13 +182,11 @@ public sealed class UserManagementService(
         bool callerIsSuperAdmin,
         CancellationToken cancellationToken = default)
     {
-        var pendingIds = (await userManager.GetUsersInRoleAsync(Roles.User))
-            .Select(u => u.Id)
-            .ToHashSet();
+        var pendingRolesQuery = repository.GetUsersByRoleQuery(Roles.User);
 
         IQueryable<ApplicationUser> q = userManager.Users
             .Include(u => u.Building)
-            .Where(u => pendingIds.Contains(u.Id) || !u.IsApproved);
+            .Where(u => pendingRolesQuery.Contains(u) || !u.IsApproved);
 
         if (!callerIsSuperAdmin && callerBuildingId != null)
             filter.BuildingId ??= callerBuildingId;
@@ -217,8 +215,12 @@ public sealed class UserManagementService(
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        var roleMap = new Dictionary<string, IList<string>>();
-        foreach (var u in users) roleMap[u.Id] = await userManager.GetRolesAsync(u);
+        var userIds = users.Select(u => u.Id).ToList();
+        var roleMap = await repository.GetRolesForUsersAsync(userIds, cancellationToken);
+        foreach (var u in users) 
+        {
+            if (!roleMap.ContainsKey(u.Id)) roleMap[u.Id] = new List<string>();
+        }
 
         var buildings = callerIsSuperAdmin
             ? await repository.GetBuildingSelectItemsAsync(cancellationToken: cancellationToken)
@@ -413,9 +415,8 @@ public sealed class UserManagementService(
 
         if (!string.Equals(filter.Role, "All", StringComparison.OrdinalIgnoreCase))
         {
-            var roleUsers = await userManager.GetUsersInRoleAsync(filter.Role);
-            var ids = roleUsers.Select(u => u.Id).ToList();
-            q = q.Where(u => ids.Contains(u.Id));
+            var roleQuery = repository.GetUsersByRoleQuery(filter.Role);
+            q = q.Where(u => roleQuery.Contains(u));
         }
 
         var total = await q.CountAsync(cancellationToken);
@@ -427,8 +428,12 @@ public sealed class UserManagementService(
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        var roleMap = new Dictionary<string, IList<string>>();
-        foreach (var u in users) roleMap[u.Id] = await userManager.GetRolesAsync(u);
+        var userIds = users.Select(u => u.Id).ToList();
+        var roleMap = await repository.GetRolesForUsersAsync(userIds, cancellationToken);
+        foreach (var u in users) 
+        {
+            if (!roleMap.ContainsKey(u.Id)) roleMap[u.Id] = new List<string>();
+        }
 
         var buildings = callerIsSuperAdmin
             ? await repository.GetBuildingSelectItemsAsync(cancellationToken: cancellationToken)

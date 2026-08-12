@@ -1,10 +1,13 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Expenses.Services;
+using ApartmentManagementSystem.Features.Expenses.ViewModels;
 using ApartmentManagementSystem.Features.Shared;
+using ApartmentManagementSystem.Features.Buildings.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Features.Expenses
 {
@@ -13,11 +16,13 @@ namespace ApartmentManagementSystem.Features.Expenses
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICommonBillService _bills;
+        private readonly IBuildingService _buildings;
 
-        public CommonBillController(UserManager<ApplicationUser> userManager, ICommonBillService bills)
+        public CommonBillController(UserManager<ApplicationUser> userManager, ICommonBillService bills, IBuildingService buildings)
         {
             _userManager = userManager;
             _bills = bills;
+            _buildings = buildings;
         }
 
         /// <summary>Returns true if the current user is authorised to manage bills for <paramref name="buildingId"/>.</summary>
@@ -53,18 +58,24 @@ namespace ApartmentManagementSystem.Features.Expenses
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,TotalAmount,Notes,BuildingId")] CommonBill bill)
+        public async Task<IActionResult> Create(CommonBillCreateViewModel model)
         {
-            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
+            if (!await IsAuthorizedForBuildingAsync(model.BuildingId)) return Forbid();
 
             if (ModelState.IsValid)
             {
+                var bill = model.ToEntity();
                 await _bills.CreateAsync(bill);
-                return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
+                return RedirectToAction(nameof(Index), new { buildingId = model.BuildingId });
             }
 
-            ViewData["BuildingId"] = bill.BuildingId;
-            return View(bill);
+            var building = await _buildings.GetAsync(model.BuildingId);
+            if (building != null)
+            {
+                ViewData["BuildingId"] = building.Id;
+                ViewData["BuildingName"] = building.Name;
+            }
+            return View(model);
         }
 
         public async Task<IActionResult> Details(Guid id)
@@ -82,30 +93,52 @@ namespace ApartmentManagementSystem.Features.Expenses
             var bill = await _bills.GetAsync(id);
             if (bill == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
-
-            ViewData["BuildingId"] = bill.BuildingId;
-            return View(bill);
+            
+            var building = await _buildings.GetAsync(bill.BuildingId);
+            if (building != null)
+            {
+                ViewData["BuildingId"] = building.Id;
+                ViewData["BuildingName"] = building.Name;
+            }
+            
+            return View(CommonBillEditViewModel.FromEntity(bill));
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,TotalAmount,Notes,BuildingId")] CommonBill input)
+        public async Task<IActionResult> Edit(Guid id, CommonBillEditViewModel model)
         {
-            if (id != input.Id) return NotFound();
+            if (id != model.Id) return NotFound();
 
-            var bill = await _bills.GetAsync(id);
-            if (bill == null) return NotFound();
-            if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
-
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                ViewData["BuildingId"] = bill.BuildingId;
-                return View(bill);
+                var bill = await _bills.GetAsync(id);
+                if (bill == null) return NotFound();
+                if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
+                
+                model.UpdateEntity(bill);
+                
+                try
+                {
+                    await _bills.UpdateAsync(bill);
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!await _bills.ExistsAsync(bill.Id)) return NotFound();
+                    else throw;
+                }
+                
+                TempData["Success"] = "Common bill updated successfully.";
+                return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
+            }
+            
+            var building = await _buildings.GetAsync(model.BuildingId);
+            if (building != null)
+            {
+                ViewData["BuildingId"] = building.Id;
+                ViewData["BuildingName"] = building.Name;
             }
 
-            await _bills.UpdateAsync(bill, input);
-
-            TempData["Success"] = "Common bill updated successfully.";
-            return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
+            return View(model);
         }
 
         public async Task<IActionResult> Delete(Guid id)

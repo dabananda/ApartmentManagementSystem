@@ -29,12 +29,14 @@ public sealed class CommonBillService(ICommonBillRepository bills) : ICommonBill
         await bills.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task UpdateAsync(CommonBill bill, CommonBill input, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(CommonBill bill, CancellationToken cancellationToken = default)
     {
-        bill.Name = input.Name;
-        bill.TotalAmount = input.TotalAmount;
-        bill.Notes = input.Notes;
         await bills.SaveChangesAsync(cancellationToken);
+    }
+    
+    public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return bills.GetAsync(id, false, cancellationToken).ContinueWith(t => t.Result != null);
     }
 
     public Task DeleteAsync(CommonBill bill, CancellationToken cancellationToken = default) => bills.DeleteAsync(bill, cancellationToken);
