@@ -1,5 +1,6 @@
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Extensions;
+using ApartmentManagementSystem.Application;
+using ApartmentManagementSystem.Infrastructure;
 using ApartmentManagementSystem.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -16,8 +17,8 @@ builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
 
 // Encapsulated setup
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddFeatureServices();
 
 var app = builder.Build();
 

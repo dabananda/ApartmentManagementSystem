@@ -2,12 +2,12 @@ using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
-using ApartmentManagementSystem.Features.Flats.ViewModels;
+using ApartmentManagementSystem.Application.Features.Home.DTOs;
+using ApartmentManagementSystem.Application.Features.Flats.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ApartmentManagementSystem.Features.Tenancy.Services;
+using ApartmentManagementSystem.Application.Features.Tenancy.Services;
 
 namespace ApartmentManagementSystem.Features.Flats
 {

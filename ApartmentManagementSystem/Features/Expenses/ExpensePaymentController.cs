@@ -1,9 +1,10 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Expenses.Services;
-using ApartmentManagementSystem.Features.Expenses.ViewModels;
+using ApartmentManagementSystem.Application.Features.Expenses.Services;
+using ApartmentManagementSystem.Application.Features.Expenses.DTOs;
 using ApartmentManagementSystem.Features.Shared;
-using ApartmentManagementSystem.Features.Buildings.Services;
+using ApartmentManagementSystem.Application.Features.Buildings.Queries;
+using ApartmentManagementSystem.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,18 +17,18 @@ namespace ApartmentManagementSystem.Features.Expenses
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IExpensePaymentService _payments;
-        private readonly IBuildingService _buildings;
+        private readonly IMediator _mediator;
         private readonly ICommonBillService _bills;
 
         public ExpensePaymentController(
-            UserManager<ApplicationUser> userManager, 
+            UserManager<ApplicationUser> userManager,
             IExpensePaymentService payments,
-            IBuildingService buildings,
+            IMediator mediator,
             ICommonBillService bills)
         {
             _userManager = userManager;
             _payments = payments;
-            _buildings = buildings;
+            _mediator = mediator;
             _bills = bills;
         }
 

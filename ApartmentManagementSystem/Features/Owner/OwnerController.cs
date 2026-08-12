@@ -1,10 +1,10 @@
-using ApartmentManagementSystem.Features.Owner.Services;
+using ApartmentManagementSystem.Application.Features.Owner.Services;
 using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
-using ApartmentManagementSystem.Features.Owner.ViewModels;
+using ApartmentManagementSystem.Application.Features.Home.DTOs;
+using ApartmentManagementSystem.Application.Features.Owner.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -58,11 +58,11 @@ namespace ApartmentManagementSystem.Features.Owner
             if (me == null) return Forbid();
 
             var targetOwnerId = User.IsInRole("Owner") ? me.Id : (ownerId ?? me.Id);
-            
+
             var restrictToBuildingId = (User.IsInRole("President") && me.BuildingId != null) ? me.BuildingId : null;
 
             var page = await _ownerService.GetCommonBillsPageAsync(targetOwnerId, restrictToBuildingId);
-            
+
             // If allocations were 0, service returns an empty model with the user's name
             if (page == null)
             {

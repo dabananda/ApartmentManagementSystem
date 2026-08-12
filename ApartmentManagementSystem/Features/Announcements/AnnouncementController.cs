@@ -1,9 +1,9 @@
 using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Announcements.Services;
-using ApartmentManagementSystem.Features.Announcements.ViewModels;
-using ApartmentManagementSystem.Features.Administration.Services;
+using ApartmentManagementSystem.Application.Features.Announcements.Services;
+using ApartmentManagementSystem.Application.Features.Announcements.DTOs;
+using ApartmentManagementSystem.Application.Interfaces.Administration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

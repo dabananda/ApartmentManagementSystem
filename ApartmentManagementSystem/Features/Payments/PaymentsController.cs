@@ -1,7 +1,7 @@
-using ApartmentManagementSystem.Features.Payments.Services;
+using ApartmentManagementSystem.Application.Interfaces.Payments;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

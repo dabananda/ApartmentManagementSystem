@@ -1,0 +1,35 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+using ApartmentManagementSystem.Domain.Entities.Base;
+
+using ApartmentManagementSystem.Domain.Common;
+
+namespace ApartmentManagementSystem.Domain.Entities
+{
+    public class CommonBill : BaseEntity, IAggregateRoot
+    {
+
+        [Required]
+        [Display(Name = "Bill Name")]
+        [StringLength(100)]
+        public string Name { get; set; } = default!;
+
+        [DataType(DataType.Date)]
+        [Display(Name = "Bill Date")]
+        public DateTime BillDate { get; set; } = DateTime.Today;
+
+        [Required]
+        [DataType(DataType.Currency)]
+        [Column(TypeName = "decimal(18, 2)")]
+        public decimal TotalAmount { get; set; }
+
+        public string? Notes { get; set; }
+
+        public Guid BuildingId { get; set; }
+        [ForeignKey("BuildingId")]
+        public virtual Building? Building { get; set; }
+
+        public ICollection<ExpenseAllocation>? Allocations { get; set; } = new List<ExpenseAllocation>();
+    }
+}

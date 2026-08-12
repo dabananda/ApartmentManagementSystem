@@ -1,9 +1,10 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Expenses.Services;
-using ApartmentManagementSystem.Features.Expenses.ViewModels;
+using ApartmentManagementSystem.Application.Features.Expenses.Services;
+using ApartmentManagementSystem.Application.Features.Expenses.DTOs;
 using ApartmentManagementSystem.Features.Shared;
-using ApartmentManagementSystem.Features.Buildings.Services;
+using ApartmentManagementSystem.Application.Features.Buildings.Queries;
+using ApartmentManagementSystem.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,13 +17,13 @@ namespace ApartmentManagementSystem.Features.Expenses
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICommonBillService _bills;
-        private readonly IBuildingService _buildings;
+        private readonly IMediator _mediator;
 
-        public CommonBillController(UserManager<ApplicationUser> userManager, ICommonBillService bills, IBuildingService buildings)
+        public CommonBillController(UserManager<ApplicationUser> userManager, ICommonBillService bills, IMediator mediator)
         {
             _userManager = userManager;
             _bills = bills;
-            _buildings = buildings;
+            _mediator = mediator;
         }
 
         /// <summary>Returns true if the current user is authorised to manage bills for <paramref name="buildingId"/>.</summary>
@@ -69,7 +70,7 @@ namespace ApartmentManagementSystem.Features.Expenses
                 return RedirectToAction(nameof(Index), new { buildingId = model.BuildingId });
             }
 
-            var building = await _buildings.GetAsync(model.BuildingId);
+            var building = await _mediator.Send(new GetBuildingByIdQuery { Id = model.BuildingId });
             if (building != null)
             {
                 ViewData["BuildingId"] = building.Id;
@@ -93,14 +94,14 @@ namespace ApartmentManagementSystem.Features.Expenses
             var bill = await _bills.GetAsync(id);
             if (bill == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
-            
-            var building = await _buildings.GetAsync(bill.BuildingId);
+
+            var building = await _mediator.Send(new GetBuildingByIdQuery { Id = bill.BuildingId });
             if (building != null)
             {
                 ViewData["BuildingId"] = building.Id;
                 ViewData["BuildingName"] = building.Name;
             }
-            
+
             return View(CommonBillEditViewModel.FromEntity(bill));
         }
 
@@ -114,9 +115,9 @@ namespace ApartmentManagementSystem.Features.Expenses
                 var bill = await _bills.GetAsync(id);
                 if (bill == null) return NotFound();
                 if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
-                
+
                 model.UpdateEntity(bill);
-                
+
                 try
                 {
                     await _bills.UpdateAsync(bill);
@@ -126,12 +127,12 @@ namespace ApartmentManagementSystem.Features.Expenses
                     if (!await _bills.ExistsAsync(bill.Id)) return NotFound();
                     else throw;
                 }
-                
+
                 TempData["Success"] = "Common bill updated successfully.";
                 return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
             }
-            
-            var building = await _buildings.GetAsync(model.BuildingId);
+
+            var building = await _mediator.Send(new GetBuildingByIdQuery { Id = model.BuildingId });
             if (building != null)
             {
                 ViewData["BuildingId"] = building.Id;

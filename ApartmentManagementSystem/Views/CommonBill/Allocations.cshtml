@@ -1,4 +1,4 @@
-﻿@using ApartmentManagementSystem.Features.Owner.ViewModels
+@using ApartmentManagementSystem.Application.Features.Owner.DTOs
 @model List<OwnerAllocationRowViewModel>
 @{
     ViewData["Title"] = "Owner Payments";
@@ -8,7 +8,7 @@
     var billTotal = ViewData["BillTotal"] as decimal? ?? 0m;
 }
 
-<h2 class="mb-3">Owner Payments — @billName (@billDate)</h2>
+<h2 class="mb-3">Owner Payments � @billName (@billDate)</h2>
 <div class="mb-3 text-muted">Bill Total: @billTotal.ToString("C")</div>
 
 @if (TempData["Success"] != null)

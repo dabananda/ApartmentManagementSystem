@@ -20,5 +20,10 @@
     <PackageReference Include="System.Text.Json" Version="8.0.6" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ApartmentManagementSystem.Application\ApartmentManagementSystem.Application.csproj" />
+    <ProjectReference Include="..\ApartmentManagementSystem.Infrastructure\ApartmentManagementSystem.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
 

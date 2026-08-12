@@ -1,7 +1,8 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Buildings.Services;
-using ApartmentManagementSystem.Features.Buildings.ViewModels;
+using ApartmentManagementSystem.Application.Features.Buildings.DTOs;
+using ApartmentManagementSystem.Application.Features.Buildings.Queries;
+using ApartmentManagementSystem.Application.Features.Buildings.Commands;
 using ApartmentManagementSystem.Features.Shared;
 using ApartmentManagementSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -16,26 +17,26 @@ namespace ApartmentManagementSystem.Features.Buildings
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IBuildingCodeGenerator _codeGen;
-        private readonly IBuildingService _buildings;
+        private readonly ApartmentManagementSystem.Application.Mediator.IMediator _mediator;
 
         public BuildingController(
             UserManager<ApplicationUser> userManager,
             IBuildingCodeGenerator codeGen,
-            IBuildingService buildings)
+            ApartmentManagementSystem.Application.Mediator.IMediator mediator)
         {
             _userManager = userManager;
             _codeGen = codeGen;
-            _buildings = buildings;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index([FromQuery] BuildingIndexFilterViewModel filter)
         {
-            return View(await _buildings.GetIndexAsync(filter));
+            return View(await _mediator.Send(new GetBuildingIndexQuery { Filter = filter }));
         }
 
         public async Task<IActionResult> Details(Guid id)
         {
-            var building = await _buildings.GetAsync(id, includeFlats: true);
+            var building = await _mediator.Send(new GetBuildingByIdQuery { Id = id, IncludeFlats = true });
             if (building == null) return NotFound();
 
             if (User.IsInRole(Roles.President))
@@ -59,20 +60,23 @@ namespace ApartmentManagementSystem.Features.Buildings
             if (string.IsNullOrWhiteSpace(model.Code))
                 model.Code = await _codeGen.GenerateAsync();
 
-            if (await _buildings.CodeExistsAsync(model.Code))
+            if (await _mediator.Send(new CheckBuildingCodeExistsQuery { Code = model.Code }))
                 ModelState.AddModelError(nameof(BuildingCreateViewModel.Code), "Building code already exists.");
 
             if (!ModelState.IsValid)
                 return View(model);
 
             var building = model.ToEntity();
-            await _buildings.CreateAsync(building);
+
+            var command = new CreateBuildingCommand { Building = building };
+            await _mediator.Send(command);
+
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(Guid id)
         {
-            var building = await _buildings.GetAsync(id);
+            var building = await _mediator.Send(new GetBuildingByIdQuery { Id = id });
             if (building == null) return NotFound();
             return View(BuildingEditViewModel.FromEntity(building));
         }
@@ -84,18 +88,18 @@ namespace ApartmentManagementSystem.Features.Buildings
 
             if (ModelState.IsValid)
             {
-                var building = await _buildings.GetAsync(id);
+                var building = await _mediator.Send(new GetBuildingByIdQuery { Id = id });
                 if (building == null) return NotFound();
-                
+
                 model.UpdateEntity(building);
 
                 try
                 {
-                    await _buildings.UpdateAsync(building);
+                    await _mediator.Send(new UpdateBuildingCommand { Building = building });
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!await _buildings.ExistsAsync(building.Id)) return NotFound();
+                    if (!await _mediator.Send(new CheckBuildingExistsQuery { Id = building.Id })) return NotFound();
                     else throw;
                 }
                 return RedirectToAction(nameof(Index));
@@ -108,7 +112,7 @@ namespace ApartmentManagementSystem.Features.Buildings
         {
             if (!User.IsInRole(Roles.SuperAdmin)) return Forbid();
 
-            var building = await _buildings.GetAsync(id);
+            var building = await _mediator.Send(new GetBuildingByIdQuery { Id = id });
             if (building == null) return NotFound();
 
             return View(BuildingDetailsViewModel.FromEntity(building));
@@ -120,10 +124,10 @@ namespace ApartmentManagementSystem.Features.Buildings
         {
             if (!User.IsInRole(Roles.SuperAdmin)) return Forbid();
 
-            var building = await _buildings.GetAsync(id);
+            var building = await _mediator.Send(new GetBuildingByIdQuery { Id = id });
             if (building == null) return NotFound();
 
-            if (await _buildings.HasBlockingRecordsAsync(id))
+            if (await _mediator.Send(new CheckBuildingHasBlockingRecordsQuery { BuildingId = id }))
             {
                 TempData["Error"] =
                     "Cannot delete this building because one or more flats have related records " +
@@ -133,7 +137,7 @@ namespace ApartmentManagementSystem.Features.Buildings
 
             try
             {
-                await _buildings.DeleteAsync(building);
+                await _mediator.Send(new DeleteBuildingCommand { Building = building });
                 TempData["Success"] = "Building deleted.";
             }
             catch (DbUpdateException)

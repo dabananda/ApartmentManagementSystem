@@ -1,7 +1,7 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Shared;
-using ApartmentManagementSystem.Features.TenantPortal.Services;
+using ApartmentManagementSystem.Application.Features.TenantPortal.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -89,7 +89,6 @@ namespace ApartmentManagementSystem.Features.TenantPortal
 
             if (!ModelState.IsValid) return View(model);
 
-            model.Id = Guid.NewGuid();
             model.BuildingId = assignment.Flat.BuildingId;
             model.FlatId = assignment.FlatId;
             model.CreatedByUserId = ctx.Me.Id;

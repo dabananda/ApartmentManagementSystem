@@ -1,5 +1,5 @@
 using ApartmentManagementSystem.Domain.Constants;
-using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -63,7 +63,7 @@ namespace ApartmentManagementSystem.Features.Home
         public IActionResult Error(int? statusCode = null)
         {
             var exceptionHandlerPathFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
-            
+
             if (exceptionHandlerPathFeature?.Error != null)
             {
                 _logger.LogError(exceptionHandlerPathFeature.Error, "Unhandled exception occurred at {Path}", exceptionHandlerPathFeature.Path);

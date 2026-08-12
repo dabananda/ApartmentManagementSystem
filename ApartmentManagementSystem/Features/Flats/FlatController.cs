@@ -1,8 +1,8 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
-using ApartmentManagementSystem.Features.Flats.Services;
-using ApartmentManagementSystem.Features.Flats.ViewModels;
-using ApartmentManagementSystem.Features.President.ViewModels;
+using ApartmentManagementSystem.Application.Features.Flats.Services;
+using ApartmentManagementSystem.Application.Features.Flats.DTOs;
+using ApartmentManagementSystem.Application.Features.President.DTOs;
 using ApartmentManagementSystem.Features.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

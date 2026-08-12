@@ -1,10 +1,10 @@
 using ApartmentManagementSystem.Infrastructure.Data;
 using ApartmentManagementSystem.Domain.Constants;
-using ApartmentManagementSystem.Features.President.Services;
+using ApartmentManagementSystem.Application.Features.President.Services;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Payments;
-using ApartmentManagementSystem.Features.Home.ViewModels;
-using ApartmentManagementSystem.Features.President.ViewModels;
+using ApartmentManagementSystem.Application.Features.Home.DTOs;
+using ApartmentManagementSystem.Application.Features.President.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

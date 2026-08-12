@@ -1,8 +1,8 @@
 using ApartmentManagementSystem.Domain.Constants;
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Shared;
-using ApartmentManagementSystem.Features.TenantBilling.Services;
-using ApartmentManagementSystem.Features.Tenancy.ViewModels;
+using ApartmentManagementSystem.Application.Features.TenantBilling.Services;
+using ApartmentManagementSystem.Application.Features.Tenancy.DTOs;
 using ApartmentManagementSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
