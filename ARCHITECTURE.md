@@ -1,20 +1,30 @@
-# Architecture
+# 🏗️ Architecture Guide
 
 ## Overview
 
-Apartment Management System is a single ASP.NET Core MVC application. It uses a feature-oriented application layer above shared infrastructure and a SQL Server database. Browser requests are served by Razor views; there is no separate public API or client application.
+Apartment Management System is a robust and feature rich ASP.NET Core MVC application. It leverages a feature-oriented application layer above shared infrastructure and a SQL Server database. Browser requests are served by Razor views; there is no separate public API or client application.
 
-```text
-Browser
-  -> MVC controller + Razor view
-  -> Feature service
-  -> Feature repository
-  -> ApplicationDbContext / SQL Server
+### Request Flow
 
-Cross-cutting services: ASP.NET Identity, Stripe, SMTP, Cloudinary, hosted billing worker
+```mermaid
+flowchart TD
+    A[Browser] -->|HTTP Request| B(MVC Controller + Razor View)
+    B --> C{Feature Service}
+    C --> D[Feature Repository]
+    D --> E[(ApplicationDbContext / SQL Server)]
+    
+    subgraph Cross-Cutting Concerns
+    F[ASP.NET Identity]
+    G[Stripe Payments]
+    H[SMTP Email]
+    I[Cloudinary]
+    J[Hosted Billing Worker]
+    end
+    
+    C -.-> Cross-Cutting Concerns
 ```
 
-## Runtime composition
+## Runtime Composition
 
 `Program.cs` is the composition root. It registers MVC, localization, infrastructure, feature services, authentication and authorization, then maps the conventional MVC route and Identity Razor Pages.
 
@@ -25,94 +35,102 @@ Cross-cutting services: ASP.NET Identity, Stripe, SMTP, Cloudinary, hosted billi
 
 The application uses the `en-US` culture with the currency symbol displayed as `tk`.
 
-## Project layout
+## Project Layout
 
-```text
-ApartmentManagementSystem/
-├── Domain/
-│   ├── Constants/              Role names and composed role policies
-│   └── Entities/               EF Core entities and domain data
-├── Features/
-│   └── <Feature>/
-│       ├── <Feature>Controller.cs
-│       ├── Services/           Workflow and authorization-aware business logic
-│       ├── Repositories/       EF Core queries and persistence
-│       └── ViewModels/         Request/view-specific models
-├── Infrastructure/
-│   ├── BackgroundJobs/         Hosted monthly tenant-bill generator
-│   ├── Data/                   DbContext, Identity claims, and seeding
-│   └── Services/               Email, uploads, code generation, custom sign-in
-├── Views/                      Razor views grouped by controller
-├── Areas/Identity/             Identity UI pages
-├── wwwroot/                    Static CSS, JavaScript, animation, and vendor assets
-├── Extensions/                 Service-registration extension methods
-└── Program.cs                  Application startup and middleware pipeline
+```mermaid
+graph LR
+    Root[ApartmentManagementSystem/] --> Domain
+    Root --> Features
+    Root --> Infrastructure
+    Root --> Views
+    Root --> Identity[Areas/Identity/]
+    Root --> wwwroot
+    Root --> Extensions
+    Root --> Program[Program.cs]
+
+    Domain --> Constants
+    Domain --> Entities
+    
+    Features --> Feature[Feature/]
+    Feature --> Controllers
+    Feature --> Services
+    Feature --> Repositories
+    Feature --> ViewModels
+    
+    Infrastructure --> BackgroundJobs
+    Infrastructure --> Data
+    Infrastructure --> InfraServices[Services]
 ```
 
-## Feature boundaries
+## Feature Boundaries
 
-The feature folders contain the current controllers, services, repositories, and view models for these areas:
+The `Features` folder contains the controllers, services, repositories, and view models organized by feature areas:
 
 | Area | Responsibility |
 | --- | --- |
-| Administration | User approval, role management, president assignment, and dashboards. |
-| Buildings and Flats | Building/flat lifecycle and owner assignment. |
-| Tenancy and Tenant Billing | Tenant directory/assignment, billing profiles, rent, and receipts. |
-| Tenant Portal | Tenant-facing bills, payments, notices, visitors, and tickets. |
-| Expenses and Owner Billing | Common bills, allocations, expense payments, owner balances, and receipts. |
-| Payments | Stripe Checkout session creation, webhook handling, and payment persistence. |
-| Announcements, Entry Logs, Maintenance | Day-to-day building operations. |
-| President and Reports | Building dashboards and financial, occupancy, visitor, and maintenance reports. |
+| **Administration** | User approval, role management, president assignment, and dashboards. |
+| **Buildings and Flats** | Building/flat lifecycle and owner assignment. |
+| **Tenancy & Tenant Billing**| Tenant directory/assignment, billing profiles, rent, and receipts. |
+| **Tenant Portal** | Tenant-facing bills, payments, notices, visitors, and tickets. |
+| **Expenses & Owner Billing**| Common bills, allocations, expense payments, owner balances, and receipts. |
+| **Payments** | Stripe Checkout session creation, webhook handling, and payment persistence. |
+| **Day-to-day Operations** | Announcements, Entry Logs, Maintenance. |
+| **Reports** | Building dashboards and financial, occupancy, visitor, and maintenance reports. |
 
-Controllers should remain focused on HTTP concerns: request binding, model validation, calling a service, and selecting a response or view. Services own workflows; repositories contain database access. New work should follow this separation rather than adding direct `ApplicationDbContext` calls to controllers.
+> [!TIP]
+> **Controller Scope:** Controllers should remain focused on HTTP concerns (request binding, validation, calling a service, selecting a response/view). Services own workflows. New features should adhere strictly to this separation.
 
-## Identity and authorization
+## Identity and Authorization
 
-`ApplicationUser` extends ASP.NET Identity's user model with a full name, optional building, approval state, and profile image URL. The roles seeded at startup are `SuperAdmin`, `President`, `Owner`, `Tenant`, `Staff`, and `User`.
+`ApplicationUser` extends ASP.NET Identity's user model with a full name, optional building, approval state, and profile image URL. 
 
-The custom claims principal factory exposes building information in the signed-in user's claims. Controllers use role attributes and services/repositories apply building and ownership boundaries where required. Authorization must be enforced server-side; sidebar visibility is only navigation assistance.
+The custom claims principal factory exposes building information in the signed-in user's claims. Controllers use role attributes, and services/repositories apply building and ownership boundaries where required. 
 
-## Data model and invariants
+> [!CAUTION]
+> Authorization must be enforced server-side. Do not rely on UI/sidebar visibility for access control.
+
+## Data Model and Invariants
 
 `ApplicationDbContext` inherits `IdentityDbContext<ApplicationUser>` and uses the default SQL schema `ams`.
 
-```text
-Building 1 ── * Flat
-Building 1 ── * CommonBill 1 ── * ExpenseAllocation ── * ExpenseAllocationPayment
-ApplicationUser (owner) 1 ── * Flat
-Flat 1 ── 1 FlatBillingProfile
-Flat 1 ── * TenantAssignment * ── 1 ApplicationUser (tenant)
-TenantAssignment + FlatBillingProfile -> TenantBill 1 ── * TenantPayment
-Building 1 ── * Announcement / EntryLog / MaintenanceTicket
+### Entity Relationships
+
+```mermaid
+erDiagram
+    BUILDING ||--o{ FLAT : contains
+    BUILDING ||--o{ COMMON_BILL : has
+    COMMON_BILL ||--o{ EXPENSE_ALLOC : allocates
+    EXPENSE_ALLOC ||--o{ EXPENSE_PAYMENT : receives
+    USER ||--o{ FLAT : owns
+    FLAT ||--o| BILLING_PROFILE : configures
+    FLAT ||--o{ TENANT_ASSIGNMENT : history
+    TENANT_ASSIGNMENT }o--|| USER : tenant
+    TENANT_ASSIGNMENT ||--o{ TENANT_BILL : incurs
+    BILLING_PROFILE ||--o{ TENANT_BILL : prices
+    TENANT_BILL ||--o{ TENANT_PAYMENT : receives
+    BUILDING ||--o{ ANNOUNCEMENT : issues
+    BUILDING ||--o{ ENTRY_LOG : records
+    BUILDING ||--o{ MAINTENANCE_TICKET : tracks
 ```
 
-Important database constraints include:
-
-- Building names and building codes are unique.
+**Key Invariants:**
+- Building names and codes are unique.
 - A flat number is unique within its building.
-- A user can have at most one active tenant assignment, and a flat can have at most one active tenant assignment. Both use filtered unique indexes where `EndDate IS NULL`.
+- Active tenant assignments are uniquely constrained using filtered indexes (`EndDate IS NULL`).
 - A flat has at most one billing profile.
-- Stripe/manual payment idempotency keys are unique when provided.
-- Tenant bills use a row-version concurrency token.
+- Payment idempotency keys are strictly unique.
+- Tenant bills utilize a row-version concurrency token.
 
-## External integrations
+## External Integrations
 
-### Payments
+### Payments (Stripe)
+`StripePaymentService` creates Checkout sessions. Metadata identifies the payment subject. The `POST /payments/webhook` endpoint verifies signatures and processes `checkout.session.completed` and `payment_intent.succeeded`. 
 
-`StripePaymentService` creates Checkout sessions for tenant bills and owner common-bill allocations. Checkout metadata identifies the payment subject. The anonymous `POST /payments/webhook` endpoint verifies Stripe signatures and processes `checkout.session.completed` and `payment_intent.succeeded` events. Repository-level idempotency prevents duplicate payment records when both events arrive.
+### Email and Uploads
+`PaymentEmailService` handles SMTP email delivery for receipts. `CloudinaryPhotoUploadService` handles uploads. Keys should **never** be placed in source-controlled configuration.
 
-### Email and uploads
+## Background Work
+`TenantMonthlyBillGenerator` is a `BackgroundService` that runs shortly after midnight on the first day of the month to generate bills based on active tenant assignments. 
 
-`PaymentEmailService` sends owner and tenant receipt emails through the registered SMTP sender. `CloudinaryPhotoUploadService` handles photo uploads when its configuration is supplied. Integrations should be treated as optional only where the relevant workflow handles their failure; never place keys in source-controlled configuration.
-
-## Background work
-
-`TenantMonthlyBillGenerator` is an in-process `BackgroundService`. Shortly after midnight each day, it checks whether it is the first day of the month. If so, it creates one bill for every active tenant assignment with an active flat billing profile, skipping bills that already exist for the same flat, tenant, and month.
-
-Because this worker runs in the web process, deploy a single application instance or add distributed coordination before scaling out. It uses server-local `DateTime` values, so ensure the host timezone matches the intended billing calendar.
-
-## Startup and deployment notes
-
-On startup the application attempts to seed roles and the configured super-admin account. It requires a valid SQL connection and a `SuperAdminPassword`; it logs seeding failures rather than terminating the process. Stripe client configuration is also required when payment services are resolved.
-
-The repository currently contains no EF Core migrations. A deployment must supply a compatible schema or create and manage migrations before running the application. See the [README](README.md#quick-start) for a new-local-database workflow.
+> [!IMPORTANT]
+> Because this worker runs in the web process, you must deploy a single application instance or implement distributed locking before scaling out. It relies on the server's local `DateTime`.
