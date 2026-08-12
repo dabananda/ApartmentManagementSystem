@@ -1,9 +1,11 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Flats.Services;
 using AMS.Application.Features.Flats.DTOs;
+using AMS.Application.Features.Flats.Commands;
+using AMS.Application.Features.Flats.Queries;
 using AMS.Application.Features.President.DTOs;
 using AMS.Web.Features.Shared;
+using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,18 +18,18 @@ namespace AMS.Web.Features.Flats
     public class FlatController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IFlatService _flats;
+        private readonly IMediator _mediator;
 
-        public FlatController(UserManager<ApplicationUser> userManager, IFlatService flats)
+        public FlatController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _flats = flats;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> AllFlats()
         {
-            var flats = await _flats.GetAllWithReferencesAsync();
-            var activeAssignments = await _flats.GetActiveAssignmentsAsync();
+            var flats = await _mediator.Send(new GetAllFlatsWithReferencesQuery());
+            var activeAssignments = await _mediator.Send(new GetActiveAssignmentsQuery());
 
             var tenantMap = activeAssignments
                 .GroupBy(ta => ta.FlatId)
@@ -48,7 +50,7 @@ namespace AMS.Web.Features.Flats
         {
             if (buildingId == null) return NotFound();
 
-            var building = await _flats.GetBuildingAsync(buildingId.Value);
+            var building = await _mediator.Send(new GetBuildingForFlatQuery(buildingId.Value));
             if (building == null) return NotFound();
 
             if (User.IsInRole(Roles.President))
@@ -57,7 +59,7 @@ namespace AMS.Web.Features.Flats
                 if (ctx?.BuildingId != buildingId) return Forbid();
             }
 
-            var flats = await _flats.GetForBuildingAsync(buildingId.Value);
+            var flats = await _mediator.Send(new GetFlatsForBuildingQuery(buildingId.Value));
 
             ViewData["BuildingId"] = building.Id;
             ViewData["BuildingName"] = building.Name;
@@ -69,7 +71,7 @@ namespace AMS.Web.Features.Flats
         {
             if (buildingId == null) return NotFound();
 
-            var building = await _flats.GetBuildingAsync(buildingId.Value);
+            var building = await _mediator.Send(new GetBuildingForFlatQuery(buildingId.Value));
             if (building == null) return NotFound();
 
             ViewData["BuildingId"] = buildingId;
@@ -83,11 +85,11 @@ namespace AMS.Web.Features.Flats
             if (ModelState.IsValid)
             {
                 var flat = model.ToEntity();
-                await _flats.CreateAsync(flat);
+                await _mediator.Send(new CreateFlatCommand(flat));
                 return RedirectToAction(nameof(Index), new { buildingId = model.BuildingId });
             }
 
-            var building = await _flats.GetBuildingAsync(model.BuildingId);
+            var building = await _mediator.Send(new GetBuildingForFlatQuery(model.BuildingId));
             if (building != null)
             {
                 ViewData["BuildingId"] = building.Id;
@@ -101,7 +103,7 @@ namespace AMS.Web.Features.Flats
         {
             if (flatId == null) return NotFound();
 
-            var flat = await _flats.GetAsync(flatId.Value, includeReferences: true);
+            var flat = await _mediator.Send(new GetFlatByIdQuery(flatId.Value, IncludeReferences: true));
             if (flat == null) return NotFound();
 
             if (User.IsInRole(Roles.President))
@@ -121,7 +123,7 @@ namespace AMS.Web.Features.Flats
             };
 
             ViewData["FlatNumber"] = flat.FlatNumber;
-            ViewData["BuildingName"] = flat.Building.Name;
+            ViewData["BuildingName"] = flat.Building!.Name;
             ViewData["BuildingId"] = flat.BuildingId;
 
             return View(viewModel);
@@ -132,10 +134,10 @@ namespace AMS.Web.Features.Flats
         {
             if (ModelState.IsValid)
             {
-                var flat = await _flats.GetAsync(model.FlatId);
+                var flat = await _mediator.Send(new GetFlatByIdQuery(model.FlatId));
                 if (flat == null) return NotFound();
 
-                await _flats.AssignOwnerAsync(flat, model.OwnerId);
+                await _mediator.Send(new AssignOwnerCommand(flat, model.OwnerId));
 
                 TempData["SuccessMessage"] = "Owner assigned successfully.";
                 return RedirectToAction(nameof(Index), new { buildingId = flat.BuildingId });
@@ -143,14 +145,14 @@ namespace AMS.Web.Features.Flats
 
             var owners = await _userManager.GetUsersInRoleAsync(Roles.Owner);
             model.Owners = new SelectList(owners, "Id", "Fullname");
-            model.Flats = new SelectList(await _flats.GetAllWithReferencesAsync(), "Id", "FlatNumber");
+            model.Flats = new SelectList(await _mediator.Send(new GetAllFlatsWithReferencesQuery()), "Id", "FlatNumber");
 
             return View(model);
         }
 
         public async Task<IActionResult> Delete(Guid id)
         {
-            var flat = await _flats.GetAsync(id, includeReferences: true);
+            var flat = await _mediator.Send(new GetFlatByIdQuery(id, IncludeReferences: true));
             if (flat == null) return NotFound();
 
             if (User.IsInRole(Roles.President))
@@ -165,7 +167,7 @@ namespace AMS.Web.Features.Flats
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id, bool confirmed = false)
         {
-            var flat = await _flats.GetAsync(id, asNoTracking: true);
+            var flat = await _mediator.Send(new GetFlatByIdQuery(id, AsNoTracking: true));
             if (flat == null) return NotFound();
 
             if (User.IsInRole(Roles.President))
@@ -174,7 +176,7 @@ namespace AMS.Web.Features.Flats
                 if (ctx?.BuildingId != flat.BuildingId) return Forbid();
             }
 
-            var deletionCheck = await _flats.GetDeletionCheckAsync(id);
+            var deletionCheck = await _mediator.Send(new GetFlatDeletionCheckQuery(id));
 
             if (deletionCheck.HasRelatedRecords)
             {
@@ -192,7 +194,7 @@ namespace AMS.Web.Features.Flats
 
             try
             {
-                await _flats.DeleteAsync(flat);
+                await _mediator.Send(new DeleteFlatCommand(flat));
                 TempData["Success"] = "Flat deleted successfully.";
             }
             catch (DbUpdateException)

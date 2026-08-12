@@ -13,10 +13,9 @@ public class FlatCreateViewModel
 
     public Flat ToEntity()
     {
-        return new Flat
-        {
-            FlatNumber = FlatNumber,
-            BuildingId = BuildingId
-        };
+        return Flat.Create(
+            flatNumber: FlatNumber,
+            buildingId: BuildingId
+        );
     }
 }
