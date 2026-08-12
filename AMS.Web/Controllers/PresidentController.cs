@@ -1,15 +1,12 @@
-using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
+using AMS.Application.Features.President.DTOs;
 using AMS.Application.Features.President.Queries;
 using AMS.Application.Mediator;
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
-using AMS.Application.Features.President.DTOs;
+using AMS.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AMS.Web.Controllers
-{
+namespace AMS.Web.Controllers;
+
 [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
 public class PresidentController(IMediator mediator) : Controller
 {
@@ -22,6 +19,4 @@ public class PresidentController(IMediator mediator) : Controller
         }
         return View(await mediator.Send(new GetPresidentDashboardQuery(buildingId)));
     }
-}
-
 }

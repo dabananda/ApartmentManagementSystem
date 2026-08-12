@@ -1,13 +1,10 @@
-using AMS.Application.Interfaces.Owner;
-using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
+using System.Data;
 using AMS.Application.Features.Owner.DTOs;
-using AMS.Application.Features.Tenancy.DTOs;
+using AMS.Application.Interfaces.Owner;
+using AMS.Domain.Entities;
+using AMS.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Data;
 
 namespace AMS.Infrastructure.Repositories.Owner;
 

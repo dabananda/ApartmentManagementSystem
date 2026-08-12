@@ -1,5 +1,5 @@
-using AMS.Application.Mediator;
 using AMS.Application.Interfaces.TenantBilling;
+using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.TenantBilling.Commands;
 

@@ -1,5 +1,5 @@
-using AMS.Application.Mediator;
 using AMS.Application.Interfaces.Tenancy;
+using AMS.Application.Mediator;
 using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.Tenancy.Queries;
@@ -14,10 +14,10 @@ public class GetAssignmentFlatQueryHandler(ITenantAssignmentRepository assignmen
         // Try all three repositories since this query is used by multiple features
         var flat = await assignmentRepo.GetFlatAsync(request.FlatId);
         if (flat != null) return flat;
-        
+
         flat = await directoryRepo.GetFlatAsync(request.FlatId, cancellationToken);
         if (flat != null) return flat;
-        
+
         return await profileRepo.GetFlatAsync(request.FlatId, cancellationToken);
     }
 }

@@ -1,6 +1,6 @@
+using AMS.Application.Interfaces.Buildings;
 using AMS.Application.Mediator;
 using AMS.Domain.Entities;
-using AMS.Application.Interfaces.Buildings;
 
 namespace AMS.Application.Features.Buildings.Commands;
 

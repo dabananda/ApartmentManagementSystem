@@ -1,6 +1,6 @@
-using AMS.Application.Mediator;
-using AMS.Application.Interfaces.President;
 using AMS.Application.Features.President.DTOs;
+using AMS.Application.Interfaces.President;
+using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.President.Queries;
 

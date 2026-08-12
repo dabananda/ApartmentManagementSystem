@@ -1,11 +1,11 @@
-using AMS.Application.Mediator;
-using AMS.Application.Interfaces.TenantBilling;
-using AMS.Domain.Entities;
 using AMS.Application.Features.Tenancy.DTOs;
+using AMS.Application.Interfaces.TenantBilling;
+using AMS.Application.Mediator;
+using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.TenantBilling.Commands;
 
-public record PayTenantBillCommand(RecordTenantPaymentVM Vm, string? RestrictToOwnerId) 
+public record PayTenantBillCommand(RecordTenantPaymentVM Vm, string? RestrictToOwnerId)
     : IRequest<(bool success, string message, List<TenantPayment> payments, string? tenantUserId)>;
 
 public class PayTenantBillCommandHandler(ITenantRentRepository repository)

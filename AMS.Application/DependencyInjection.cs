@@ -1,6 +1,6 @@
+using System.Reflection;
 using AMS.Application.Mediator;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace AMS.Application;
 

@@ -1,6 +1,6 @@
-using AMS.Application.Mediator;
-using AMS.Application.Interfaces.Reports;
 using AMS.Application.Features.Reports.DTOs;
+using AMS.Application.Interfaces.Reports;
+using AMS.Application.Mediator;
 using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.Reports.Queries;
@@ -12,7 +12,7 @@ public class GetVisitorCsvQueryHandler(IPresidentVisitorReportRepository reports
 {
     public Task<IReadOnlyList<EntryLog>> Handle(GetVisitorCsvQuery request, CancellationToken cancellationToken = default)
     {
-        var (start, end) = request.Filter.ToBoundsOrDefault(30); 
+        var (start, end) = request.Filter.ToBoundsOrDefault(30);
         return reports.GetAsync(request.BuildingId, start, end, cancellationToken);
     }
 }

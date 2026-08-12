@@ -1,6 +1,5 @@
 using AMS.Application.Interfaces.Reports;
 using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 
 namespace AMS.Infrastructure.Repositories.Reports;

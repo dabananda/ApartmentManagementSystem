@@ -1,26 +1,25 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AMS.Application.Features.Owner.DTOs
+namespace AMS.Application.Features.Owner.DTOs;
+
+public class RecordOwnerPaymentViewModel
 {
-    public class RecordOwnerPaymentViewModel
-    {
-        [Required]
-        public Guid CommonBillId { get; set; }
+    [Required]
+    public Guid CommonBillId { get; set; }
 
-        [Required]
-        public string OwnerId { get; set; } = default!;
+    [Required]
+    public string OwnerId { get; set; } = default!;
 
-        [Required]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]
-        public decimal Amount { get; set; }
+    [Required]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]
+    public decimal Amount { get; set; }
 
-        [DataType(DataType.Date)]
-        public DateTime PaymentDate { get; set; } = DateTime.Today;
+    [DataType(DataType.Date)]
+    public DateTime PaymentDate { get; set; } = DateTime.Today;
 
-        [StringLength(100)]
-        public string? Reference { get; set; }
+    [StringLength(100)]
+    public string? Reference { get; set; }
 
-        public string OwnerName { get; set; } = string.Empty;
-        public decimal CurrentDue { get; set; }
-    }
+    public string OwnerName { get; set; } = string.Empty;
+    public decimal CurrentDue { get; set; }
 }

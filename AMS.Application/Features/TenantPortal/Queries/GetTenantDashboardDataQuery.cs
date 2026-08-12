@@ -1,6 +1,6 @@
-using AMS.Application.Mediator;
-using AMS.Application.Interfaces.TenantPortal;
 using AMS.Application.Features.TenantPortal.DTOs;
+using AMS.Application.Interfaces.TenantPortal;
+using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.TenantPortal.Queries;
 

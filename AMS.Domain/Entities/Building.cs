@@ -1,44 +1,43 @@
 using System.ComponentModel.DataAnnotations;
-using AMS.Domain.Entities.Base;
 using AMS.Domain.Common;
+using AMS.Domain.Entities.Base;
 
-namespace AMS.Domain.Entities
+namespace AMS.Domain.Entities;
+
+public class Building : BaseEntity, IAggregateRoot
 {
-    public class Building : BaseEntity, IAggregateRoot
+    [Required, StringLength(100)]
+    public string Name { get; private set; } = default!;
+
+    [StringLength(255)]
+    public string? Address { get; private set; }
+
+    [Required, MaxLength(16)]
+    public string Code { get; private set; } = default!;
+
+    public ICollection<Flat>? Flats { get; private set; }
+    public ICollection<CommonBill>? CommonBills { get; private set; } = new List<CommonBill>();
+    public ICollection<ExpensePayment>? ExpensePayments { get; private set; } = new List<ExpensePayment>();
+    public ICollection<EntryLog> EntryLogs { get; private set; } = new List<EntryLog>();
+
+    protected Building() { } // For EF Core
+
+    public static Building Create(string name, string code, string? address = null)
     {
-        [Required, StringLength(100)]
-        public string Name { get; private set; } = default!;
-
-        [StringLength(255)]
-        public string? Address { get; private set; }
-
-        [Required, MaxLength(16)]
-        public string Code { get; private set; } = default!;
-
-        public ICollection<Flat>? Flats { get; private set; }
-        public ICollection<CommonBill>? CommonBills { get; private set; } = new List<CommonBill>();
-        public ICollection<ExpensePayment>? ExpensePayments { get; private set; } = new List<ExpensePayment>();
-        public ICollection<EntryLog> EntryLogs { get; private set; } = new List<EntryLog>();
-
-        protected Building() { } // For EF Core
-
-        public static Building Create(string name, string code, string? address = null)
+        var building = new Building
         {
-            var building = new Building
-            {
-                Id = Guid.NewGuid(),
-                Name = name,
-                Code = code,
-                Address = address
-            };
-            return building;
-        }
+            Id = Guid.NewGuid(),
+            Name = name,
+            Code = code,
+            Address = address
+        };
+        return building;
+    }
 
-        public void UpdateDetails(string name, string code, string? address = null)
-        {
-            Name = name;
-            Code = code;
-            Address = address;
-        }
+    public void UpdateDetails(string name, string code, string? address = null)
+    {
+        Name = name;
+        Code = code;
+        Address = address;
     }
 }

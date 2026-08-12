@@ -1,7 +1,6 @@
-namespace AMS.Infrastructure.Services
+namespace AMS.Infrastructure.Services;
+
+public interface IBuildingCodeGenerator
 {
-    public interface IBuildingCodeGenerator
-    {
-        Task<string> GenerateAsync(CancellationToken ct = default);
-    }
+    Task<string> GenerateAsync(CancellationToken ct = default);
 }

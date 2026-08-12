@@ -1,6 +1,5 @@
-using AMS.Application.Mediator;
 using AMS.Application.Interfaces.Reports;
-using AMS.Application.Features.Reports.DTOs;
+using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.Reports.Queries;
 

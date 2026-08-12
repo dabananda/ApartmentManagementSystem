@@ -1,10 +1,8 @@
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace AMS.Infrastructure.Services
+namespace AMS.Infrastructure.Services;
+
+public interface IPhotoUploadService
 {
-    public interface IPhotoUploadService
-    {
-        Task<string> UploadAsync(IFormFile file);
-    }
+    Task<string> UploadAsync(IFormFile file);
 }

@@ -1,35 +1,32 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+using AMS.Domain.Common;
 using AMS.Domain.Entities.Base;
 
-using AMS.Domain.Common;
+namespace AMS.Domain.Entities;
 
-namespace AMS.Domain.Entities
+public class CommonBill : BaseEntity, IAggregateRoot
 {
-    public class CommonBill : BaseEntity, IAggregateRoot
-    {
 
-        [Required]
-        [Display(Name = "Bill Name")]
-        [StringLength(100)]
-        public string Name { get; set; } = default!;
+    [Required]
+    [Display(Name = "Bill Name")]
+    [StringLength(100)]
+    public string Name { get; set; } = default!;
 
-        [DataType(DataType.Date)]
-        [Display(Name = "Bill Date")]
-        public DateTime BillDate { get; set; } = DateTime.Today;
+    [DataType(DataType.Date)]
+    [Display(Name = "Bill Date")]
+    public DateTime BillDate { get; set; } = DateTime.Today;
 
-        [Required]
-        [DataType(DataType.Currency)]
-        [Column(TypeName = "decimal(18, 2)")]
-        public decimal TotalAmount { get; set; }
+    [Required]
+    [DataType(DataType.Currency)]
+    [Column(TypeName = "decimal(18, 2)")]
+    public decimal TotalAmount { get; set; }
 
-        public string? Notes { get; set; }
+    public string? Notes { get; set; }
 
-        public Guid BuildingId { get; set; }
-        [ForeignKey("BuildingId")]
-        public virtual Building? Building { get; set; }
+    public Guid BuildingId { get; set; }
+    [ForeignKey("BuildingId")]
+    public virtual Building? Building { get; set; }
 
-        public ICollection<ExpenseAllocation>? Allocations { get; set; } = new List<ExpenseAllocation>();
-    }
+    public ICollection<ExpenseAllocation>? Allocations { get; set; } = new List<ExpenseAllocation>();
 }

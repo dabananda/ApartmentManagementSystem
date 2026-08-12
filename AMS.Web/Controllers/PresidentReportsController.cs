@@ -1,147 +1,144 @@
 using System.Globalization;
 using System.Text;
-using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
-using AMS.Application.Interfaces.Buildings;
-using AMS.Application.Features.Reports.Queries;
-using AMS.Application.Mediator;
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Reports.DTOs;
+using AMS.Application.Features.Reports.Queries;
+using AMS.Application.Interfaces.Buildings;
+using AMS.Application.Mediator;
+using AMS.Domain.Constants;
+using AMS.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AMS.Web.Controllers
+namespace AMS.Web.Controllers;
+
+[Authorize(Roles = Roles.PresidentOrSuperAdmin)]
+public class PresidentReportsController : Controller
 {
-    [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
-    public class PresidentReportsController : Controller
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IBuildingRepository _buildings;
+    private readonly IMediator _mediator;
+
+    public PresidentReportsController(
+        UserManager<ApplicationUser> userManager,
+        IBuildingRepository buildings,
+        IMediator mediator)
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IBuildingRepository _buildings;
-        private readonly IMediator _mediator;
+        _userManager = userManager;
+        _buildings = buildings;
+        _mediator = mediator;
+    }
 
-        public PresidentReportsController(
-            UserManager<ApplicationUser> userManager,
-            IBuildingRepository buildings,
-            IMediator mediator)
+    private async Task<(Guid buildingId, string buildingName)> RequireBuilding()
+    {
+        var me = await _userManager.GetUserAsync(User);
+        if (me?.BuildingId == null)
+            throw new InvalidOperationException("User has no building.");
+        var bId = me.BuildingId.Value;
+        var building = await _buildings.GetAsync(bId);
+        var bName = building?.Name ?? "My Building";
+        return (bId, bName);
+    }
+
+    private static string Csv(string? s)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        if (s.Contains(',') || s.Contains('"') || s.Contains('\n') || s.Contains('\r'))
+            return "\"" + s.Replace("\"", "\"\"") + "\"";
+        return s;
+    }
+
+    public async Task<IActionResult> Financial(DateRangeFilter filter)
+    {
+        var (buildingId, buildingName) = await RequireBuilding();
+        return View(await _mediator.Send(new GetFinancialReportQuery(buildingId, buildingName, filter)));
+    }
+
+    public async Task<IActionResult> FinancialCsv(DateTime? from, DateTime? to)
+    {
+        var filter = new DateRangeFilter { From = from, To = to };
+        var (buildingId, buildingName) = await RequireBuilding();
+        var rows = await _mediator.Send(new GetFinancialCsvQuery(buildingId, filter));
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Building,{Csv(buildingName)}");
+        sb.AppendLine("BillDate,Title,TotalAmount,Collected,Outstanding");
+
+        foreach (var row in rows)
         {
-            _userManager = userManager;
-            _buildings = buildings;
-            _mediator = mediator;
+            var outstanding = Math.Max(row.TotalAmount - row.Collected, 0m);
+            sb.AppendLine($"{row.BillDate:yyyy-MM-dd},{Csv(row.Title)},{row.TotalAmount},{row.Collected},{outstanding}");
         }
 
-        private async Task<(Guid buildingId, string buildingName)> RequireBuilding()
+        return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "financial_report.csv");
+    }
+
+    public async Task<IActionResult> Occupancy()
+    {
+        var (buildingId, buildingName) = await RequireBuilding();
+        return View(await _mediator.Send(new GetOccupancyReportQuery(buildingId, buildingName)));
+    }
+
+    public async Task<IActionResult> OccupancyCsv()
+    {
+        var (buildingId, buildingName) = await RequireBuilding();
+        var flats = await _mediator.Send(new GetOccupancyCsvQuery(buildingId));
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Building,{Csv(buildingName)}");
+        sb.AppendLine("FlatNumber,IsOccupied,HasOwner");
+        foreach (var f in flats)
+            sb.AppendLine($"{Csv(f.FlatNumber)}, {(f.IsOccupied ? "Yes" : "No")}, {(f.HasOwner ? "Yes" : "No")}");
+        return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "occupancy_report.csv");
+    }
+
+    public async Task<IActionResult> Visitors(DateRangeFilter filter)
+    {
+        var (buildingId, buildingName) = await RequireBuilding();
+        return View(await _mediator.Send(new GetVisitorReportQuery(buildingId, buildingName, filter)));
+    }
+
+    public async Task<IActionResult> VisitorsCsv(DateTime? from, DateTime? to)
+    {
+        var filter = new DateRangeFilter { From = from, To = to };
+        var (buildingId, buildingName) = await RequireBuilding();
+        var rows = await _mediator.Send(new GetVisitorCsvQuery(buildingId, filter));
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Building,{Csv(buildingName)}");
+        sb.AppendLine("DateTime,Type,Person,FlatId");
+        foreach (var r in rows)
+            sb.AppendLine($"{r.EntryTime:yyyy-MM-dd HH:mm},{Csv(r.EntryType.ToString())},{Csv(r.Fullname)},{r.FlatId}");
+        return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "visitor_report.csv");
+    }
+
+    public async Task<IActionResult> Maintenance(DateRangeFilter filter)
+    {
+        var (buildingId, buildingName) = await RequireBuilding();
+        return View(await _mediator.Send(new GetMaintenanceReportQuery(buildingId, buildingName, filter)));
+    }
+
+    public async Task<IActionResult> MaintenanceCsv(DateTime? from, DateTime? to)
+    {
+        var filter = new DateRangeFilter { From = from, To = to };
+        var (buildingId, buildingName) = await RequireBuilding();
+        var rows = await _mediator.Send(new GetMaintenanceCsvQuery(buildingId, filter));
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Building,{Csv(buildingName)}");
+        sb.AppendLine("Title,Status,CreatedAt,ClosedAt,ResolutionHours");
+
+        foreach (var r in rows)
         {
-            var me = await _userManager.GetUserAsync(User);
-            if (me?.BuildingId == null)
-                throw new InvalidOperationException("User has no building.");
-            var bId = me.BuildingId.Value;
-            var building = await _buildings.GetAsync(bId);
-            var bName = building?.Name ?? "My Building";
-            return (bId, bName);
+            var title = Csv(r.Title);
+            var created = r.CreatedAt.ToString("yyyy-MM-dd HH:mm");
+            var closed = r.ClosedAt.HasValue ? r.ClosedAt.Value.ToString("yyyy-MM-dd HH:mm") : "";
+            var hours = r.ClosedAt.HasValue
+                ? (r.ClosedAt.Value - r.CreatedAt).TotalHours.ToString("0.##", CultureInfo.InvariantCulture)
+                : "";
+            sb.AppendLine($"{title},{r.Status},{created},{closed},{hours}");
         }
 
-        private static string Csv(string? s)
-        {
-            if (string.IsNullOrEmpty(s)) return "";
-            if (s.Contains(',') || s.Contains('"') || s.Contains('\n') || s.Contains('\r'))
-                return "\"" + s.Replace("\"", "\"\"") + "\"";
-            return s;
-        }
-
-        public async Task<IActionResult> Financial(DateRangeFilter filter)
-        {
-            var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _mediator.Send(new GetFinancialReportQuery(buildingId, buildingName, filter)));
-        }
-
-        public async Task<IActionResult> FinancialCsv(DateTime? from, DateTime? to)
-        {
-            var filter = new DateRangeFilter { From = from, To = to };
-            var (buildingId, buildingName) = await RequireBuilding();
-            var rows = await _mediator.Send(new GetFinancialCsvQuery(buildingId, filter));
-
-            var sb = new StringBuilder();
-            sb.AppendLine($"Building,{Csv(buildingName)}");
-            sb.AppendLine("BillDate,Title,TotalAmount,Collected,Outstanding");
-
-            foreach (var row in rows)
-            {
-                var outstanding = Math.Max(row.TotalAmount - row.Collected, 0m);
-                sb.AppendLine($"{row.BillDate:yyyy-MM-dd},{Csv(row.Title)},{row.TotalAmount},{row.Collected},{outstanding}");
-            }
-
-            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "financial_report.csv");
-        }
-
-        public async Task<IActionResult> Occupancy()
-        {
-            var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _mediator.Send(new GetOccupancyReportQuery(buildingId, buildingName)));
-        }
-
-        public async Task<IActionResult> OccupancyCsv()
-        {
-            var (buildingId, buildingName) = await RequireBuilding();
-            var flats = await _mediator.Send(new GetOccupancyCsvQuery(buildingId));
-
-            var sb = new StringBuilder();
-            sb.AppendLine($"Building,{Csv(buildingName)}");
-            sb.AppendLine("FlatNumber,IsOccupied,HasOwner");
-            foreach (var f in flats)
-                sb.AppendLine($"{Csv(f.FlatNumber)}, {(f.IsOccupied ? "Yes" : "No")}, {(f.HasOwner ? "Yes" : "No")}");
-            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "occupancy_report.csv");
-        }
-
-        public async Task<IActionResult> Visitors(DateRangeFilter filter)
-        {
-            var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _mediator.Send(new GetVisitorReportQuery(buildingId, buildingName, filter)));
-        }
-
-        public async Task<IActionResult> VisitorsCsv(DateTime? from, DateTime? to)
-        {
-            var filter = new DateRangeFilter { From = from, To = to };
-            var (buildingId, buildingName) = await RequireBuilding();
-            var rows = await _mediator.Send(new GetVisitorCsvQuery(buildingId, filter));
-
-            var sb = new StringBuilder();
-            sb.AppendLine($"Building,{Csv(buildingName)}");
-            sb.AppendLine("DateTime,Type,Person,FlatId");
-            foreach (var r in rows)
-                sb.AppendLine($"{r.EntryTime:yyyy-MM-dd HH:mm},{Csv(r.EntryType.ToString())},{Csv(r.Fullname)},{r.FlatId}");
-            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "visitor_report.csv");
-        }
-
-        public async Task<IActionResult> Maintenance(DateRangeFilter filter)
-        {
-            var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _mediator.Send(new GetMaintenanceReportQuery(buildingId, buildingName, filter)));
-        }
-
-        public async Task<IActionResult> MaintenanceCsv(DateTime? from, DateTime? to)
-        {
-            var filter = new DateRangeFilter { From = from, To = to };
-            var (buildingId, buildingName) = await RequireBuilding();
-            var rows = await _mediator.Send(new GetMaintenanceCsvQuery(buildingId, filter));
-
-            var sb = new StringBuilder();
-            sb.AppendLine($"Building,{Csv(buildingName)}");
-            sb.AppendLine("Title,Status,CreatedAt,ClosedAt,ResolutionHours");
-
-            foreach (var r in rows)
-            {
-                var title = Csv(r.Title);
-                var created = r.CreatedAt.ToString("yyyy-MM-dd HH:mm");
-                var closed = r.ClosedAt.HasValue ? r.ClosedAt.Value.ToString("yyyy-MM-dd HH:mm") : "";
-                var hours = r.ClosedAt.HasValue
-                    ? (r.ClosedAt.Value - r.CreatedAt).TotalHours.ToString("0.##", CultureInfo.InvariantCulture)
-                    : "";
-                sb.AppendLine($"{title},{r.Status},{created},{closed},{hours}");
-            }
-
-            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "maintenance_report.csv");
-        }
+        return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", "maintenance_report.csv");
     }
 }

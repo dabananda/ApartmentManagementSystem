@@ -1,6 +1,5 @@
 using AMS.Application.Features.Expenses.DTOs;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
 
 namespace AMS.Application.Interfaces.Expenses;
 

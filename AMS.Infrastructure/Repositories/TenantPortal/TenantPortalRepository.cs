@@ -1,9 +1,7 @@
-using AMS.Application.Interfaces.TenantPortal;
-using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.TenantPortal.DTOs;
+using AMS.Application.Interfaces.TenantPortal;
+using AMS.Domain.Entities;
+using AMS.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,7 +1,5 @@
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Owner.DTOs;
-using AMS.Application.Features.Tenancy.DTOs;
+using AMS.Domain.Entities;
 
 namespace AMS.Application.Interfaces.Owner;
 

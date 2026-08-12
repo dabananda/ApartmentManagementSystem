@@ -1,10 +1,10 @@
-using AMS.Application.Mediator;
 using AMS.Application.Interfaces.Owner;
+using AMS.Application.Mediator;
 using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.Owner.Commands;
 
-public record FullPayOwnerBillCommand(string OwnerId, Guid CommonBillId, Guid? RestrictToBuildingId) 
+public record FullPayOwnerBillCommand(string OwnerId, Guid CommonBillId, Guid? RestrictToBuildingId)
     : IRequest<(bool success, string message, List<ExpenseAllocationPayment> payments)>;
 
 public class FullPayOwnerBillCommandHandler(IOwnerBillingRepository repository)

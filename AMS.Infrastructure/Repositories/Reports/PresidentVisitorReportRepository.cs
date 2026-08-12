@@ -1,8 +1,6 @@
 using AMS.Application.Interfaces.Reports;
-using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
+using AMS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 namespace AMS.Infrastructure.Repositories.Reports;
 

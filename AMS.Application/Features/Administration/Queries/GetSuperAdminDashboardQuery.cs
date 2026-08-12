@@ -1,17 +1,21 @@
+using AMS.Application.Features.Administration.DTOs;
+using AMS.Application.Interfaces.Administration;
+using AMS.Application.Mediator;
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Interfaces.Administration;
-using AMS.Application.Features.Administration.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace AMS.Infrastructure.Services;
+namespace AMS.Application.Features.Administration.Queries;
 
-public sealed class SuperAdminDashboardService(
+public record GetSuperAdminDashboardQuery() : IRequest<SuperAdminDashboardViewModel>;
+
+public class GetSuperAdminDashboardQueryHandler(
     ISuperAdminDashboardRepository dashboard,
-    UserManager<ApplicationUser> users) : ISuperAdminDashboardService
+    UserManager<ApplicationUser> users)
+    : IRequestHandler<GetSuperAdminDashboardQuery, SuperAdminDashboardViewModel>
 {
-    public async Task<SuperAdminDashboardViewModel> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<SuperAdminDashboardViewModel> Handle(GetSuperAdminDashboardQuery request, CancellationToken cancellationToken = default)
     {
         // Load all data concurrently where possible
         var buildings = await dashboard.GetBuildingsAsync(cancellationToken);

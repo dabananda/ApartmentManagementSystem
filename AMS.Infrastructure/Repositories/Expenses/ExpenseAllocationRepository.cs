@@ -1,8 +1,6 @@
 using AMS.Application.Interfaces.Expenses;
-using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
+using AMS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AMS.Infrastructure.Repositories.Expenses;

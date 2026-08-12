@@ -1,12 +1,12 @@
-using AMS.Domain.Entities;
+using System.Globalization;
 using AMS.Application;
+using AMS.Domain.Entities;
 using AMS.Infrastructure;
 using AMS.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
-using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 

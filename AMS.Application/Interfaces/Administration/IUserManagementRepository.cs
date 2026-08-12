@@ -1,6 +1,4 @@
 using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
-using AMS.Application.Features.Administration.DTOs;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AMS.Application.Interfaces.Administration;

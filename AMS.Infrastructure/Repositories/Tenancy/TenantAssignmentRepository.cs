@@ -1,9 +1,7 @@
-using AMS.Application.Interfaces.Tenancy;
-using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Tenancy.DTOs;
+using AMS.Application.Interfaces.Tenancy;
+using AMS.Domain.Entities;
+using AMS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 namespace AMS.Infrastructure.Repositories.Tenancy;
 

@@ -1,6 +1,6 @@
-using AMS.Application.Mediator;
-using AMS.Application.Interfaces.Owner;
 using AMS.Application.Features.Owner.DTOs;
+using AMS.Application.Interfaces.Owner;
+using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.Owner.Queries;
 

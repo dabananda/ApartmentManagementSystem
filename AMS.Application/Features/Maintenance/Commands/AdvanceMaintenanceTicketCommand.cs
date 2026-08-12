@@ -1,5 +1,5 @@
-using AMS.Application.Mediator;
 using AMS.Application.Interfaces.Maintenance;
+using AMS.Application.Mediator;
 using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.Maintenance.Commands;
@@ -16,9 +16,9 @@ public class AdvanceMaintenanceTicketCommandHandler(IMaintenanceTicketRepository
 
         ticket.Status = ticket.Status switch
         {
-            "Open"       => "InProgress",
+            "Open" => "InProgress",
             "InProgress" => "Closed",
-            _            => "Closed"
+            _ => "Closed"
         };
 
         if (ticket.Status == "Closed")

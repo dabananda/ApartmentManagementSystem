@@ -1,5 +1,5 @@
-using AMS.Application.Mediator;
 using AMS.Application.Interfaces.EntryLogs;
+using AMS.Application.Mediator;
 using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.EntryLogs.Commands;

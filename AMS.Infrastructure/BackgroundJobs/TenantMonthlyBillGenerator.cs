@@ -1,79 +1,74 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using AMS.Infrastructure.Data;
 using AMS.Domain.Entities;
-using AMS.Domain.Constants;
+using AMS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace AMS.Infrastructure.BackgroundJobs
+namespace AMS.Infrastructure.BackgroundJobs;
+
+public class TenantMonthlyBillGenerator : BackgroundService
 {
-    public class TenantMonthlyBillGenerator : BackgroundService
+    private readonly IServiceProvider _sp;
+    private readonly ILogger<TenantMonthlyBillGenerator> _logger;
+    public TenantMonthlyBillGenerator(IServiceProvider sp, ILogger<TenantMonthlyBillGenerator> logger)
     {
-        private readonly IServiceProvider _sp;
-        private readonly ILogger<TenantMonthlyBillGenerator> _logger;
-        public TenantMonthlyBillGenerator(IServiceProvider sp, ILogger<TenantMonthlyBillGenerator> logger)
-        {
-            _sp = sp; _logger = logger;
-        }
+        _sp = sp; _logger = logger;
+    }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
-                try
+                var now = DateTime.Now;
+                var delay = DateTime.Today.AddDays(1).AddMinutes(10) - now;
+                if (delay < TimeSpan.Zero) delay = TimeSpan.FromHours(24);
+                await Task.Delay(delay, stoppingToken);
+
+                if (DateTime.Today.Day != 1) continue;
+
+                using var scope = _sp.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var q = await db.TenantAssignments
+                    .Include(a => a.Flat)
+                    .Where(a => a.EndDate == null)
+                    .Select(a => new { a.FlatId, a.TenantUserId })
+                    .ToListAsync(stoppingToken);
+
+                if (q.Count == 0) continue;
+
+                var profiles = await db.FlatBillingProfiles.Where(p => p.IsActive).ToListAsync(stoppingToken);
+                var pByFlat = profiles.ToDictionary(x => x.FlatId, x => x);
+
+                foreach (var a in q)
                 {
-                    var now = DateTime.Now;
-                    var delay = DateTime.Today.AddDays(1).AddMinutes(10) - now;
-                    if (delay < TimeSpan.Zero) delay = TimeSpan.FromHours(24);
-                    await Task.Delay(delay, stoppingToken);
+                    if (!pByFlat.TryGetValue(a.FlatId, out var prof)) continue;
 
-                    if (DateTime.Today.Day != 1) continue;
+                    var firstOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-                    using var scope = _sp.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    var exists = await db.TenantBills.AnyAsync(tb =>
+                        tb.FlatId == a.FlatId && tb.TenantUserId == a.TenantUserId && tb.BillDate == firstOfMonth, stoppingToken);
+                    if (exists) continue;
 
-                    var q = await db.TenantAssignments
-                        .Include(a => a.Flat)
-                        .Where(a => a.EndDate == null)
-                        .Select(a => new { a.FlatId, a.TenantUserId })
-                        .ToListAsync(stoppingToken);
-
-                    if (q.Count == 0) continue;
-
-                    var profiles = await db.FlatBillingProfiles.Where(p => p.IsActive).ToListAsync(stoppingToken);
-                    var pByFlat = profiles.ToDictionary(x => x.FlatId, x => x);
-
-                    foreach (var a in q)
+                    await db.TenantBills.AddAsync(new TenantBill
                     {
-                        if (!pByFlat.TryGetValue(a.FlatId, out var prof)) continue;
-
-                        var firstOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-
-                        var exists = await db.TenantBills.AnyAsync(tb =>
-                            tb.FlatId == a.FlatId && tb.TenantUserId == a.TenantUserId && tb.BillDate == firstOfMonth, stoppingToken);
-                        if (exists) continue;
-
-                        await db.TenantBills.AddAsync(new TenantBill
-                        {
-                            FlatId = a.FlatId,
-                            TenantUserId = a.TenantUserId,
-                            Title = prof.Title,
-                            BillDate = firstOfMonth,
-                            Amount = prof.MonthlyAmount
-                        }, stoppingToken);
-                    }
-
-                    await db.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation("TenantMonthlyBillGenerator: bills generated for {Date}", DateTime.Today);
+                        FlatId = a.FlatId,
+                        TenantUserId = a.TenantUserId,
+                        Title = prof.Title,
+                        BillDate = firstOfMonth,
+                        Amount = prof.MonthlyAmount
+                    }, stoppingToken);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "TenantMonthlyBillGenerator failed");
-                }
+
+                await db.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("TenantMonthlyBillGenerator: bills generated for {Date}", DateTime.Today);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "TenantMonthlyBillGenerator failed");
             }
         }
     }

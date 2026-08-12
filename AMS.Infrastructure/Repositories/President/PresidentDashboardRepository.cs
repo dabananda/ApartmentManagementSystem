@@ -1,7 +1,6 @@
+using AMS.Application.Features.President.DTOs;
 using AMS.Application.Interfaces.President;
 using AMS.Infrastructure.Data;
-using AMS.Domain.Constants;
-using AMS.Application.Features.President.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace AMS.Infrastructure.Repositories.President;

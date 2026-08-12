@@ -1,6 +1,6 @@
-using AMS.Application.Mediator;
-using AMS.Application.Interfaces.Tenancy;
 using AMS.Application.Features.Buildings.DTOs;
+using AMS.Application.Interfaces.Tenancy;
+using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.Tenancy.Queries;
 

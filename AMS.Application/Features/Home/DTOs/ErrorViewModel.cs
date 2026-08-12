@@ -1,8 +1,7 @@
-namespace AMS.Application.Features.Home.DTOs
+namespace AMS.Application.Features.Home.DTOs;
+
+public class ErrorViewModel
 {
-    public class ErrorViewModel
-    {
-        public string? RequestId { get; set; }
-        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
-    }
+    public string? RequestId { get; set; }
+    public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 }

@@ -1,10 +1,10 @@
-using AMS.Application.Mediator;
 using AMS.Application.Interfaces.Owner;
+using AMS.Application.Mediator;
 using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.Owner.Commands;
 
-public record PayAllOwnerBillsCommand(string OwnerId, Guid? RestrictToBuildingId) 
+public record PayAllOwnerBillsCommand(string OwnerId, Guid? RestrictToBuildingId)
     : IRequest<(bool success, string message, List<ExpenseAllocationPayment> payments)>;
 
 public class PayAllOwnerBillsCommandHandler(IOwnerBillingRepository repository)

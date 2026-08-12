@@ -1,7 +1,6 @@
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Buildings.DTOs;
 using AMS.Application.Features.Flats.DTOs;
+using AMS.Domain.Entities;
 
 namespace AMS.Application.Interfaces.Tenancy;
 

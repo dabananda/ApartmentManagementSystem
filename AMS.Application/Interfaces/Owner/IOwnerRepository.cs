@@ -1,5 +1,3 @@
-using AMS.Domain.Entities;
-using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Owner.DTOs;
 
 namespace AMS.Application.Interfaces.Owner;
