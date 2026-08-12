@@ -1,7 +1,7 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
+using AMS.Application.Configuration;
 
 namespace AMS.Infrastructure.Services;
 
@@ -9,12 +9,12 @@ public class CloudinaryPhotoUploadService : IPhotoUploadService
 {
     private readonly Cloudinary _cloudinary;
 
-    public CloudinaryPhotoUploadService(IConfiguration config)
+    public CloudinaryPhotoUploadService(AppSettings config)
     {
         var acc = new Account(
-            config["Cloudinary:CloudName"],
-            config["Cloudinary:ApiKey"],
-            config["Cloudinary:ApiSecret"]
+            config.Cloudinary.CloudName,
+            config.Cloudinary.ApiKey,
+            config.Cloudinary.ApiSecret
         );
         _cloudinary = new Cloudinary(acc);
     }

@@ -5,18 +5,19 @@ using AMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Stripe;
+using AMS.Application.Configuration;
 
 namespace AMS.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, AppSettings appSettings)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        var connectionString = appSettings.ConnectionStrings.DefaultConnection;
+        if (string.IsNullOrEmpty(connectionString))
+            throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
@@ -45,11 +46,11 @@ public static class DependencyInjection
 
         services.AddSingleton(sp =>
         {
-            var cfg = sp.GetRequiredService<IConfiguration>();
-            var key = cfg["Stripe:SecretKey"] ?? throw new InvalidOperationException("Stripe:SecretKey missing");
+            var settings = sp.GetRequiredService<AppSettings>();
+            var key = settings.Stripe.SecretKey;
+            if (string.IsNullOrEmpty(key)) throw new InvalidOperationException("Stripe:SecretKey missing");
             return new StripeClient(key);
         });
-        services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
 
         var assembly = System.Reflection.Assembly.GetExecutingAssembly();
         var repositoryTypes = assembly.GetTypes()

@@ -1,5 +1,6 @@
 using System.Globalization;
 using AMS.Application;
+using AMS.Application.Configuration;
 using AMS.Domain.Entities;
 using AMS.Infrastructure;
 using AMS.Infrastructure.Data;
@@ -16,7 +17,12 @@ builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+
+var appSettings = new AppSettings();
+builder.Configuration.Bind(appSettings);
+builder.Services.AddSingleton(appSettings);
+
+builder.Services.AddInfrastructure(appSettings);
 
 var app = builder.Build();
 
@@ -63,9 +69,9 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        var configuration = services.GetRequiredService<IConfiguration>();
-        var superAdminPassword = configuration["SuperAdminPassword"];
-        var superAdminEmail = configuration["SuperAdminEmail"];
+        var settings = services.GetRequiredService<AppSettings>();
+        var superAdminPassword = settings.SuperAdmin.Password;
+        var superAdminEmail = settings.SuperAdmin.Email;
 
         if (string.IsNullOrEmpty(superAdminPassword) || string.IsNullOrEmpty(superAdminEmail))
         {
