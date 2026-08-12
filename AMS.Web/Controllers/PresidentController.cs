@@ -2,14 +2,13 @@ using AMS.Infrastructure.Data;
 using AMS.Domain.Constants;
 using AMS.Application.Features.President.Services;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.President.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AMS.Web.Features.President;
-
+namespace AMS.Web.Controllers
+{
 [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
 public class PresidentController(IPresidentDashboardService dashboard) : Controller
 {
@@ -22,4 +21,6 @@ public class PresidentController(IPresidentDashboardService dashboard) : Control
         }
         return View(await dashboard.GetAsync(buildingId));
     }
+}
+
 }

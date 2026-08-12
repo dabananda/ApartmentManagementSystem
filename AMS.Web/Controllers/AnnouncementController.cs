@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AMS.Web.Features.Announcements
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.President)]
     public class AnnouncementController : Controller

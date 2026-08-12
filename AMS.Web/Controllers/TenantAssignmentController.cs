@@ -1,6 +1,6 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Shared;
+using AMS.Web.Extensions;
 using AMS.Application.Features.Tenancy.Services;
 using AMS.Application.Features.Tenancy.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AMS.Web.Features.Tenancy
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class TenantAssignmentController : Controller

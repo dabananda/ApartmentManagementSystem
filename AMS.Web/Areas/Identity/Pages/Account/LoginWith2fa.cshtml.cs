@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;

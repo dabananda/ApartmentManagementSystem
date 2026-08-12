@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;

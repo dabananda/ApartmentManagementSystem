@@ -1,12 +1,11 @@
 using AMS.Application.Interfaces.Payments;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AMS.Web.Features.Payments
+namespace AMS.Web.Controllers
 {
     [Authorize]
     [Route("payments")]

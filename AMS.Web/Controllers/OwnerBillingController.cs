@@ -2,7 +2,7 @@ using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Application.Features.Owner.Services;
 using AMS.Application.Features.Owner.DTOs;
-using AMS.Web.Features.Shared;
+using AMS.Web.Extensions;
 using AMS.Application.Features.Tenancy.DTOs;
 using AMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 
-namespace AMS.Web.Features.Owner
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class OwnerBillingController : Controller

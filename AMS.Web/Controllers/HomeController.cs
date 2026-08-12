@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
-namespace AMS.Web.Features.Home
+namespace AMS.Web.Controllers
 {
     public class HomeController : Controller
     {

@@ -3,7 +3,6 @@
 #nullable disable
 
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using AMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;

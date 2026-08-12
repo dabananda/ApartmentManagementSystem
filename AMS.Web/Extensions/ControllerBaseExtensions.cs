@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 
-namespace AMS.Web.Features.Shared;
+namespace AMS.Web.Extensions;
 
 /// <summary>
 /// Extension methods shared across MVC controllers to eliminate repetitive patterns.

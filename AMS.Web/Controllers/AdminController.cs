@@ -2,14 +2,14 @@ using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Application.Interfaces.Administration;
 using AMS.Application.Features.Administration.DTOs;
-using AMS.Web.Features.Shared;
+using AMS.Web.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
-namespace AMS.Web.Features.Administration
+namespace AMS.Web.Controllers
 {
     public class AdminController : Controller
     {

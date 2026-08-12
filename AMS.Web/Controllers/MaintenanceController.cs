@@ -1,14 +1,13 @@
 using AMS.Infrastructure.Data;
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using AMS.Application.Features.Maintenance.Services;
 
-namespace AMS.Web.Features.Maintenance
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class MaintenanceController : Controller

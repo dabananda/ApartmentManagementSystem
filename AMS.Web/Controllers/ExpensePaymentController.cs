@@ -2,7 +2,7 @@ using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Application.Features.Expenses.Services;
 using AMS.Application.Features.Expenses.DTOs;
-using AMS.Web.Features.Shared;
+using AMS.Web.Extensions;
 using AMS.Application.Features.Buildings.Queries;
 using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace AMS.Web.Features.Expenses
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class ExpensePaymentController : Controller

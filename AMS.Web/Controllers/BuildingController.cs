@@ -3,14 +3,14 @@ using AMS.Domain.Entities;
 using AMS.Application.Features.Buildings.DTOs;
 using AMS.Application.Features.Buildings.Queries;
 using AMS.Application.Features.Buildings.Commands;
-using AMS.Web.Features.Shared;
+using AMS.Web.Extensions;
 using AMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AMS.Web.Features.Buildings
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class BuildingController : Controller

@@ -1,6 +1,6 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Shared;
+using AMS.Web.Extensions;
 using AMS.Application.Features.TenantBilling.Services;
 using AMS.Application.Features.Tenancy.DTOs;
 using AMS.Infrastructure.Services;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 
-namespace AMS.Web.Features.TenantBilling
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.OwnerOrPresidentOrSuperAdmin)]
     public class TenantRentController : Controller

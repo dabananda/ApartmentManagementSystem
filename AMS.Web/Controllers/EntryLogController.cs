@@ -1,7 +1,6 @@
 using AMS.Infrastructure.Data;
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.EntryLogs.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace AMS.Web.Features.EntryLogs
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.StaffOrOwnerOrPresidentOrSuperAdmin)]
     public class EntryLogController : Controller

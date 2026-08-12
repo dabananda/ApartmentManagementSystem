@@ -4,7 +4,6 @@
 using AMS.Infrastructure.Data;
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;

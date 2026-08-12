@@ -5,14 +5,13 @@ using AMS.Domain.Constants;
 using AMS.Application.Interfaces.Buildings;
 using AMS.Application.Features.Reports.Services;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Reports.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AMS.Web.Features.Reports
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class PresidentReportsController : Controller

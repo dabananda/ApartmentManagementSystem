@@ -4,7 +4,7 @@ using AMS.Application.Features.Flats.DTOs;
 using AMS.Application.Features.Flats.Commands;
 using AMS.Application.Features.Flats.Queries;
 using AMS.Application.Features.President.DTOs;
-using AMS.Web.Features.Shared;
+using AMS.Web.Extensions;
 using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
-namespace AMS.Web.Features.Flats
+namespace AMS.Web.Controllers
 {
     [Authorize(Roles = Roles.PresidentOrSuperAdmin)]
     public class FlatController : Controller

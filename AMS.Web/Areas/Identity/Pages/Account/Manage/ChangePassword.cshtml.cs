@@ -6,7 +6,6 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using AMS.Domain.Entities;
-using AMS.Web.Features.Payments;
 using AMS.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

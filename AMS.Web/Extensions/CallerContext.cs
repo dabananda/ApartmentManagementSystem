@@ -1,6 +1,6 @@
 using AMS.Domain.Entities;
 
-namespace AMS.Web.Features.Shared;
+namespace AMS.Web.Extensions;
 
 /// <summary>
 /// Encapsulates the identity context of the currently authenticated user for a single request.
