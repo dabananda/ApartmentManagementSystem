@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
+using ApartmentManagementSystem.Domain.Entities.Base;
+
 namespace ApartmentManagementSystem.Domain.Entities
 {
-    public class Building
+    public class Building : BaseEntity
     {
-        public Guid Id { get; set; }
 
         [Required, StringLength(100)]
         public string Name { get; set; } = default!;

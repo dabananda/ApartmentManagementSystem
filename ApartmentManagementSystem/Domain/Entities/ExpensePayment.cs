@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+using ApartmentManagementSystem.Domain.Entities.Base;
+
 namespace ApartmentManagementSystem.Domain.Entities
 {
-    public class ExpensePayment
+    public class ExpensePayment : BaseEntity
     {
-        public Guid Id { get; set; }
 
         [Required]
         [Display(Name = "Payment Name")]
@@ -31,7 +32,5 @@ namespace ApartmentManagementSystem.Domain.Entities
         [ForeignKey("BuildingId")]
         public virtual Building? Building { get; set; }
 
-        [Required]
-        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

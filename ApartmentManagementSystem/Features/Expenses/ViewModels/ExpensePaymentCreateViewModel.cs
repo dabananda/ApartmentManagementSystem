@@ -33,7 +33,7 @@ public class ExpensePaymentCreateViewModel
             Notes = Notes,
             BuildingId = BuildingId,
             CommonBillId = CommonBillId,
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
     }
 }

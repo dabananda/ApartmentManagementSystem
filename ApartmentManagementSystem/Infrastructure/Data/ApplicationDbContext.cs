@@ -1,6 +1,8 @@
 using ApartmentManagementSystem.Domain.Entities;
 using ApartmentManagementSystem.Features.Payments;
 using ApartmentManagementSystem.Features.Home.ViewModels;
+using ApartmentManagementSystem.Domain.Entities.Base;
+using ApartmentManagementSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,8 +10,15 @@ namespace ApartmentManagementSystem.Infrastructure.Data
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options) { }
+        private readonly ICurrentUserService? _currentUserService;
+
+        public ApplicationDbContext(
+            DbContextOptions<ApplicationDbContext> options,
+            ICurrentUserService? currentUserService = null)
+            : base(options)
+        {
+            _currentUserService = currentUserService;
+        }
 
         public DbSet<Building> Buildings { get; set; }
         public DbSet<Flat> Flats { get; set; }
@@ -227,6 +236,64 @@ namespace ApartmentManagementSystem.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(r => r.TenantBillId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Building>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<Flat>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<CommonBill>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<ExpensePayment>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<Announcement>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<TenantBill>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<MaintenanceTicket>().HasQueryFilter(x => !x.IsDeleted);
+        }
+        public override int SaveChanges()
+        {
+            ApplyAuditAndSoftDeleteRules();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            ApplyAuditAndSoftDeleteRules();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void ApplyAuditAndSoftDeleteRules()
+        {
+            var entries = ChangeTracker.Entries();
+            var userId = _currentUserService?.UserId;
+
+            foreach (var entry in entries)
+            {
+                if (entry.Entity is IAuditableEntity auditableEntity)
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        auditableEntity.CreatedAt = DateTime.UtcNow;
+                        auditableEntity.CreatedBy = userId;
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        auditableEntity.UpdatedAt = DateTime.UtcNow;
+                        auditableEntity.UpdatedBy = userId;
+                    }
+                }
+
+                if (entry.Entity is ISoftDeletable softDeletableEntity)
+                {
+                    if (entry.State == EntityState.Deleted)
+                    {
+                        entry.State = EntityState.Modified;
+                        softDeletableEntity.IsDeleted = true;
+                        softDeletableEntity.DeletedAt = DateTime.UtcNow;
+
+                        if (entry.Entity is IAuditableEntity auditable)
+                        {
+                            auditable.UpdatedAt = DateTime.UtcNow;
+                            auditable.UpdatedBy = userId;
+                        }
+                    }
+                }
+            }
         }
     }
 }

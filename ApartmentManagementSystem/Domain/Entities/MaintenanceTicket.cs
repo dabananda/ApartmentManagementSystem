@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
+using ApartmentManagementSystem.Domain.Entities.Base;
+
 namespace ApartmentManagementSystem.Domain.Entities
 {
-    public class MaintenanceTicket
+    public class MaintenanceTicket : BaseEntity
     {
-        public Guid Id { get; set; }
 
         [Required]
         public Guid BuildingId { get; set; }
@@ -18,7 +19,6 @@ namespace ApartmentManagementSystem.Domain.Entities
         [Required, StringLength(20)]
         public string Status { get; set; } = "Open";
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ClosedAt { get; set; }
 
         public Guid? FlatId { get; set; }

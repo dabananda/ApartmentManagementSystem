@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
+using ApartmentManagementSystem.Domain.Entities.Base;
+
 namespace ApartmentManagementSystem.Domain.Entities
 {
-    public class Announcement
+    public class Announcement : BaseEntity
     {
-        public Guid Id { get; set; }
 
         [Required]
         public Guid BuildingId { get; set; }
@@ -15,6 +16,5 @@ namespace ApartmentManagementSystem.Domain.Entities
         [Required, StringLength(2000)]
         public string Body { get; set; } = "";
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

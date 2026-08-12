@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+using ApartmentManagementSystem.Domain.Entities.Base;
+
 namespace ApartmentManagementSystem.Domain.Entities
 {
-    public class CommonBill
+    public class CommonBill : BaseEntity
     {
-        public Guid Id { get; set; }
 
         [Required]
         [Display(Name = "Bill Name")]
@@ -28,8 +29,5 @@ namespace ApartmentManagementSystem.Domain.Entities
         public virtual Building? Building { get; set; }
 
         public ICollection<ExpenseAllocation>? Allocations { get; set; } = new List<ExpenseAllocation>();
-
-        [Required]
-        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

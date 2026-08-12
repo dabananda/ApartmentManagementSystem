@@ -65,6 +65,9 @@ namespace ApartmentManagementSystem.Extensions
             services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationUserClaimsPrincipalFactory>();
             services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInManager>();
 
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
+
             services.AddTransient<IBuildingCodeGenerator, BuildingCodeGenerator>();
             services.AddTransient<IEmailSender, EmailSender>();
             services.AddScoped<IPaymentEmailService, PaymentEmailService>();

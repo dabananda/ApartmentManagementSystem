@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+using ApartmentManagementSystem.Domain.Entities.Base;
+
 namespace ApartmentManagementSystem.Domain.Entities
 {
-    public class Flat
+    public class Flat : BaseEntity
     {
-        public Guid Id { get; set; }
         [Required]
         [StringLength(50)]
         public string FlatNumber { get; set; }
