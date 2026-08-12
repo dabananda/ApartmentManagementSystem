@@ -244,6 +244,17 @@ namespace ApartmentManagementSystem.Infrastructure.Data
             modelBuilder.Entity<Announcement>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<TenantBill>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MaintenanceTicket>().HasQueryFilter(x => !x.IsDeleted);
+
+            // Matching query filters for dependent entities to resolve EF Core warnings
+            modelBuilder.Entity<EntryLog>().HasQueryFilter(x => !x.Building.IsDeleted && !x.Flat.IsDeleted);
+            modelBuilder.Entity<ExpenseAllocation>().HasQueryFilter(x => !x.CommonBill.IsDeleted);
+            modelBuilder.Entity<FlatBillingProfile>().HasQueryFilter(x => !x.Flat.IsDeleted);
+            modelBuilder.Entity<OwnerBillingProfile>().HasQueryFilter(x => !x.Flat.IsDeleted);
+            modelBuilder.Entity<Tenant>().HasQueryFilter(x => !x.Flat.IsDeleted);
+            modelBuilder.Entity<TenantAssignment>().HasQueryFilter(x => !x.Flat.IsDeleted);
+            modelBuilder.Entity<TenantPayment>().HasQueryFilter(x => !x.TenantBill.IsDeleted);
+            modelBuilder.Entity<ExpenseAllocationPayment>().HasQueryFilter(x => !x.ExpenseAllocation.CommonBill.IsDeleted);
+            modelBuilder.Entity<Rent>().HasQueryFilter(x => !x.Tenant.Flat.IsDeleted);
         }
         public override int SaveChanges()
         {
