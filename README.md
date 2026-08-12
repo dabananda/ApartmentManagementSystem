@@ -5,9 +5,10 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![Platform](https://img.shields.io/badge/Platform-Web-blue?style=flat-square)]()
+[![Architecture: Clean](https://img.shields.io/badge/Architecture-Clean-orange?style=flat-square)]()
+[![Pattern: CQRS](https://img.shields.io/badge/Pattern-CQRS-blue?style=flat-square)]()
 
-Apartment Management System is a comprehensive role-based web application tailored for operating and managing apartment buildings efficiently.
+Apartment Management System is an enterprise-grade, role-based web application designed for operating and managing apartment buildings efficiently.
 
 </div>
 
@@ -15,9 +16,9 @@ Apartment Management System is a comprehensive role-based web application tailor
 
 ## 📖 Overview
 
-It supports building and flat administration, user approval, ownership and tenancy, common-expense allocation, tenant rent billing, payments, visitor logs, notices, maintenance tickets, and operational reports.
+Built with **.NET 8**, **Entity Framework Core**, and **SQL Server**, this application is engineered using **Clean Architecture**, **Domain-Driven Design (DDD)**, and the **CQRS (Command Query Responsibility Segregation)** pattern.
 
-Built with **ASP.NET Core MVC** targeting **.NET 8** and powered by **SQL Server** through **Entity Framework Core**.
+It supports comprehensive workflows for building and flat administration, user approval, ownership and tenancy, common-expense allocation, tenant rent billing, payments (including Stripe integration), visitor logs, notices, maintenance tickets, and operational reports.
 
 ## 📑 Table of Contents
 
@@ -54,7 +55,7 @@ Built with **ASP.NET Core MVC** targeting **.NET 8** and powered by **SQL Server
 | `Staff` | Entry-log operations. |
 | `User` | A seeded role available for pending/general accounts. |
 
-*Authorization is robustly enforced in controllers. A president needs a building assignment before building-specific workflows are available.*
+*Authorization is robustly enforced via claims. A president needs a building assignment before building-specific workflows are available.*
 
 ## ⚙️ Quick Start
 
@@ -70,22 +71,21 @@ Built with **ASP.NET Core MVC** targeting **.NET 8** and powered by **SQL Server
 ```powershell
 git clone https://github.com/dabananda/ApartmentManagementSystem.git
 cd ApartmentManagementSystem
-dotnet restore
 
 # Configure development-only secrets; replace the sample values.
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\\MSSQLLocalDB;Database=ApartmentManagementSystem;Trusted_Connection=True;TrustServerCertificate=True"
-dotnet user-secrets set "SuperAdminEmail" "admin@example.test"
-dotnet user-secrets set "SuperAdminPassword" "Use-a-strong-local-password"
-dotnet user-secrets set "Stripe:SecretKey" "sk_test_..."
-dotnet user-secrets set "Stripe:WebhookSecret" "whsec_..."
-dotnet user-secrets set "Stripe:Currency" "bdt"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\\MSSQLLocalDB;Database=ApartmentManagementSystem;Trusted_Connection=True;TrustServerCertificate=True" --project AMS.Web
+dotnet user-secrets set "SuperAdminEmail" "admin@example.test" --project AMS.Web
+dotnet user-secrets set "SuperAdminPassword" "Use-a-strong-local-password" --project AMS.Web
+dotnet user-secrets set "Stripe:SecretKey" "sk_test_..." --project AMS.Web
+dotnet user-secrets set "Stripe:WebhookSecret" "whsec_..." --project AMS.Web
+dotnet user-secrets set "Stripe:Currency" "bdt" --project AMS.Web
 
-# Initialize Database
-dotnet ef migrations add InitialCreate --project ApartmentManagementSystem
-dotnet ef database update --project ApartmentManagementSystem
+# Initialize Database (Targeting the Infrastructure project where DbContext lives)
+dotnet ef migrations add InitialCreate --project AMS.Infrastructure --startup-project AMS.Web
+dotnet ef database update --project AMS.Infrastructure --startup-project AMS.Web
 
 # Run the app
-dotnet run --project ApartmentManagementSystem
+dotnet run --project AMS.Web
 ```
 
 The HTTPS launch profile uses `https://localhost:7033`; HTTP uses `http://localhost:5117`.
@@ -93,67 +93,68 @@ The HTTPS launch profile uses `https://localhost:7033`; HTTP uses `http://localh
 At startup, the application creates its roles and the configured `SuperAdmin`. Sign in and begin by creating a building and assigning its president.
 
 > [!WARNING]
-> Do not use the placeholder credentials in `appsettings.Development.json` outside a disposable local environment. Use User Secrets or environment variables for sensitive settings.
+> Do not use placeholder credentials outside a disposable local environment. Use User Secrets or environment variables for sensitive settings.
 
 ## 🛠 Configuration
 
 | Key | Required | Purpose |
-| --- | :---: | --- |
+| --- | --- | --- |
 | `ConnectionStrings:DefaultConnection` | **Yes** | SQL Server connection string. |
-| `SuperAdminEmail` | **Yes** | Email for the initial super-admin seed account. |
-| `SuperAdminPassword` | **Yes** | Password for the initial super-admin seed account. |
-| `Stripe:SecretKey` | Yes (runtime) | Stripe API client key. |
-| `Stripe:WebhookSecret` | Yes (webhooks)| Verifies incoming Stripe webhooks. |
-| `Stripe:Currency` | No | Checkout currency; defaults to `bdt`. |
-| `Smtp:*` | No | SMTP settings for receipt email. |
-| `Cloudinary:*` | No | Cloudinary settings for photo uploads. |
-
-For local Stripe testing:
-```powershell
-stripe listen --forward-to https://localhost:7033/payments/webhook
-```
+| `SuperAdminEmail` | **Yes** | The email address of the seeded root user. |
+| `SuperAdminPassword` | **Yes** | The password of the seeded root user. |
+| `Stripe:SecretKey` | No | Enables Stripe payment processing. |
+| `Stripe:WebhookSecret` | No | Required for the application to accept Stripe webhook events and automatically reconcile payments. |
+| `Stripe:Currency` | No | e.g. `usd`, `eur`, `bdt`. |
+| `Cloudinary:CloudName` | No | Cloudinary environment details. Enables image uploads for profile pictures and maintenance tickets. |
+| `Cloudinary:ApiKey` | No | |
+| `Cloudinary:ApiSecret` | No | |
+| `Email:SmtpServer` | No | SMTP settings. Enables the application to send payment receipts via email. |
+| `Email:SmtpPort` | No | |
+| `Email:SmtpUsername` | No | |
+| `Email:SmtpPassword` | No | |
+| `Email:FromAddress` | No | |
+| `Email:FromName` | No | |
 
 ## 📚 Documentation
 
-- [Usage Guide](USAGE.md) — Role-based operational workflows.
-- [Architecture Guide](ARCHITECTURE.md) — System boundaries, data model, dependencies, and runtime behavior.
-- [Contribution Guide](CONTRIBUTING.md) — Local development and change-submission conventions.
-- [Code of Conduct](CODE_OF_CONDUCT.md) — Community standards and behavior.
-- [Security Policy](SECURITY.md) — Reporting vulnerabilities.
+- [**Architecture Guide**](ARCHITECTURE.md): Deep dive into the Clean Architecture, CQRS implementation, Custom Mediator, and Domain Driven Design layers.
+- [**Usage Guide**](USAGE.md): Walkthrough of standard operating procedures from SuperAdmin setup down to Tenant usage.
+- [**Contributing Guidelines**](CONTRIBUTING.md): Instructions for developers.
 
 ## 💻 Technology Stack
 
-- **Framework:** ASP.NET Core MVC and Razor Views (.NET 8)
-- **Identity & Security:** ASP.NET Core Identity
-- **ORM & Database:** Entity Framework Core 8 with SQL Server
-- **Payments:** Stripe Checkout and Webhooks
-- **Integrations:** SMTP, Cloudinary
-- **Frontend Assets:** Bootstrap, JavaScript, CSS (`wwwroot`)
+**Core Architecture & Patterns:**
+- Clean Architecture (Domain, Application, Infrastructure, Web layers)
+- Domain-Driven Design (DDD)
+- CQRS (Command Query Responsibility Segregation)
+- Custom Mediator Pattern
+
+**Backend:**
+- .NET 8 (C# 12)
+- ASP.NET Core MVC & Identity
+- Entity Framework Core 8
+- SQL Server
+
+**Frontend:**
+- Razor Pages / Views
+- Bootstrap 5
+- jQuery & DataTables
+- FontAwesome
+
+**Integrations:**
+- Stripe (Payments & Webhooks)
+- Cloudinary (Image Hosting)
+- MailKit (SMTP Email)
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see the [Contributing Guide](CONTRIBUTING.md) for details on how to get started, conventions to follow, and the submission process. Ensure you also review our [Code of Conduct](CODE_OF_CONDUCT.md).
+Contributions are welcome! Please read the [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
-## 📄 License & Usage
+## 📝 License & Usage
 
-This project is open-source and released under the [MIT License](LICENSE). 
-
-> **Commercial / Product Usage License:** 
-> Interested persons or companies wishing to use this product in a commercial or extensive operational capacity must contact the author for a dedicated product usage license and support.
-
----
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details. 
 
 ## 👨‍💻 Author
 
 **Dabananda Mitra**  
-*Software Engineer*
-
-- **Portfolio:** [dabananda.vercel.app](https://dabananda.vercel.app)
-- **LinkedIn:** [linkedin.com/in/dabananda](https://linkedin.com/in/dabananda)
-- **GitHub:** [github.com/dabananda](https://github.com/dabananda)
-- **X (Twitter):** [@dabanandamitra](https://x.com/dabanandamitra)
-- **Facebook**: [fb.com/dabanandamitra](https://www.facebook.com/dabanandamitra/)
-- **WhatsApp**: [wa.me/@dabananda](https://wa.me/@dabananda)
-
-
-Feel free to connect or reach out for inquiries, licensing, or just to say hi!
+[GitHub](https://github.com/dabananda) | [LinkedIn](https://www.linkedin.com/in/dabanandamitra/) | [Portfolio](https://dabanandamitra.com)

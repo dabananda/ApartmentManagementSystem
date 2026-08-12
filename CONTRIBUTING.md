@@ -13,31 +13,29 @@ Please take a moment to review this document to make the contribution process ea
    dotnet restore
    ```
 
-3. Configure local secrets as described in the [README](README.md#configuration). Do not commit connection strings, Stripe keys, SMTP passwords, Cloudinary secrets, or production credentials.
-4. Create and apply migrations for your local database. This repository currently has no checked-in migrations:
+3. Configure local secrets as described in the [README](README.md#configuration) under the `AMS.Web` project. Do not commit connection strings, Stripe keys, SMTP passwords, Cloudinary secrets, or production credentials.
+4. Create and apply migrations for your local database. Migrations reside in the `AMS.Infrastructure` project, but the startup project is `AMS.Web`:
 
    ```powershell
-   dotnet ef migrations add InitialCreate --project ApartmentManagementSystem
-   dotnet ef database update --project ApartmentManagementSystem
+   dotnet ef migrations add InitialCreate --project AMS.Infrastructure --startup-project AMS.Web
+   dotnet ef database update --project AMS.Infrastructure --startup-project AMS.Web
    ```
 
 5. Run the application:
 
    ```powershell
-   dotnet run --project ApartmentManagementSystem
+   dotnet run --project AMS.Web
    ```
 
-## 📐 Development Conventions
+## 📐 Development Conventions (Clean Architecture & CQRS)
 
-- Add application work under the appropriate `Features/<Feature>` folder.
-- Keep controllers thin: bind and validate input, call a service, then return a result.
-- Put workflow/business behavior in a service and EF Core queries/persistence in a repository.
-- Prefer view models for UI input and output instead of binding entities broadly.
-- Use asynchronous EF Core APIs and pass cancellation tokens where the existing convention supports them.
-- Apply authorization at the controller/action level and enforce ownership/building boundaries in the workflow. **Never rely on hidden navigation for access control.**
-- Preserve anti-forgery validation on state-changing browser endpoints.
-- Use decimal amounts for money and maintain the existing idempotency/concurrency safeguards in payment flows.
-- Treat Stripe webhooks as retryable and duplicate-delivery-prone.
+- **Domain First:** Add core business rules, Entities, and Value Objects to `AMS.Domain`. This layer has no dependencies.
+- **CQRS:** Add new application features as Commands (writes) or Queries (reads) inside `AMS.Application/Features/<Feature Area>/`.
+- **Handlers:** Put workflow/business behavior inside a specific `IRequestHandler` in the Application layer, executed via the Custom Mediator.
+- **Infrastructure:** Put EF Core queries, persistence implementations, and external integrations in `AMS.Infrastructure`. 
+- **Thin Controllers:** Keep controllers in `AMS.Web` extremely thin: parse the HTTP request, map it to a Command/Query, dispatch it to the Mediator, and return a View or HTTP Result.
+- **Thin DbContext:** Entity configurations should be placed in `AMS.Infrastructure/Data/Configurations` implementing `IEntityTypeConfiguration<T>`. Do not bloat `ApplicationDbContext.OnModelCreating`.
+- **Authorization:** Apply authorization at the controller/action level and enforce ownership/building boundaries in the Handlers. **Never rely on hidden navigation for access control.**
 
 ## 🗄️ Database Changes
 
@@ -50,12 +48,9 @@ For a shared project, include the generated migration files with schema changes 
 Run the following from the repository root:
 
 ```powershell
-dotnet restore
-dotnet build ApartmentManagementSystem.slnx
-dotnet test ApartmentManagementSystem.slnx
+dotnet clean
+dotnet build
 ```
-
-*Note: If there are no test projects in the solution, the last command may report that no tests were found.* 
 
 For changes without automated coverage, manually exercise the affected role and workflow. At minimum, verify authorization behavior, validation errors, and the success path.
 
