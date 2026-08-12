@@ -1,8 +1,10 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Web.Extensions;
-using AMS.Application.Features.Tenancy.Services;
+using AMS.Application.Features.Tenancy.Commands;
+using AMS.Application.Features.Tenancy.Queries;
 using AMS.Application.Features.Tenancy.DTOs;
+using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,18 +16,18 @@ namespace AMS.Web.Controllers
     public class TenantAssignmentController : Controller
     {
         private readonly UserManager<ApplicationUser> _users;
-        private readonly ITenantAssignmentService _assignments;
+        private readonly IMediator _mediator;
 
-        public TenantAssignmentController(UserManager<ApplicationUser> users, ITenantAssignmentService assignments)
+        public TenantAssignmentController(UserManager<ApplicationUser> users, IMediator mediator)
         {
             _users = users;
-            _assignments = assignments;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Assign()
         {
             var ctx = await this.GetCallerContextAsync(_users);
-            var vm = await _assignments.GetAssignmentFormAsync(User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null);
+            var vm = await _mediator.Send(new GetAssignmentFormDataQuery(User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null));
             return View(vm);
         }
 
@@ -35,14 +37,14 @@ namespace AMS.Web.Controllers
             if (!ModelState.IsValid) return await Assign();
 
             var ctx = await this.GetCallerContextAsync(_users);
-            var flat = await _assignments.GetFlatAsync(vm.FlatId);
+            var flat = await _mediator.Send(new GetAssignmentFlatQuery(vm.FlatId));
             if (flat == null) return NotFound("Flat not found.");
 
             if (User.IsInRole(Roles.Owner) && flat.OwnerId != ctx?.Me.Id) return Forbid();
 
-            if (!await _assignments.TenantExistsAsync(vm.TenantUserId)) return NotFound("Tenant user not found.");
+            if (!await _mediator.Send(new CheckTenantExistsQuery(vm.TenantUserId))) return NotFound("Tenant user not found.");
 
-            var activeForTenant = await _assignments.GetActiveAssignmentAsync(vm.TenantUserId);
+            var activeForTenant = await _mediator.Send(new GetAssignmentActiveQuery(vm.TenantUserId));
             if (activeForTenant != null)
             {
                 ModelState.AddModelError(string.Empty, activeForTenant.FlatId == vm.FlatId
@@ -53,7 +55,7 @@ namespace AMS.Web.Controllers
 
             try
             {
-                await _assignments.AssignAsync(vm.FlatId, vm.TenantUserId);
+                await _mediator.Send(new AssignTenantCommand(vm.FlatId, vm.TenantUserId));
             }
             catch (DbUpdateException ex) when (
                 ex.InnerException?.Message.Contains("IX_TenantAssignments_TenantUserId_Active") == true ||
@@ -70,7 +72,7 @@ namespace AMS.Web.Controllers
         public async Task<IActionResult> MyTenants()
         {
             var ctx = await this.GetCallerContextAsync(_users);
-            var data = await _assignments.GetActiveAsync(User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null);
+            var data = await _mediator.Send(new GetActiveTenantAssignmentsQuery(User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null));
             return View(data);
         }
     }

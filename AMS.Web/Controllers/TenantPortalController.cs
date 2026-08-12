@@ -1,7 +1,9 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Web.Extensions;
-using AMS.Application.Features.TenantPortal.Services;
+using AMS.Application.Features.TenantPortal.Commands;
+using AMS.Application.Features.TenantPortal.Queries;
+using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +14,12 @@ namespace AMS.Web.Controllers
     public class TenantPortalController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ITenantPortalService _tenantPortalService;
+        private readonly IMediator _mediator;
 
-        public TenantPortalController(UserManager<ApplicationUser> userManager, ITenantPortalService tenantPortalService)
+        public TenantPortalController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _tenantPortalService = tenantPortalService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -25,7 +27,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var vm = await _tenantPortalService.GetDashboardDataAsync(ctx.Me.Id);
+            var vm = await _mediator.Send(new GetTenantDashboardDataQuery(ctx.Me.Id));
             if (vm == null)
                 return View("TenantSetupRequired", "Your account isn't linked to a flat yet.");
 
@@ -37,7 +39,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var items = await _tenantPortalService.GetBillsAsync(ctx.Me.Id);
+            var items = await _mediator.Send(new GetTenantPortalBillsQuery(ctx.Me.Id));
             return View(items);
         }
 
@@ -46,7 +48,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var items = await _tenantPortalService.GetPaymentsAsync(ctx.Me.Id);
+            var items = await _mediator.Send(new GetTenantPortalPaymentsQuery(ctx.Me.Id));
             return View(items);
         }
 
@@ -56,7 +58,7 @@ namespace AMS.Web.Controllers
             if (ctx?.BuildingId == null)
                 return View("TenantSetupRequired", "Your account isn't linked to a building yet.");
 
-            var notices = await _tenantPortalService.GetNoticesAsync(ctx.BuildingId);
+            var notices = await _mediator.Send(new GetTenantPortalNoticesQuery(ctx.BuildingId));
             return View(notices);
         }
 
@@ -65,12 +67,12 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var (assignment, _) = await _tenantPortalService.GetActiveAssignmentAsync(ctx.Me.Id);
+            var (assignment, _) = await _mediator.Send(new GetTenantActiveAssignmentQuery(ctx.Me.Id));
             if (assignment?.Flat == null)
                 return View("TenantSetupRequired", "Your account isn't linked to a flat yet.");
 
-            var items = await _tenantPortalService.GetTicketsAsync(
-                assignment.Flat.BuildingId, assignment.FlatId, ctx.Me.Id);
+            var items = await _mediator.Send(new GetTenantPortalTicketsQuery(
+                assignment.Flat.BuildingId, assignment.FlatId, ctx.Me.Id));
 
             return View(items);
         }
@@ -83,7 +85,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var (assignment, _) = await _tenantPortalService.GetActiveAssignmentAsync(ctx.Me.Id);
+            var (assignment, _) = await _mediator.Send(new GetTenantActiveAssignmentQuery(ctx.Me.Id));
             if (assignment?.Flat == null)
                 return View("TenantSetupRequired", "Your account isn't linked to a flat yet.");
 
@@ -95,7 +97,7 @@ namespace AMS.Web.Controllers
             model.Status = "Open";
             model.CreatedAt = DateTime.UtcNow;
 
-            await _tenantPortalService.CreateTicketAsync(model);
+            await _mediator.Send(new CreateTenantTicketCommand(model));
 
             TempData["Ok"] = "Ticket created successfully.";
             return RedirectToAction(nameof(Tickets));
@@ -106,12 +108,12 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var (assignment, _) = await _tenantPortalService.GetActiveAssignmentAsync(ctx.Me.Id);
+            var (assignment, _) = await _mediator.Send(new GetTenantActiveAssignmentQuery(ctx.Me.Id));
             if (assignment?.Flat == null)
                 return View("TenantSetupRequired", "Your account isn't linked to a flat yet.");
 
-            var items = await _tenantPortalService.GetVisitorsAsync(
-                assignment.Flat.BuildingId, assignment.FlatId, from, to);
+            var items = await _mediator.Send(new GetTenantPortalVisitorsQuery(
+                assignment.Flat.BuildingId, assignment.FlatId, from, to));
 
             return View(items);
         }

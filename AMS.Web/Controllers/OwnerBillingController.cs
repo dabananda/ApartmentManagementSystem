@@ -1,7 +1,9 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Owner.Services;
 using AMS.Application.Features.Owner.DTOs;
+using AMS.Application.Features.Owner.Commands;
+using AMS.Application.Features.Owner.Queries;
+using AMS.Application.Mediator;
 using AMS.Web.Extensions;
 using AMS.Application.Features.Tenancy.DTOs;
 using AMS.Infrastructure.Services;
@@ -17,20 +19,20 @@ namespace AMS.Web.Controllers
     public class OwnerBillingController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IOwnerBillingService _ownerBillingService;
+        private readonly IMediator _mediator;
         private readonly IPaymentEmailService _paymentEmailService;
         private readonly IUrlHelperFactory _urlHelperFactory;
         private readonly IActionContextAccessor _actionContextAccessor;
 
         public OwnerBillingController(
             UserManager<ApplicationUser> userManager,
-            IOwnerBillingService ownerBillingService,
+            IMediator mediator,
             IPaymentEmailService paymentEmailService,
             IUrlHelperFactory urlHelperFactory,
             IActionContextAccessor actionContextAccessor)
         {
             _userManager = userManager;
-            _ownerBillingService = ownerBillingService;
+            _mediator = mediator;
             _paymentEmailService = paymentEmailService;
             _urlHelperFactory = urlHelperFactory;
             _actionContextAccessor = actionContextAccessor;
@@ -43,7 +45,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx?.BuildingId != buildingId && !ctx!.IsSuperAdmin) return Forbid();
 
-            var rows = await _ownerBillingService.GetIndexRowsAsync(buildingId.Value);
+            var rows = await _mediator.Send(new GetOwnerBillingIndexQuery(buildingId.Value));
 
             ViewData["BuildingId"] = buildingId;
             return View(rows);
@@ -57,7 +59,7 @@ namespace AMS.Web.Controllers
             if (ctx?.BuildingId == null && !ctx!.IsSuperAdmin) return Forbid();
 
             var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx?.BuildingId : null;
-            var page = await _ownerBillingService.GetBillsPageAsync(ownerId, restrictToBuildingId);
+            var page = await _mediator.Send(new GetOwnerBillingBillsPageQuery(ownerId, restrictToBuildingId));
 
             if (page == null) return NotFound("No bills found for this owner.");
 
@@ -74,8 +76,8 @@ namespace AMS.Web.Controllers
 
             var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx.BuildingId : null;
 
-            var (success, message, created) = await _ownerBillingService.PayAsync(
-                vm.OwnerId, vm.CommonBillId, vm, restrictToBuildingId);
+            var (success, message, created) = await _mediator.Send(new PayOwnerBillCommand(
+                vm.OwnerId, vm.CommonBillId, vm, restrictToBuildingId));
 
             if (!success)
             {
@@ -104,7 +106,7 @@ namespace AMS.Web.Controllers
 
             var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx.BuildingId : null;
 
-            var (success, message, created) = await _ownerBillingService.PayAllAsync(ownerId, restrictToBuildingId);
+            var (success, message, created) = await _mediator.Send(new PayAllOwnerBillsCommand(ownerId, restrictToBuildingId));
 
             if (!success)
             {
@@ -130,8 +132,8 @@ namespace AMS.Web.Controllers
 
             var restrictToBuildingId = User.IsInRole(Roles.President) ? ctx.BuildingId : null;
 
-            var (success, message, created) = await _ownerBillingService.FullPayAsync(
-                ownerId, commonBillId, restrictToBuildingId);
+            var (success, message, created) = await _mediator.Send(new FullPayOwnerBillCommand(
+                ownerId, commonBillId, restrictToBuildingId));
 
             if (!success)
             {
@@ -148,7 +150,7 @@ namespace AMS.Web.Controllers
 
         public async Task<IActionResult> Receipt(Guid id)
         {
-            var (payment, buildingId) = await _ownerBillingService.GetReceiptDataAsync(id);
+            var (payment, buildingId) = await _mediator.Send(new GetOwnerReceiptQuery(id));
             if (payment == null) return NotFound();
 
             var ctx = await this.GetCallerContextAsync(_userManager);
@@ -175,7 +177,7 @@ namespace AMS.Web.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> EmailReceipt(Guid id)
         {
-            var (payment, buildingId) = await _ownerBillingService.GetReceiptDataAsync(id);
+            var (payment, buildingId) = await _mediator.Send(new GetOwnerReceiptQuery(id));
             if (payment == null) return NotFound();
 
             var ctx = await this.GetCallerContextAsync(_userManager);

@@ -1,7 +1,8 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Expenses.Services;
 using AMS.Web.Extensions;
+using AMS.Application.Features.Expenses.Queries;
+using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,12 @@ namespace AMS.Web.Controllers
     public class ExpenseAllocationController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IExpenseAllocationService _allocations;
+        private readonly IMediator _mediator;
 
-        public ExpenseAllocationController(UserManager<ApplicationUser> userManager, IExpenseAllocationService allocations)
+        public ExpenseAllocationController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _allocations = allocations;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index(Guid? commonBillId)
@@ -27,7 +28,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var result = await _allocations.GetAsync(commonBillId.Value);
+            var result = await _mediator.Send(new GetExpenseAllocationQuery(commonBillId.Value));
             var commonBill = result.CommonBill;
 
             if (commonBill == null || !ctx.IsAuthorizedForBuilding(commonBill.BuildingId))

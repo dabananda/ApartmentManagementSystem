@@ -3,7 +3,8 @@ using System.Text;
 using AMS.Infrastructure.Data;
 using AMS.Domain.Constants;
 using AMS.Application.Interfaces.Buildings;
-using AMS.Application.Features.Reports.Services;
+using AMS.Application.Features.Reports.Queries;
+using AMS.Application.Mediator;
 using AMS.Domain.Entities;
 using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Reports.DTOs;
@@ -18,25 +19,16 @@ namespace AMS.Web.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IBuildingRepository _buildings;
-        private readonly IPresidentFinancialReportService _financialReports;
-        private readonly IPresidentOccupancyReportService _occupancyReports;
-        private readonly IPresidentVisitorReportService _visitorReports;
-        private readonly IMaintenanceReportService _maintenanceReports;
+        private readonly IMediator _mediator;
 
         public PresidentReportsController(
             UserManager<ApplicationUser> userManager,
             IBuildingRepository buildings,
-            IPresidentFinancialReportService financialReports,
-            IPresidentOccupancyReportService occupancyReports,
-            IPresidentVisitorReportService visitorReports,
-            IMaintenanceReportService maintenanceReports)
+            IMediator mediator)
         {
             _userManager = userManager;
             _buildings = buildings;
-            _financialReports = financialReports;
-            _occupancyReports = occupancyReports;
-            _visitorReports = visitorReports;
-            _maintenanceReports = maintenanceReports;
+            _mediator = mediator;
         }
 
         private async Task<(Guid buildingId, string buildingName)> RequireBuilding()
@@ -61,14 +53,14 @@ namespace AMS.Web.Controllers
         public async Task<IActionResult> Financial(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _financialReports.GetAsync(buildingId, buildingName, filter));
+            return View(await _mediator.Send(new GetFinancialReportQuery(buildingId, buildingName, filter)));
         }
 
         public async Task<IActionResult> FinancialCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
             var (buildingId, buildingName) = await RequireBuilding();
-            var rows = await _financialReports.GetCsvAsync(buildingId, filter);
+            var rows = await _mediator.Send(new GetFinancialCsvQuery(buildingId, filter));
 
             var sb = new StringBuilder();
             sb.AppendLine($"Building,{Csv(buildingName)}");
@@ -86,13 +78,13 @@ namespace AMS.Web.Controllers
         public async Task<IActionResult> Occupancy()
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _occupancyReports.GetAsync(buildingId, buildingName));
+            return View(await _mediator.Send(new GetOccupancyReportQuery(buildingId, buildingName)));
         }
 
         public async Task<IActionResult> OccupancyCsv()
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            var flats = await _occupancyReports.GetCsvAsync(buildingId);
+            var flats = await _mediator.Send(new GetOccupancyCsvQuery(buildingId));
 
             var sb = new StringBuilder();
             sb.AppendLine($"Building,{Csv(buildingName)}");
@@ -105,14 +97,14 @@ namespace AMS.Web.Controllers
         public async Task<IActionResult> Visitors(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _visitorReports.GetAsync(buildingId, buildingName, filter));
+            return View(await _mediator.Send(new GetVisitorReportQuery(buildingId, buildingName, filter)));
         }
 
         public async Task<IActionResult> VisitorsCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
             var (buildingId, buildingName) = await RequireBuilding();
-            var rows = await _visitorReports.GetCsvAsync(buildingId, filter);
+            var rows = await _mediator.Send(new GetVisitorCsvQuery(buildingId, filter));
 
             var sb = new StringBuilder();
             sb.AppendLine($"Building,{Csv(buildingName)}");
@@ -125,14 +117,14 @@ namespace AMS.Web.Controllers
         public async Task<IActionResult> Maintenance(DateRangeFilter filter)
         {
             var (buildingId, buildingName) = await RequireBuilding();
-            return View(await _maintenanceReports.GetAsync(buildingId, buildingName, filter));
+            return View(await _mediator.Send(new GetMaintenanceReportQuery(buildingId, buildingName, filter)));
         }
 
         public async Task<IActionResult> MaintenanceCsv(DateTime? from, DateTime? to)
         {
             var filter = new DateRangeFilter { From = from, To = to };
             var (buildingId, buildingName) = await RequireBuilding();
-            var rows = await _maintenanceReports.GetCsvAsync(buildingId, filter);
+            var rows = await _mediator.Send(new GetMaintenanceCsvQuery(buildingId, filter));
 
             var sb = new StringBuilder();
             sb.AppendLine($"Building,{Csv(buildingName)}");

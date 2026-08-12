@@ -1,7 +1,8 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Web.Extensions;
-using AMS.Application.Features.Tenancy.Services;
+using AMS.Application.Features.Tenancy.Queries;
+using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,12 @@ namespace AMS.Web.Controllers
     public class TenantController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ITenantDirectoryService _tenants;
+        private readonly IMediator _mediator;
 
-        public TenantController(UserManager<ApplicationUser> userManager, ITenantDirectoryService tenants)
+        public TenantController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _tenants = tenants;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> ViewTenants(Guid? flatId)
@@ -27,7 +28,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             if (ctx == null) return Forbid();
 
-            var flat = await _tenants.GetFlatAsync(flatId.Value);
+            var flat = await _mediator.Send(new GetAssignmentFlatQuery(flatId.Value));
             if (flat == null) return NotFound();
 
             var isOwner = flat.OwnerId == ctx.Me.Id;
@@ -39,7 +40,7 @@ namespace AMS.Web.Controllers
             ViewData["FlatNumber"] = flat.FlatNumber;
             ViewData["FlatId"] = flat.Id;
 
-            var rows = await _tenants.GetFlatTenantsAsync(flat);
+            var rows = await _mediator.Send(new GetFlatTenantsQuery(flat));
             return View(rows);
         }
 
@@ -51,10 +52,10 @@ namespace AMS.Web.Controllers
 
             var buildingId = ctx.BuildingId!.Value;
 
-            var building = await _tenants.GetBuildingAsync(buildingId);
+            var building = await _mediator.Send(new GetAssignmentBuildingQuery(buildingId));
             if (building == null) return NotFound();
 
-            var rows = await _tenants.GetBuildingTenantsAsync(buildingId);
+            var rows = await _mediator.Send(new GetBuildingTenantsQuery(buildingId));
 
             ViewData["BuildingName"] = building.Name;
             ViewData["BuildingId"] = building.Id;

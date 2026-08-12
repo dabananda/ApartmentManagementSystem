@@ -1,9 +1,10 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Expenses.Services;
 using AMS.Application.Features.Expenses.DTOs;
 using AMS.Web.Extensions;
 using AMS.Application.Features.Buildings.Queries;
+using AMS.Application.Features.Expenses.Queries;
+using AMS.Application.Features.Expenses.Commands;
 using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,13 +17,11 @@ namespace AMS.Web.Controllers
     public class CommonBillController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ICommonBillService _bills;
         private readonly IMediator _mediator;
 
-        public CommonBillController(UserManager<ApplicationUser> userManager, ICommonBillService bills, IMediator mediator)
+        public CommonBillController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _bills = bills;
             _mediator = mediator;
         }
 
@@ -39,7 +38,7 @@ namespace AMS.Web.Controllers
             if (buildingId == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(buildingId.Value)) return Forbid();
 
-            var bills = await _bills.GetForBuildingAsync(buildingId.Value);
+            var bills = await _mediator.Send(new GetCommonBillsForBuildingQuery(buildingId.Value));
 
             ViewData["BuildingId"] = buildingId;
             return View(bills);
@@ -66,7 +65,7 @@ namespace AMS.Web.Controllers
             if (ModelState.IsValid)
             {
                 var bill = model.ToEntity();
-                await _bills.CreateAsync(bill);
+                await _mediator.Send(new CreateCommonBillCommand(bill));
                 return RedirectToAction(nameof(Index), new { buildingId = model.BuildingId });
             }
 
@@ -81,7 +80,7 @@ namespace AMS.Web.Controllers
 
         public async Task<IActionResult> Details(Guid id)
         {
-            var bill = await _bills.GetAsync(id, includeBuilding: true);
+            var bill = await _mediator.Send(new GetCommonBillByIdQuery(id, IncludeBuilding: true));
             if (bill == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
@@ -91,7 +90,7 @@ namespace AMS.Web.Controllers
 
         public async Task<IActionResult> Edit(Guid id)
         {
-            var bill = await _bills.GetAsync(id);
+            var bill = await _mediator.Send(new GetCommonBillByIdQuery(id));
             if (bill == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
@@ -112,7 +111,7 @@ namespace AMS.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                var bill = await _bills.GetAsync(id);
+                var bill = await _mediator.Send(new GetCommonBillByIdQuery(id));
                 if (bill == null) return NotFound();
                 if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
@@ -120,11 +119,11 @@ namespace AMS.Web.Controllers
 
                 try
                 {
-                    await _bills.UpdateAsync(bill);
+                    await _mediator.Send(new UpdateCommonBillCommand(bill));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!await _bills.ExistsAsync(bill.Id)) return NotFound();
+                    if (!await _mediator.Send(new CheckCommonBillExistsQuery(bill.Id))) return NotFound();
                     else throw;
                 }
 
@@ -144,11 +143,11 @@ namespace AMS.Web.Controllers
 
         public async Task<IActionResult> Delete(Guid id)
         {
-            var bill = await _bills.GetAsync(id, includeBuilding: true);
+            var bill = await _mediator.Send(new GetCommonBillByIdQuery(id, IncludeBuilding: true));
             if (bill == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
-            ViewData["HasPayments"] = await _bills.HasPaymentsAsync(bill.Id);
+            ViewData["HasPayments"] = await _mediator.Send(new CheckCommonBillHasPaymentsQuery(bill.Id));
             return View(bill);
         }
 
@@ -156,17 +155,17 @@ namespace AMS.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var bill = await _bills.GetAsync(id);
+            var bill = await _mediator.Send(new GetCommonBillByIdQuery(id));
             if (bill == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(bill.BuildingId)) return Forbid();
 
-            if (await _bills.HasPaymentsAsync(bill.Id))
+            if (await _mediator.Send(new CheckCommonBillHasPaymentsQuery(bill.Id)))
             {
                 TempData["Error"] = "Cannot delete this common bill because there are recorded payments against it.";
                 return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });
             }
 
-            await _bills.DeleteAsync(bill);
+            await _mediator.Send(new DeleteCommonBillCommand(bill));
 
             TempData["Success"] = "Common bill deleted.";
             return RedirectToAction(nameof(Index), new { buildingId = bill.BuildingId });

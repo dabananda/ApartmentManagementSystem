@@ -1,8 +1,10 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Web.Extensions;
-using AMS.Application.Features.TenantBilling.Services;
 using AMS.Application.Features.Tenancy.DTOs;
+using AMS.Application.Features.TenantBilling.Commands;
+using AMS.Application.Features.TenantBilling.Queries;
+using AMS.Application.Mediator;
 using AMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,7 +18,7 @@ namespace AMS.Web.Controllers
     public class TenantRentController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ITenantRentService _tenantRentService;
+        private readonly IMediator _mediator;
         private readonly IPaymentEmailService _paymentEmailService;
         private readonly IUrlHelperFactory _urlHelperFactory;
         private readonly IActionContextAccessor _actionContextAccessor;
@@ -24,14 +26,14 @@ namespace AMS.Web.Controllers
 
         public TenantRentController(
             UserManager<ApplicationUser> userManager,
-            ITenantRentService tenantRentService,
+            IMediator mediator,
             IPaymentEmailService paymentEmailService,
             IUrlHelperFactory urlHelperFactory,
             IActionContextAccessor actionContextAccessor,
             ILogger<TenantRentController> log)
         {
             _userManager = userManager;
-            _tenantRentService = tenantRentService;
+            _mediator = mediator;
             _paymentEmailService = paymentEmailService;
             _urlHelperFactory = urlHelperFactory;
             _actionContextAccessor = actionContextAccessor;
@@ -43,7 +45,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
-            var tenants = await _tenantRentService.GetTenantRentListAsync(restrictToOwnerId);
+            var tenants = await _mediator.Send(new GetTenantRentListQuery(restrictToOwnerId));
             return View(tenants);
         }
 
@@ -53,16 +55,16 @@ namespace AMS.Web.Controllers
 
             if (User.IsInRole(Roles.Owner))
             {
-                var allowed = await _tenantRentService.IsTenantVisibleToOwnerAsync(tenantUserId, ctx!.Me.Id);
+                var allowed = await _mediator.Send(new CheckTenantVisibilityQuery(tenantUserId, ctx!.Me.Id));
                 if (!allowed) return Forbid();
             }
 
-            await _tenantRentService.EnsureCurrentMonthBillsForTenantAsync(tenantUserId);
+            await _mediator.Send(new EnsureCurrentMonthTenantBillsCommand(tenantUserId));
 
-            var page = await _tenantRentService.GetTenantBillsPageAsync(tenantUserId);
+            var page = await _mediator.Send(new GetTenantBillsPageQuery(tenantUserId));
             if (page == null) return NotFound("No bills.");
 
-            ViewData["History"] = await _tenantRentService.GetTenantPaymentHistoryAsync(tenantUserId);
+            ViewData["History"] = await _mediator.Send(new GetTenantPaymentHistoryQuery(tenantUserId));
             return View(page);
         }
 
@@ -74,7 +76,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
-            var (success, message, created, tenantUserId) = await _tenantRentService.PayAsync(vm, restrictToOwnerId);
+            var (success, message, created, tenantUserId) = await _mediator.Send(new PayTenantBillCommand(vm, restrictToOwnerId));
 
             if (!success)
             {
@@ -99,7 +101,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
-            var (success, message, created, tenantUserId) = await _tenantRentService.FullPayAsync(billId, restrictToOwnerId);
+            var (success, message, created, tenantUserId) = await _mediator.Send(new FullPayTenantBillCommand(billId, restrictToOwnerId));
 
             if (!success)
             {
@@ -124,7 +126,7 @@ namespace AMS.Web.Controllers
             var ctx = await this.GetCallerContextAsync(_userManager);
             var restrictToOwnerId = User.IsInRole(Roles.Owner) ? ctx?.Me.Id : null;
 
-            var (success, message, created, _) = await _tenantRentService.PayAllAsync(tenantUserId, restrictToOwnerId);
+            var (success, message, created, _) = await _mediator.Send(new PayAllTenantBillsCommand(tenantUserId, restrictToOwnerId));
 
             if (!success)
             {
@@ -141,7 +143,7 @@ namespace AMS.Web.Controllers
 
         public async Task<IActionResult> Receipt(Guid id)
         {
-            var (payment, ownerId) = await _tenantRentService.GetReceiptDataAsync(id);
+            var (payment, ownerId) = await _mediator.Send(new GetTenantReceiptQuery(id));
             if (payment == null) return NotFound();
 
             var ctx = await this.GetCallerContextAsync(_userManager);
@@ -168,7 +170,7 @@ namespace AMS.Web.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> EmailReceipt(Guid id)
         {
-            var (payment, ownerId) = await _tenantRentService.GetReceiptDataAsync(id);
+            var (payment, ownerId) = await _mediator.Send(new GetTenantReceiptQuery(id));
             if (payment == null) return NotFound();
 
             var ctx = await this.GetCallerContextAsync(_userManager);

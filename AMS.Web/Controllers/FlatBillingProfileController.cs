@@ -6,7 +6,9 @@ using AMS.Application.Features.Flats.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using AMS.Application.Features.Tenancy.Services;
+using AMS.Application.Features.Tenancy.Commands;
+using AMS.Application.Features.Tenancy.Queries;
+using AMS.Application.Mediator;
 
 namespace AMS.Web.Controllers
 {
@@ -14,17 +16,17 @@ namespace AMS.Web.Controllers
     public class FlatBillingProfileController : Controller
     {
         private readonly UserManager<ApplicationUser> _users;
-        private readonly IFlatBillingProfileService _profiles;
-        public FlatBillingProfileController(UserManager<ApplicationUser> users, IFlatBillingProfileService profiles)
+        private readonly IMediator _mediator;
+        public FlatBillingProfileController(UserManager<ApplicationUser> users, IMediator mediator)
         {
-            _users = users; _profiles = profiles;
+            _users = users; _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
             var me = await _users.GetUserAsync(User);
 
-            var rows = await _profiles.GetRowsAsync(User.IsInRole("Owner") ? me!.Id : null);
+            var rows = await _mediator.Send(new GetFlatProfileRowsQuery(User.IsInRole("Owner") ? me!.Id : null));
 
             return View(rows);
         }
@@ -32,11 +34,11 @@ namespace AMS.Web.Controllers
         public async Task<IActionResult> Edit(Guid flatId)
         {
             var me = await _users.GetUserAsync(User);
-            var flat = await _profiles.GetFlatAsync(flatId);
+            var flat = await _mediator.Send(new GetAssignmentFlatQuery(flatId));
             if (flat == null) return NotFound();
             if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
 
-            var p = await _profiles.GetProfileAsync(flatId)
+            var p = await _mediator.Send(new GetFlatBillingProfileQuery(flatId))
                 ?? new FlatBillingProfile { FlatId = flatId };
 
             return View(p);
@@ -50,12 +52,12 @@ namespace AMS.Web.Controllers
                 return View(vm);
 
             var me = await _users.GetUserAsync(User);
-            var flat = await _profiles.GetFlatAsync(vm.FlatId);
+            var flat = await _mediator.Send(new GetAssignmentFlatQuery(vm.FlatId));
             if (flat == null) return NotFound("Flat not found.");
 
             if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
 
-            await _profiles.SaveAsync(vm);
+            await _mediator.Send(new SaveFlatBillingProfileCommand(vm));
 
             TempData["Success"] = "Billing profile saved.";
             return RedirectToAction(nameof(Index));

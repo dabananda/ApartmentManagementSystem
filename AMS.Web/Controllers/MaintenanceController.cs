@@ -5,7 +5,9 @@ using AMS.Application.Features.Home.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using AMS.Application.Features.Maintenance.Services;
+using AMS.Application.Mediator;
+using AMS.Application.Features.Maintenance.Queries;
+using AMS.Application.Features.Maintenance.Commands;
 
 namespace AMS.Web.Controllers
 {
@@ -13,12 +15,12 @@ namespace AMS.Web.Controllers
     public class MaintenanceController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IMaintenanceService _maintenance;
+        private readonly IMediator _mediator;
 
-        public MaintenanceController(UserManager<ApplicationUser> userManager, IMaintenanceService maintenance)
+        public MaintenanceController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _maintenance = maintenance;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index(string status = "Open")
@@ -27,7 +29,7 @@ namespace AMS.Web.Controllers
             if (user?.BuildingId == null) return Forbid();
             var buildingId = user.BuildingId.Value;
 
-            var items = await _maintenance.GetForBuildingAsync(buildingId, status);
+            var items = await _mediator.Send(new GetMaintenanceTicketsForBuildingQuery(buildingId, status));
 
             ViewBag.SelectedStatus = status;
             return View(items);
@@ -44,7 +46,7 @@ namespace AMS.Web.Controllers
 
             if (!ModelState.IsValid) return View(model);
 
-            await _maintenance.CreateAsync(model, buildingId);
+            await _mediator.Send(new CreateMaintenanceTicketCommand(model, buildingId));
             return RedirectToAction(nameof(Index));
         }
 
@@ -55,7 +57,7 @@ namespace AMS.Web.Controllers
             if (user?.BuildingId == null) return Forbid();
             var buildingId = user.BuildingId.Value;
 
-            var ticket = await _maintenance.AdvanceAsync(id, buildingId);
+            var ticket = await _mediator.Send(new AdvanceMaintenanceTicketCommand(id, buildingId));
 
             if (ticket == null) return NotFound();
 

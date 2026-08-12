@@ -1,9 +1,10 @@
-using AMS.Application.Features.Owner.Services;
 using AMS.Infrastructure.Data;
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Application.Features.Home.DTOs;
 using AMS.Application.Features.Owner.DTOs;
+using AMS.Application.Features.Owner.Queries;
+using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,12 +15,12 @@ namespace AMS.Web.Controllers
     public class OwnerController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IOwnerService _ownerService;
+        private readonly IMediator _mediator;
 
-        public OwnerController(UserManager<ApplicationUser> userManager, IOwnerService ownerService)
+        public OwnerController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _ownerService = ownerService;
+            _mediator = mediator;
         }
 
         private async Task<(ApplicationUser me, bool isSuperAdmin)> GetCallerInfoAsync()
@@ -34,7 +35,7 @@ namespace AMS.Web.Controllers
             var (me, _) = await GetCallerInfoAsync();
             if (me == null) return Forbid();
 
-            var vm = await _ownerService.GetDashboardAsync(me.Id);
+            var vm = await _mediator.Send(new GetOwnerDashboardQuery(me.Id));
             return View(vm);
         }
 
@@ -45,7 +46,7 @@ namespace AMS.Web.Controllers
 
             var targetOwnerId = User.IsInRole("Owner") ? me.Id : (ownerId ?? me.Id);
 
-            var rows = await _ownerService.GetOwnedFlatsAsync(targetOwnerId);
+            var rows = await _mediator.Send(new GetOwnedFlatsQuery(targetOwnerId));
             ViewBag.TargetOwnerId = targetOwnerId;
             return View(rows);
         }
@@ -60,7 +61,7 @@ namespace AMS.Web.Controllers
 
             var restrictToBuildingId = (User.IsInRole("President") && me.BuildingId != null) ? me.BuildingId : null;
 
-            var page = await _ownerService.GetCommonBillsPageAsync(targetOwnerId, restrictToBuildingId);
+            var page = await _mediator.Send(new GetOwnerCommonBillsPageQuery(targetOwnerId, restrictToBuildingId));
 
             // If allocations were 0, service returns an empty model with the user's name
             if (page == null)

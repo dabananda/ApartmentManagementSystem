@@ -1,9 +1,10 @@
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
-using AMS.Application.Features.Expenses.Services;
 using AMS.Application.Features.Expenses.DTOs;
 using AMS.Web.Extensions;
 using AMS.Application.Features.Buildings.Queries;
+using AMS.Application.Features.Expenses.Queries;
+using AMS.Application.Features.Expenses.Commands;
 using AMS.Application.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,20 +17,14 @@ namespace AMS.Web.Controllers
     public class ExpensePaymentController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IExpensePaymentService _payments;
         private readonly IMediator _mediator;
-        private readonly ICommonBillService _bills;
 
         public ExpensePaymentController(
             UserManager<ApplicationUser> userManager,
-            IExpensePaymentService payments,
-            IMediator mediator,
-            ICommonBillService bills)
+            IMediator mediator)
         {
             _userManager = userManager;
-            _payments = payments;
             _mediator = mediator;
-            _bills = bills;
         }
 
         /// <summary>Returns true if the current user is authorised to manage payments for <paramref name="buildingId"/>.</summary>
@@ -41,7 +36,7 @@ namespace AMS.Web.Controllers
         }
 
         private async Task<List<SelectListItem>> GetOutstandingBillSelectItemsAsync(Guid buildingId) =>
-            (await _payments.GetOutstandingBillsAsync(buildingId))
+            (await _mediator.Send(new GetOutstandingBillsQuery(buildingId)))
                 .Select(b => new SelectListItem
                 {
                     Value = b.Id.ToString(),
@@ -54,7 +49,7 @@ namespace AMS.Web.Controllers
             if (buildingId == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(buildingId.Value)) return Forbid();
 
-            var payments = await _payments.GetForBuildingAsync(buildingId.Value);
+            var payments = await _mediator.Send(new GetExpensePaymentsForBuildingQuery(buildingId.Value));
 
             ViewData["BuildingId"] = buildingId;
             return View(payments);
@@ -77,7 +72,7 @@ namespace AMS.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                var remainingAmount = await _payments.GetRemainingAmountAsync(model.CommonBillId);
+                var remainingAmount = await _mediator.Send(new GetRemainingExpenseAmountQuery(model.CommonBillId));
                 if (model.Amount > remainingAmount)
                     ModelState.AddModelError("Amount", $"Payment amount cannot exceed the remaining balance of {remainingAmount:C}.");
             }
@@ -85,7 +80,7 @@ namespace AMS.Web.Controllers
             if (ModelState.IsValid)
             {
                 var payment = model.ToEntity();
-                await _payments.RecordAsync(payment);
+                await _mediator.Send(new RecordExpensePaymentCommand(payment));
                 TempData["Success"] = "Payment recorded successfully.";
                 return RedirectToAction(nameof(Index), new { buildingId = model.BuildingId });
             }
@@ -99,7 +94,7 @@ namespace AMS.Web.Controllers
         {
             if (id == null) return NotFound();
 
-            var payment = await _payments.GetAsync(id.Value);
+            var payment = await _mediator.Send(new GetExpensePaymentByIdQuery(id.Value));
             if (payment == null) return NotFound();
             if (!await IsAuthorizedForBuildingAsync(payment.BuildingId)) return Forbid();
 

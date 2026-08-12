@@ -2,7 +2,9 @@ using AMS.Infrastructure.Data;
 using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using AMS.Application.Features.Home.DTOs;
-using AMS.Application.Features.EntryLogs.Services;
+using AMS.Application.Mediator;
+using AMS.Application.Features.EntryLogs.Commands;
+using AMS.Application.Features.EntryLogs.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,12 +16,12 @@ namespace AMS.Web.Controllers
     public class EntryLogController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IEntryLogService _entries;
+        private readonly IMediator _mediator;
 
-        public EntryLogController(UserManager<ApplicationUser> userManager, IEntryLogService entries)
+        public EntryLogController(UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             _userManager = userManager;
-            _entries = entries;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
@@ -28,7 +30,7 @@ namespace AMS.Web.Controllers
             if (user == null) return Unauthorized();
 
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
-            var entryLogs = await _entries.GetForBuildingAsync(isSuperAdmin ? null : user.BuildingId);
+            var entryLogs = await _mediator.Send(new GetEntryLogsForBuildingQuery(isSuperAdmin ? null : user.BuildingId));
             return View(entryLogs);
         }
 
@@ -123,7 +125,7 @@ namespace AMS.Web.Controllers
 
             if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
             {
-                var flatExists = await _entries.FlatBelongsToBuildingAsync(model.FlatId, model.BuildingId);
+                var flatExists = await _mediator.Send(new CheckFlatBelongsToBuildingQuery(model.FlatId, model.BuildingId));
 
                 if (!flatExists)
                 {
@@ -146,7 +148,7 @@ namespace AMS.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                await _entries.CreateAsync(model);
+                await _mediator.Send(new CreateEntryLogCommand(model));
 
                 TempData["SuccessMessage"] = "Entry log created successfully.";
                 return RedirectToAction("Index");
@@ -162,7 +164,7 @@ namespace AMS.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _entries.GetAsync(id.Value, includeReferences: true);
+            var entry = await _mediator.Send(new GetEntryLogByIdQuery(id.Value, IncludeReferences: true));
 
             if (entry == null) return NotFound();
 
@@ -180,7 +182,7 @@ namespace AMS.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _entries.GetAsync(id.Value);
+            var entry = await _mediator.Send(new GetEntryLogByIdQuery(id.Value));
             if (entry == null) return NotFound();
 
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
@@ -226,7 +228,7 @@ namespace AMS.Web.Controllers
 
             if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
             {
-                var flatExists = await _entries.FlatBelongsToBuildingAsync(model.FlatId, model.BuildingId);
+                var flatExists = await _mediator.Send(new CheckFlatBelongsToBuildingQuery(model.FlatId, model.BuildingId));
                 if (!flatExists) ModelState.AddModelError("FlatId", "Selected flat does not belong to the selected building.");
             }
 
@@ -237,7 +239,7 @@ namespace AMS.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                var existing = await _entries.GetAsync(id);
+                var existing = await _mediator.Send(new GetEntryLogByIdQuery(id));
                 if (existing == null) return NotFound();
 
                 if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
@@ -245,7 +247,7 @@ namespace AMS.Web.Controllers
                     if (user.BuildingId != existing.BuildingId) return Forbid();
                 }
 
-                await _entries.UpdateAsync(existing, model);
+                await _mediator.Send(new UpdateEntryLogCommand(existing, model));
 
                 TempData["SuccessMessage"] = "Entry log updated successfully.";
                 return RedirectToAction("Index");
@@ -261,7 +263,7 @@ namespace AMS.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _entries.GetAsync(id.Value, includeReferences: true);
+            var entry = await _mediator.Send(new GetEntryLogByIdQuery(id.Value, IncludeReferences: true));
 
             if (entry == null) return NotFound();
 
@@ -280,7 +282,7 @@ namespace AMS.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var entry = await _entries.GetAsync(id);
+            var entry = await _mediator.Send(new GetEntryLogByIdQuery(id));
             if (entry == null) return NotFound();
 
             if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
@@ -288,7 +290,7 @@ namespace AMS.Web.Controllers
                 if (user.BuildingId != entry.BuildingId) return Forbid();
             }
 
-            await _entries.DeleteAsync(entry);
+            await _mediator.Send(new DeleteEntryLogCommand(entry));
 
             TempData["SuccessMessage"] = "Entry log deleted successfully.";
             return RedirectToAction("Index");
@@ -308,7 +310,8 @@ namespace AMS.Web.Controllers
                 }
             }
 
-            var flats = (await _entries.GetFlatsAsync(buildingId))
+            var queryData = await _mediator.Send(new GetEntryLogFormDataQuery(buildingId));
+            var flats = queryData.Flats
                 .Select(f => new { id = f.Id, flatNumber = f.FlatNumber });
 
             return Json(flats);
@@ -317,17 +320,19 @@ namespace AMS.Web.Controllers
         private async Task PopulateDropdowns(ApplicationUser user, Guid? selectedBuildingId = null, Guid? selectedFlatId = null)
         {
             var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
-            var buildings = await _entries.GetBuildingsAsync(isSuperAdmin ? null : user.BuildingId);
-            ViewBag.BuildingId = new SelectList(buildings, "Id", "Name", selectedBuildingId);
+            var queryData = await _mediator.Send(new GetEntryLogFormDataQuery(isSuperAdmin ? null : user.BuildingId));
+            ViewBag.BuildingId = new SelectList(queryData.Buildings, "Id", "Name", selectedBuildingId);
 
             IReadOnlyList<Flat> flats = [];
             if (selectedBuildingId.HasValue && selectedBuildingId != Guid.Empty)
             {
-                flats = await _entries.GetFlatsAsync(selectedBuildingId);
+                var fData = await _mediator.Send(new GetEntryLogFormDataQuery(selectedBuildingId));
+                flats = fData.Flats;
             }
             else if (user.BuildingId.HasValue)
             {
-                flats = await _entries.GetFlatsAsync(user.BuildingId);
+                var fData = await _mediator.Send(new GetEntryLogFormDataQuery(user.BuildingId));
+                flats = fData.Flats;
             }
 
             ViewBag.FlatId = new SelectList(flats, "Id", "FlatNumber", selectedFlatId);
