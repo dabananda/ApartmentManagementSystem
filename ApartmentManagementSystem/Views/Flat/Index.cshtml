@@ -66,11 +66,11 @@
                 </td>
                 <td>
                     <a asp-action="AssignOwner" asp-route-flatId="@item.Id"
-                       class="btn btn-sm @(item.Owner == null ? "btn-success" : "btn-warning")">
+                       class="btn btn-sm @(item.Owner == null ? "btn-success" : "btn-secondary")">
                         @(item.Owner == null ? "Assign Owner" : "Change Owner")
                     </a>
 
-                    <a asp-controller="Tenant" asp-action="ViewTenants" asp-route-flatId="@item.Id" class="btn btn-sm btn-info">View Tenants</a>
+                    <a asp-controller="Tenant" asp-action="ViewTenants" asp-route-flatId="@item.Id" class="btn btn-sm btn-light">View Tenants</a>
                     <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@item.Id', '@item.FlatNumber')">Delete</button>
                 </td>
             </tr>

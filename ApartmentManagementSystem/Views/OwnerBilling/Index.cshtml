@@ -1,10 +1,10 @@
-@using ApartmentManagementSystem.Features.Owner.ViewModels
+﻿@using ApartmentManagementSystem.Features.Owner.ViewModels
 @model List<OwnerBillingRow>
 @{
     ViewData["Title"] = "Owners - Billing Summary";
-    var buildingId = (Guid)ViewData["BuildingId"];
+    var buildingId = ViewData["BuildingId"] as Guid? ?? Guid.Empty;
 }
-<h2 class="mb-3">Owners � Billing Summary</h2>
+<h2 class="mb-3">Owners — Billing Summary</h2>
 
 <table class="table table-striped align-middle">
     <thead>
@@ -37,3 +37,4 @@
 </table>
 
 <a asp-controller="CommonBill" asp-action="Index" asp-route-buildingId="@buildingId" class="btn btn-outline-secondary">Back to Bills</a>
+

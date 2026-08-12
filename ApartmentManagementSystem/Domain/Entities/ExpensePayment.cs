@@ -11,7 +11,7 @@ namespace ApartmentManagementSystem.Domain.Entities
         [Required]
         [Display(Name = "Payment Name")]
         [StringLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
 
         [DataType(DataType.Date)]
         [Display(Name = "Payment Date")]

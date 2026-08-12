@@ -1,12 +1,12 @@
-﻿.sidebar-modern {
-    background: #ffffff;
-    border-right: 1px solid #e9ecef;
+/* sidebar.css - Minimalist Refactor */
+.sidebar-modern {
+    background: #FBFBFD;
+    border-right: 1px solid var(--ams-border-color);
     min-height: calc(100vh - 72px);
-    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
 }
 
 .sidebar-content {
-    padding: 0.5rem 0;
+    padding: 1rem 0.5rem;
     position: sticky;
     top: 72px;
     max-height: calc(100vh - 72px);
@@ -15,96 +15,88 @@
 
 .sidebar-offcanvas {
     width: 300px;
-    background: #ffffff;
+    background: #FBFBFD;
 }
 
 .nav-section-title {
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
-    color: #6c757d;
-    padding: 0.5rem 1.5rem 0.25rem;
-    margin: 1rem 0 0.5rem 0;
-    letter-spacing: 0.05em;
+    color: #86868B;
+    padding: 0.75rem 1rem 0.25rem;
+    margin: 1rem 0 0.25rem 0;
+    letter-spacing: 0.04em;
 }
 
-    .nav-section-title:first-child {
-        margin-top: 0;
-    }
+.nav-section-title:first-child {
+    margin-top: 0;
+}
 
 .sidebar-nav-link {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1.5rem;
-    color: #495057;
+    padding: 0.65rem 1rem;
+    color: #515154;
     text-decoration: none;
     font-weight: 500;
-    border-radius: 0;
-    margin: 0;
-    transition: all 0.3s ease;
-    border-left: 3px solid transparent;
-    position: relative;
+    border-radius: 6px;
+    margin: 0.25rem 0.5rem;
+    transition: all 0.15s ease;
 }
 
-    .sidebar-nav-link:hover {
-        background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
-        color: #667eea;
-        text-decoration: none;
-        border-left-color: #667eea;
-        transform: translateX(2px);
-    }
+.sidebar-nav-link:hover {
+    background: #EBEBEF;
+    color: #1D1D1F;
+    text-decoration: none;
+}
 
-    .sidebar-nav-link.active {
-        background: linear-gradient(90deg, rgba(102, 126, 234, 0.2) 0%, rgba(102, 126, 234, 0.1) 100%);
-        color: #667eea;
-        font-weight: 600;
-        border-left-color: #667eea;
-        box-shadow: inset 0 1px 3px rgba(102, 126, 234, 0.1);
-    }
+.sidebar-nav-link.active {
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--bs-primary);
+    font-weight: 600;
+}
 
-    .sidebar-nav-link i {
-        width: 20px;
-        height: 20px;
-        margin-right: 0.75rem;
-        font-size: 1rem;
-        opacity: 0.7;
-        transition: all 0.3s ease;
-    }
+.sidebar-nav-link i {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+    opacity: 0.8;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    .sidebar-nav-link:hover i,
-    .sidebar-nav-link.active i {
-        opacity: 1;
-        transform: scale(1.1);
-    }
+.sidebar-nav-link:hover i {
+    opacity: 1;
+    color: #1D1D1F;
+}
 
-    .sidebar-nav-link.active i {
-        color: #667eea;
-    }
-
-    .sidebar-nav-link:active {
-        transform: translateX(1px);
-        background: linear-gradient(90deg, rgba(102, 126, 234, 0.25) 0%, rgba(102, 126, 234, 0.12) 100%);
-    }
+.sidebar-nav-link.active i {
+    opacity: 1;
+    color: var(--bs-primary);
+}
 
 .nav-divider {
     height: 1px;
-    background: #e9ecef;
-    margin: 1rem 1.5rem;
+    background: var(--ams-border-color);
+    margin: 1rem 1rem;
 }
 
 .warning-message {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
+    background: #F0F9FF;
+    border: 1px solid rgba(0, 102, 204, 0.15);
     border-radius: 8px;
     padding: 0.75rem 1rem;
-    margin: 1rem 1.5rem;
-    font-size: 0.875rem;
-    color: #856404;
+    margin: 1rem 1rem;
+    font-size: 0.85rem;
+    color: #0066CC;
 }
 
 .main-content {
     min-height: calc(100vh - 72px);
-    background: #f8f9fa;
+    background: var(--bs-body-bg);
 }
 
 .content-wrapper {
@@ -120,28 +112,16 @@
 }
 
 .sidebar-content::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.15);
     border-radius: 3px;
 }
 
-    .sidebar-content::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(0, 0, 0, 0.3);
-    }
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.25);
+}
 
 @media (max-width: 991.98px) {
     .sidebar-nav-link {
-        padding: 0.875rem 1rem;
-    }
-
-    .nav-section-title {
-        padding: 0.5rem 1rem 0.25rem;
-    }
-
-    .nav-divider {
-        margin: 1rem;
-    }
-
-    .warning-message {
-        margin: 1rem;
+        padding: 0.75rem 1rem;
     }
 }

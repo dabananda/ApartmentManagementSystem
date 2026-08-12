@@ -69,9 +69,9 @@ using (var scope = app.Services.CreateScope())
         var superAdminPassword = configuration["SuperAdminPassword"];
         var superAdminEmail = configuration["SuperAdminEmail"];
 
-        if (string.IsNullOrEmpty(superAdminPassword))
+        if (string.IsNullOrEmpty(superAdminPassword) || string.IsNullOrEmpty(superAdminEmail))
         {
-            throw new InvalidOperationException("SuperAdminPassword not found in configuration.");
+            throw new InvalidOperationException("SuperAdmin credentials not found in configuration.");
         }
 
         DbInitializer.Initialize(context, userManager, roleManager, superAdminEmail, superAdminPassword).Wait();

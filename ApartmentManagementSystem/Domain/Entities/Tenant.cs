@@ -8,13 +8,13 @@ namespace ApartmentManagementSystem.Domain.Entities
         public Guid Id { get; set; }
         [Required]
         [StringLength(100)]
-        public string Fullname { get; set; }
+        public string Fullname { get; set; } = default!;
         [EmailAddress]
         public string? Email { get; set; }
         [Required]
         [StringLength(20)]
         [Display(Name = "Phone Number")]
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = default!;
         public bool IsActive { get; set; } = true;
         public Guid FlatId { get; set; }
         [ForeignKey("FlatId")]

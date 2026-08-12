@@ -1,18 +1,44 @@
-﻿/* Modern Dashboard Styles */
-body {
-    font-size: 0.875rem;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.5;
+/* dashboard.css - Minimalist Refactor */
+/* Removed old sidebar gradient logic (handled by sidebar.css) and Inter font */
+
+/* Dashboard Layout Enhancements */
+.dashboard-metrics {
+    margin-bottom: 2rem;
 }
 
-/* Remove old sidebar styles that conflict */
+.dashboard-card {
+    background: #FFFFFF;
+    border: 1px solid var(--ams-border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.dashboard-card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #86868B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1D1D1F;
+    line-height: 1.2;
+}
+
+.dashboard-card-icon {
+    font-size: 2rem;
+    color: var(--bs-primary);
+    opacity: 0.8;
+}
+
+/* Ensure no conflicts with sidebar */
 .sidebar {
     position: static !important;
     padding: 0 !important;
     box-shadow: none !important;
 }
-
-/* Active link highlighting */
-.sidebar-nav-link.active,
-.sidebar-nav-link[aria-current="page"] {
-    background: linear-gradient(90deg, rgba(102,

@@ -9,7 +9,7 @@ namespace ApartmentManagementSystem.Domain.Entities
     {
         [Required]
         [StringLength(50)]
-        public string FlatNumber { get; set; }
+        public string FlatNumber { get; set; } = default!;
         public Guid BuildingId { get; set; }
         public virtual Building? Building { get; set; }
         public string? OwnerId { get; set; }

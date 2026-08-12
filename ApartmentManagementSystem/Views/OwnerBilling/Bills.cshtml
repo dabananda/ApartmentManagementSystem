@@ -1,9 +1,9 @@
-@model IEnumerable<ApartmentManagementSystem.Domain.Entities.TenantBill>
+﻿@model IEnumerable<ApartmentManagementSystem.Domain.Entities.TenantBill>
 @using System.Globalization
 @{
-    ViewData["Title"] = "Bills"; var flatId = (Guid)ViewData["FlatId"]; var flatNumber = ViewData["FlatNumber"] as string;
+    ViewData["Title"] = "Bills"; var flatId = ViewData["FlatId"] as Guid? ?? Guid.Empty; var flatNumber = ViewData["FlatNumber"] as string;
 }
-<h1>Bills � Flat @flatNumber</h1>
+<h1>Bills — Flat @flatNumber</h1>
 @if (TempData["Ok"] is string ok)
 {
     <div class="alert alert-success">@ok</div>
@@ -36,3 +36,4 @@ else
         </table>
     </div>
 }
+

@@ -13,7 +13,7 @@
 {
     <!-- User Profile Dropdown -->
     <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle text-white px-3 py-2 rounded-3 bg-opacity-10 bg-white d-flex align-items-center"
+        <a class="nav-link dropdown-toggle px-3 py-2 rounded-3 d-flex align-items-center"
            href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <div class="user-avatar me-2 d-none d-md-flex">
                 <div class="avatar-circle-small me-2">
@@ -65,7 +65,7 @@
 else
 {
     <div class="nav-item">
-        <a class="nav-link text-white px-3 py-2 rounded-3 bg-opacity-10 bg-white d-flex align-items-center"
+        <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center"
            asp-area="Identity" asp-page="/Account/Login">
             <i class="bi bi-box-arrow-in-right me-1 d-none d-md-inline"></i>
             <span class="d-none d-md-inline">Login</span>
@@ -78,8 +78,8 @@ else
     .avatar-circle-small {
         width: 32px;
         height: 32px;
-        background: linear-gradient(135deg, #ffffff20 0%, #ffffff40 100%);
-        border: 2px solid rgba(255,255,255,0.3);
+        background: var(--bs-primary);
+        border: 2px solid rgba(0,0,0,0.05);
         border-radius: 50%;
         display: flex;
         align-items: center;

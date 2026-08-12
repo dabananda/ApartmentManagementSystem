@@ -1,14 +1,14 @@
-@using ApartmentManagementSystem.Features.Owner.ViewModels
+﻿@using ApartmentManagementSystem.Features.Owner.ViewModels
 @model List<OwnerAllocationRowViewModel>
 @{
     ViewData["Title"] = "Owner Payments";
-    var buildingId = (Guid)ViewData["BuildingId"];
-    var billName = (string)ViewData["BillName"];
-    var billDate = (string)ViewData["BillDate"];
-    var billTotal = (decimal)ViewData["BillTotal"];
+    var buildingId = ViewData["BuildingId"] as Guid? ?? Guid.Empty;
+    var billName = ViewData["BillName"] as string ?? string.Empty;
+    var billDate = ViewData["BillDate"] as string ?? string.Empty;
+    var billTotal = ViewData["BillTotal"] as decimal? ?? 0m;
 }
 
-<h2 class="mb-3">Owner Payments � @billName (@billDate)</h2>
+<h2 class="mb-3">Owner Payments — @billName (@billDate)</h2>
 <div class="mb-3 text-muted">Bill Total: @billTotal.ToString("C")</div>
 
 @if (TempData["Success"] != null)
@@ -130,3 +130,5 @@
         });
     </script>
 }
+
+

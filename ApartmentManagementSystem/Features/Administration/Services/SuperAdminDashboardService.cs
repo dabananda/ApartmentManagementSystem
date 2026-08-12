@@ -34,7 +34,7 @@ public sealed class SuperAdminDashboardService(
         {
             Id           = b.Id,
             Name         = b.Name,
-            Address      = b.Address,
+            Address      = b.Address ?? string.Empty,
             TotalFlats   = b.Flats?.Count ?? 0,
             OccupiedFlats = b.Flats?.Count(f => occupiedFlatIds.Contains(f.Id)) ?? 0,
             TotalBills   = b.CommonBills?.Sum(bill => bill.TotalAmount) ?? 0,

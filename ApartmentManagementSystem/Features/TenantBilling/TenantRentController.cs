@@ -47,7 +47,7 @@ namespace ApartmentManagementSystem.Features.TenantBilling
             return View(tenants);
         }
 
-        public async Task<IActionResult> View(string tenantUserId)
+        public new async Task<IActionResult> View(string tenantUserId)
         {
             var ctx = await this.GetCallerContextAsync(_userManager);
 

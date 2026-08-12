@@ -1,335 +1,339 @@
-﻿/* AMS Modern Theme (Bootstrap 5.3+) */
-/* Load after bootstrap.min.css and before your other app CSS files */
-
-/* ===== Color System (WCAG AAA/AA on white/brand) =====
-   Primary #6366F1 (indigo-600): text on primary = #FFFFFF (AA)
-   Secondary #64748B (slate-500): text on secondary = #FFFFFF (AA)
-   Success #10B981 (green-600): text on success = #FFFFFF (AA)
-   Danger  #EF4444 (red-600):   text on danger  = #FFFFFF (AA)
-   Warning #F59E0B (amber-500): text on warning = #111827 (AA on soft backgrounds)
-   Info    #06B6D4 (sky-500):   text on info    = #111827 (AA on soft backgrounds)
-   Gray scale: 900 #1F2937, 800 #1F2937, 700 #374151, 100 #F3F4F6, 50 #F9FAFB
-*/
+/* AMS Modern Theme (Apple & Adobe Inspired Minimalist) */
+/* Replaces previous Bootstrap 5 customizations */
 
 :root,
 [data-bs-theme="light"] {
-    /* Core brand */
-    --bs-primary: #6366F1;
-    --bs-primary-rgb: 99, 102, 241;
-    --bs-secondary: #64748B;
-    --bs-secondary-rgb: 100, 116, 139;
-    --bs-success: #10B981;
-    --bs-success-rgb: 16, 185, 129;
-    --bs-danger: #EF4444;
-    --bs-danger-rgb: 239, 68, 68;
-    --bs-warning: #F59E0B;
-    --bs-warning-rgb: 245, 158, 11;
-    --bs-info: #06B6D4;
-    --bs-info-rgb: 6, 182, 212;
-    --bs-dark: #1F2937;
-    --bs-dark-rgb: 31, 41, 55;
-    --bs-light: #F9FAFB;
-    --bs-light-rgb: 249, 250, 251;
-    /* Body / text */
-    --bs-body-color: #1F2937; /* slate-900 */
-    --bs-body-bg: #F9FAFB; /* light background */
+    /* Brand Accent - Refined Blue (Apple-like) */
+    --bs-primary: #0066CC;
+    --bs-primary-rgb: 0, 102, 204;
+    
+    /* Secondary Action - Adobe-like subtle gray */
+    --bs-secondary: #86868B;
+    --bs-secondary-rgb: 134, 134, 139;
+    
+    /* Semantic Colors - Softened for professional look */
+    --bs-success: #34C759;
+    --bs-success-rgb: 52, 199, 89;
+    --bs-danger: #FF3B30;
+    --bs-danger-rgb: 255, 59, 48;
+    --bs-warning: #FF9500;
+    --bs-warning-rgb: 255, 149, 0;
+    --bs-info: #5AC8FA;
+    --bs-info-rgb: 90, 200, 250;
+    
+    --bs-dark: #1D1D1F;
+    --bs-dark-rgb: 29, 29, 31;
+    --bs-light: #F5F5F7;
+    --bs-light-rgb: 245, 245, 247;
+    
+    /* Body & Text - Apple Typography Colors */
+    --bs-body-color: #1D1D1F; /* Charcoal primary text */
+    --bs-body-bg: #F5F5F7; /* Soft gray background */
+    
     /* Links */
-    --bs-link-color: #6366F1;
-    --bs-link-hover-color: #5B21B6;
-    /* Focus ring */
-    --bs-focus-ring-color: rgba(79,70,229,.35);
-    /* Subtle background tokens (used by alerts, list groups, etc.) */
-    --bs-primary-bg-subtle: rgba(79,70,229,.10);
-    --bs-primary-border-subtle: rgba(79,70,229,.35);
-    --bs-secondary-bg-subtle: rgba(100,116,139,.12);
-    --bs-secondary-border-subtle: rgba(100,116,139,.35);
-    --bs-success-bg-subtle: rgba(22,163,74,.10);
-    --bs-success-border-subtle: rgba(22,163,74,.30);
-    --bs-danger-bg-subtle: rgba(220,38,38,.10);
-    --bs-danger-border-subtle: rgba(220,38,38,.30);
-    --bs-warning-bg-subtle: rgba(245,158,11,.14);
-    --bs-warning-border-subtle: rgba(245,158,11,.35);
-    --bs-info-bg-subtle: rgba(14,165,233,.12);
-    --bs-info-border-subtle: rgba(14,165,233,.35);
-    /* Navbar brand gradient */
-    --ams-brand-start: #8B5CF6; /* indigo */
-    --ams-brand-end: #A855F7; /* purple */
-    --ams-brand-gradient: linear-gradient(135deg, var(--ams-brand-start) 0%, var(--ams-brand-end) 100%);
-    /* Card + surfaces */
+    --bs-link-color: #0066CC;
+    --bs-link-hover-color: #004499;
+    
+    /* Focus Ring - Subtle */
+    --bs-focus-ring-color: rgba(0, 102, 204, 0.25);
+    
+    /* Subtle Backgrounds */
+    --bs-primary-bg-subtle: rgba(0, 102, 204, 0.08);
+    --bs-primary-border-subtle: rgba(0, 102, 204, 0.2);
+    --bs-secondary-bg-subtle: rgba(134, 134, 139, 0.08);
+    --bs-secondary-border-subtle: rgba(134, 134, 139, 0.2);
+    --bs-success-bg-subtle: rgba(52, 199, 89, 0.08);
+    --bs-success-border-subtle: rgba(52, 199, 89, 0.2);
+    --bs-danger-bg-subtle: rgba(255, 59, 48, 0.08);
+    --bs-danger-border-subtle: rgba(255, 59, 48, 0.2);
+    
+    /* Surfaces */
     --ams-surface: #FFFFFF;
-    --ams-surface-soft: #F3F4F6;
+    --ams-surface-soft: #FBFBFD;
+    --ams-border-color: #E5E5EA;
 }
 
-/* ===== Navbar ===== */
+/* ===== Typography ===== */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-size: 0.95rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #1D1D1F;
+}
+
+/* ===== Navbar (Clean, White, Subtle Border) ===== */
 .navbar-ams {
-    background: var(--ams-brand-gradient) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--ams-border-color);
+    box-shadow: none !important;
 }
 
-    .navbar-ams .nav-link,
-    .navbar-ams .navbar-brand,
-    .navbar-ams .navbar-toggler,
-    .navbar-ams .btn-link {
-        color: #fff !important;
-    }
+.navbar-ams .navbar-brand {
+    color: #1D1D1F !important;
+    font-weight: 600;
+}
 
-        .navbar-ams .nav-link:hover,
-        .navbar-ams .btn-link:hover {
-            color: rgba(255,255,255,.9) !important;
-        }
+.navbar-ams .nav-link,
+.navbar-ams .navbar-toggler,
+.navbar-ams .btn-link {
+    color: #515154 !important;
+}
 
-    .navbar-ams .badge.bg-danger { /* keep good contrast on brand */
-        box-shadow: 0 0 0 2px rgba(255,255,255,.25);
-    }
+.navbar-ams .nav-link:hover,
+.navbar-ams .btn-link:hover {
+    color: #1D1D1F !important;
+}
 
-/* ===== Buttons (solid) ===== */
+.brand-icon {
+    background: #0066CC !important;
+}
+
+/* ===== Buttons (Refined, Adobe-like precision) ===== */
+.btn {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: 0.5rem 1rem;
+    border-radius: 6px !important;
+    transition: all 0.15s ease-in-out;
+}
+
 .btn-primary {
     --bs-btn-bg: var(--bs-primary);
     --bs-btn-border-color: var(--bs-primary);
-    --bs-btn-hover-bg: #5B21B6;
-    --bs-btn-hover-border-color: #5B21B6;
-    --bs-btn-active-bg: #4C1D95;
-    --bs-btn-active-border-color: #4C1D95;
-    --bs-btn-disabled-bg: rgba(var(--bs-primary-rgb), .65);
+    --bs-btn-hover-bg: #0055AA;
+    --bs-btn-hover-border-color: #0055AA;
+    --bs-btn-active-bg: #004499;
+    --bs-btn-active-border-color: #004499;
     --bs-btn-color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .btn-secondary {
-    --bs-btn-bg: var(--bs-secondary);
-    --bs-btn-border-color: var(--bs-secondary);
-    --bs-btn-hover-bg: #475569;
-    --bs-btn-hover-border-color: #475569;
-    --bs-btn-active-bg: #334155;
-    --bs-btn-active-border-color: #334155;
-    --bs-btn-color: #fff;
-}
-
-.btn-success {
-    --bs-btn-bg: var(--bs-success);
-    --bs-btn-border-color: var(--bs-success);
-    --bs-btn-hover-bg: #059669;
-    --bs-btn-hover-border-color: #059669;
-    --bs-btn-active-bg: #047857;
-    --bs-btn-active-border-color: #047857;
-    --bs-btn-color: #fff;
+    --bs-btn-bg: #F5F5F7;
+    --bs-btn-border-color: #E5E5EA;
+    --bs-btn-hover-bg: #EBEBEF;
+    --bs-btn-hover-border-color: #D1D1D6;
+    --bs-btn-color: #1D1D1F;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .btn-danger {
     --bs-btn-bg: var(--bs-danger);
     --bs-btn-border-color: var(--bs-danger);
-    --bs-btn-hover-bg: #DC2626;
-    --bs-btn-hover-border-color: #DC2626;
-    --bs-btn-active-bg: #B91C1C;
-    --bs-btn-active-border-color: #B91C1C;
+    --bs-btn-hover-bg: #E0352B;
+    --bs-btn-hover-border-color: #E0352B;
     --bs-btn-color: #fff;
 }
 
-.btn-info {
-    --bs-btn-bg: var(--bs-info);
-    --bs-btn-border-color: var(--bs-info);
-    --bs-btn-hover-bg: #0891B2;
-    --bs-btn-hover-border-color: #0891B2;
-    --bs-btn-active-bg: #0E7490;
-    --bs-btn-active-border-color: #0E7490;
-    --bs-btn-color: #111827;
+.btn-dark {
+    --bs-btn-bg: var(--bs-dark);
+    --bs-btn-border-color: var(--bs-dark);
+    --bs-btn-hover-bg: #333336;
+    --bs-btn-hover-border-color: #333336;
+    --bs-btn-color: #fff;
 }
 
-.btn-warning {
-    --bs-btn-bg: var(--bs-warning);
-    --bs-btn-border-color: var(--bs-warning);
-    --bs-btn-hover-bg: #D97706;
-    --bs-btn-hover-border-color: #D97706;
-    --bs-btn-active-bg: #B45309;
-    --bs-btn-active-border-color: #B45309;
-    --bs-btn-color: #111827;
-}
-
-/* ===== Buttons (soft & ghost variants) ===== */
-.btn-soft {
-    --_bg: rgba(var(--bs-primary-rgb), .12);
-    --_bd: rgba(var(--bs-primary-rgb), .35);
-    --_tx: var(--bs-primary);
-    background: var(--_bg);
-    border-color: var(--_bg);
-    color: var(--_tx);
-}
-
-    .btn-soft:hover {
-        background: rgba(var(--bs-primary-rgb), .18);
-    }
-
+/* Ghost Buttons */
 .btn-ghost {
     color: var(--bs-primary);
     background: transparent;
     border-color: transparent;
 }
-
-    .btn-ghost:hover {
-        background: rgba(var(--bs-primary-rgb), .08);
-        color: #5B21B6;
-    }
-
-/* ===== Forms ===== */
-.form-control:focus,
-.form-select:focus {
-    box-shadow: 0 0 0 .25rem var(--bs-focus-ring-color);
-    border-color: rgba(var(--bs-primary-rgb), .45);
+.btn-ghost:hover {
+    background: rgba(0, 102, 204, 0.06);
+    color: #0055AA;
 }
 
-.form-check-input:focus {
-    box-shadow: 0 0 0 .25rem var(--bs-focus-ring-color);
-}
-
-.input-group-text {
-    background: var(--ams-surface-soft);
-    color: #334155;
-    border-color: #E2E8F0;
-}
-
-/* Validation colors (good contrast on light bg) */
-.is-valid ~ .valid-feedback,
-.was-validated .form-control:valid ~ .valid-feedback {
-    color: #047857;
-}
-
-.is-invalid ~ .invalid-feedback,
-.was-validated .form-control:invalid ~ .invalid-feedback {
-    color: #B91C1C;
-}
-
-/* ===== Alerts (use Bootstrap’s subtle tokens) ===== */
-.alert-primary {
-    --bs-alert-bg: var(--bs-primary-bg-subtle);
-    --bs-alert-color: #1E1B4B; /* deep indigo text */
-    --bs-alert-border-color: var(--bs-primary-border-subtle);
-}
-
-.alert-secondary {
-    --bs-alert-bg: var(--bs-secondary-bg-subtle);
-    --bs-alert-color: #1F2937;
-    --bs-alert-border-color: var(--bs-secondary-border-subtle);
-}
-
-.alert-success {
-    --bs-alert-bg: var(--bs-success-bg-subtle);
-    --bs-alert-color: #065F46;
-    --bs-alert-border-color: var(--bs-success-border-subtle);
-}
-
-.alert-danger {
-    --bs-alert-bg: var(--bs-danger-bg-subtle);
-    --bs-alert-color: #7F1D1D;
-    --bs-alert-border-color: var(--bs-danger-border-subtle);
-}
-
-.alert-warning {
-    --bs-alert-bg: var(--bs-warning-bg-subtle);
-    --bs-alert-color: #7C2D12;
-    --bs-alert-border-color: var(--bs-warning-border-subtle);
-}
-
-.alert-info {
-    --bs-alert-bg: var(--bs-info-bg-subtle);
-    --bs-alert-color: #0C4A6E;
-    --bs-alert-border-color: var(--bs-info-border-subtle);
-}
-
-/* ===== Cards & Sidebar polish (harmonize with your existing CSS) ===== */
-.card,
-.modern-card {
-    background: var(--ams-surface);
-    border: 1px solid #E5E7EB;
-    border-radius: 1.25rem;
-}
-
-.sidebar-modern {
-    background: #fff;
-    border-right: 1px solid #E5E7EB;
-}
-
-/* ===== Utilities ===== */
-.bg-brand-gradient {
-    background: var(--ams-brand-gradient) !important;
-}
-
-.text-brand {
-    color: var(--bs-primary) !important;
-}
-
-.border-subtle {
-    border-color: #E5E7EB !important;
-}
-
-/* ===== Optional Dark Mode (enable by setting data-bs-theme="dark" on <body>) ===== */
-[data-bs-theme="dark"] {
-    --bs-body-bg: #0B1220;
-    --bs-body-color: #E5E7EB;
-    --bs-link-color: #A5B4FC;
-    --bs-link-hover-color: #C7D2FE;
-    --ams-surface: #1F2937;
-    --ams-surface-soft: #111827;
-    --bs-primary-bg-subtle: rgba(79,70,229,.25);
-    --bs-secondary-bg-subtle: rgba(100,116,139,.25);
-    --bs-success-bg-subtle: rgba(22,163,74,.22);
-    --bs-danger-bg-subtle: rgba(220,38,38,.22);
-    --bs-warning-bg-subtle: rgba(245,158,11,.28);
-    --bs-info-bg-subtle: rgba(14,165,233,.25);
-}
-
-
-/* ===== Enhanced Border Radius (More Rounded Corners) ===== */
-.btn {
-    border-radius: .5rem !important; /* Increased from default .375rem */
+/* ===== Forms (Spacious, Crisp Borders) ===== */
+.form-label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: #515154;
+    margin-bottom: 0.35rem;
 }
 
 .form-control, .form-select {
-    border-radius: .5rem !important; /* Increased from default .375rem */
+    border-radius: 6px !important;
+    border: 1px solid #C7C7CC;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
+    color: #1D1D1F;
+    background-color: #FFFFFF;
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.input-group .form-control:first-child,
-.input-group .form-select:first-child {
-    border-top-left-radius: .5rem !important;
-    border-bottom-left-radius: .5rem !important;
-}
-
-.input-group .form-control:last-child,
-.input-group .form-select:last-child {
-    border-top-right-radius: .5rem !important;
-    border-bottom-right-radius: .5rem !important;
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+    outline: none;
 }
 
 .input-group-text {
-    border-radius: .5rem !important;
+    background: #F5F5F7;
+    color: #515154;
+    border: 1px solid #C7C7CC;
+    border-radius: 6px !important;
 }
 
+/* Fix Bootstrap Input Group Radius */
+.input-group .form-control:first-child,
+.input-group .form-select:first-child {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+.input-group .form-control:not(:first-child):not(:last-child) {
+    border-radius: 0 !important;
+}
+.input-group .form-control:last-child,
+.input-group .form-select:last-child {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+/* Validation */
+.is-invalid ~ .invalid-feedback,
+.was-validated .form-control:invalid ~ .invalid-feedback {
+    color: var(--bs-danger);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+/* ===== Cards (Minimalist, Subtle Shadow) ===== */
+.card, .modern-card {
+    background: var(--ams-surface);
+    border: 1px solid var(--ams-border-color);
+    border-radius: 12px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02) !important;
+    transition: none; /* Removed heavy hover transitions */
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--ams-border-color);
+    padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* ===== Alerts & Badges ===== */
 .alert {
-    border-radius: 1rem !important; /* Increased from default .375rem */
+    border-radius: 8px !important;
+    border: 1px solid transparent;
+}
+.alert-info {
+    background-color: #F0F9FF;
+    color: #0066CC;
+    border-color: rgba(0, 102, 204, 0.15);
 }
 
 .badge {
-    border-radius: .5rem !important; /* More rounded badges */
+    border-radius: 4px !important;
+    font-weight: 500;
+    padding: 0.35em 0.65em;
 }
+.bg-success { background-color: var(--bs-success) !important; color: white !important; }
+.bg-danger { background-color: var(--bs-danger) !important; color: white !important; }
+.bg-warning { background-color: var(--bs-warning) !important; color: #1D1D1F !important; }
+.bg-info { background-color: var(--bs-info) !important; color: #1D1D1F !important; }
+.bg-secondary { background-color: #8E8E93 !important; color: white !important; }
 
-.dropdown-menu {
-    border-radius: 1rem !important; /* More rounded dropdowns */
-}
-
+/* ===== Modals ===== */
 .modal-content {
-    border-radius: 1.25rem !important; /* More rounded modals */
+    border-radius: 16px !important;
+    border: 1px solid var(--ams-border-color);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+.modal-header {
+    border-bottom: 1px solid var(--ams-border-color);
+    padding: 1.25rem 1.5rem;
+}
+.modal-footer {
+    border-top: 1px solid var(--ams-border-color);
+    padding: 1.25rem 1.5rem;
+    background-color: #FBFBFD;
+    border-bottom-left-radius: 16px !important;
+    border-bottom-right-radius: 16px !important;
 }
 
-.toast {
-    border-radius: 1rem !important; /* More rounded toasts */
+/* ===== Sidebar ===== */
+.sidebar-modern {
+    background: #FBFBFD;
+    border-right: 1px solid var(--ams-border-color);
 }
 
-.nav-pills .nav-link {
-    border-radius: .5rem !important; /* More rounded nav pills */
+/* ===== Tables (Refined, Spacious) ===== */
+.table {
+    color: #1D1D1F;
+    margin-bottom: 0;
+}
+.table th {
+    font-weight: 600;
+    color: #86868B;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--ams-border-color) !important;
+    padding: 1rem;
+    background-color: #FBFBFD;
+}
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--ams-border-color);
+}
+.table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.015);
 }
 
-.pagination .page-link {
-    border-radius: .5rem !important; /* More rounded pagination */
-    margin: 0 .125rem; /* Add slight spacing between pagination items */
+/* DataTables Overrides */
+div.dataTables_wrapper div.dataTables_filter input {
+    border-radius: 6px;
+    border: 1px solid #C7C7CC;
+    padding: 0.3rem 0.6rem;
+    margin-left: 0.5rem;
+}
+div.dataTables_wrapper div.dataTables_filter input:focus {
+    border-color: var(--bs-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+}
+div.dataTables_wrapper div.dataTables_length select {
+    border-radius: 6px;
+    border: 1px solid #C7C7CC;
+    padding: 0.3rem 1.5rem 0.3rem 0.6rem;
+}
+.page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+.page-link {
+    color: #1D1D1F;
+    border-radius: 4px !important;
+    margin: 0 2px;
+    border: 1px solid transparent;
+}
+.page-link:hover {
+    background-color: #F5F5F7;
+    border-color: var(--ams-border-color);
+    color: #1D1D1F;
 }
 
-.progress {
-    border-radius: .5rem !important; /* More rounded progress bars */
+/* ===== Utilities ===== */
+.border-subtle {
+    border-color: var(--ams-border-color) !important;
+}
+.text-muted {
+    color: #86868B !important;
 }

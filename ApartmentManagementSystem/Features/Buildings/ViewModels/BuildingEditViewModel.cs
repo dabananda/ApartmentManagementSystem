@@ -26,7 +26,7 @@ public class BuildingEditViewModel
         {
             Id = building.Id,
             Name = building.Name,
-            Address = building.Address
+            Address = building.Address ?? string.Empty
         };
     }
 }

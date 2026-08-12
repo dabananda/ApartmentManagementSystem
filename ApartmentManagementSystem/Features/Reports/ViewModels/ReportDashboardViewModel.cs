@@ -7,7 +7,7 @@ namespace ApartmentManagementSystem.Features.Reports.ViewModels
 {
     public class ReportDashboardViewModel
     {
-        public string BuildingName { get; set; }
+        public string BuildingName { get; set; } = default!;
 
         [Display(Name = "Total Bills Issued")]
         [DataType(DataType.Currency)]

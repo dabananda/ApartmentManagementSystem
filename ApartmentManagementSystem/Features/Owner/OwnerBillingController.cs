@@ -49,7 +49,7 @@ namespace ApartmentManagementSystem.Features.Owner
             return View(rows);
         }
 
-        public async Task<IActionResult> View(string ownerId)
+        public new async Task<IActionResult> View(string ownerId)
         {
             if (string.IsNullOrWhiteSpace(ownerId)) return NotFound();
 
@@ -161,7 +161,7 @@ namespace ApartmentManagementSystem.Features.Owner
                 PaidOn = payment.PaymentDate,
                 OwnerName = payment.ExpenseAllocation?.Owner?.Fullname ?? payment.ExpenseAllocation?.Owner?.UserName!,
                 OwnerEmail = payment.ExpenseAllocation?.Owner?.Email,
-                BillTitle = payment.ExpenseAllocation?.CommonBill?.Name,
+                BillTitle = payment.ExpenseAllocation?.CommonBill?.Name ?? string.Empty,
                 BillDate = payment.ExpenseAllocation?.CommonBill?.BillDate ?? DateTime.MinValue,
                 Amount = payment.Amount,
                 Reference = payment.Reference,

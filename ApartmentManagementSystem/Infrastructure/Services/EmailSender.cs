@@ -17,7 +17,7 @@ namespace ApartmentManagementSystem.Infrastructure.Services
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
             var smtpServer = _config["Smtp:Host"];
-            var port = int.Parse(_config["Smtp:Port"]);
+            if (!int.TryParse(_config["Smtp:Port"], out var port)) port = 0;
             var senderEmail = _config["Smtp:From"];
             var username = _config["Smtp:User"];
             var password = _config["Smtp:Password"];

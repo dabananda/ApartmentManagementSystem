@@ -17,18 +17,18 @@ namespace ApartmentManagementSystem.Domain.Entities
 
         [Required(ErrorMessage = "Full name is required")]
         [StringLength(100, ErrorMessage = "Full name cannot exceed 100 characters")]
-        public string Fullname { get; set; }
+        public string Fullname { get; set; } = default!;
 
         [Phone(ErrorMessage = "Please enter a valid phone number")]
         public string? PhoneNumber { get; set; }
 
         [Required(ErrorMessage = "Please select a building")]
         public Guid BuildingId { get; set; }
-        public Building Building { get; set; }
+        public Building Building { get; set; } = default!;
 
         [Required(ErrorMessage = "Please select a flat")]
         public Guid FlatId { get; set; }
-        public Flat Flat { get; set; }
+        public Flat Flat { get; set; } = default!;
 
         [Required(ErrorMessage = "Please select an entry type")]
         public EntryType EntryType { get; set; }
@@ -39,7 +39,7 @@ namespace ApartmentManagementSystem.Domain.Entities
 
         [Required(ErrorMessage = "Purpose is required")]
         [StringLength(500, ErrorMessage = "Purpose cannot exceed 500 characters")]
-        public string Purpose { get; set; }
+        public string Purpose { get; set; } = default!;
 
         public DateTime EntryTime { get; set; } = DateTime.Now;
 
