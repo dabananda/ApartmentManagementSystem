@@ -27,7 +27,7 @@ public sealed class OwnerRepository(ApplicationDbContext context, UserManager<Ap
             .ToListAsync(cancellationToken);
 
         var rentPaidThisMonth = await context.TenantPayments
-            .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)
+            .Include(p => p.TenantBill).ThenInclude(b => b!.Flat)
             .Where(p => p.PaymentDate >= monthStart && p.TenantBill!.Flat!.OwnerId == ownerId)
             .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
 
@@ -55,8 +55,8 @@ public sealed class OwnerRepository(ApplicationDbContext context, UserManager<Ap
             .ToListAsync(cancellationToken);
 
         var recentRent = await context.TenantPayments
-            .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)
-            .Include(p => p.TenantBill)!.ThenInclude(b => b.TenantUser)
+            .Include(p => p.TenantBill).ThenInclude(b => b!.Flat)
+            .Include(p => p.TenantBill).ThenInclude(b => b!.TenantUser)
             .Where(p => p.TenantBill!.Flat!.OwnerId == ownerId)
             .OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id)
             .Take(10)
@@ -72,7 +72,7 @@ public sealed class OwnerRepository(ApplicationDbContext context, UserManager<Ap
             .ToListAsync(cancellationToken);
 
         var recentCommon = await context.ExpenseAllocationPayments
-            .Include(p => p.ExpenseAllocation)!.ThenInclude(a => a.CommonBill)
+            .Include(p => p.ExpenseAllocation).ThenInclude(a => a!.CommonBill)
             .Where(p => p.OwnerId == ownerId)
             .OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id)
             .Take(10)

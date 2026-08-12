@@ -14,7 +14,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
         var me = await users.FindByIdAsync(tenantUserId);
         var today = DateTime.Today;
         var assignment = await context.TenantAssignments
-            .Include(a => a.Flat)!.ThenInclude(f => f.Building)
+            .Include(a => a.Flat).ThenInclude(f => f!.Building)
             .Where(a => a.TenantUserId == tenantUserId && (a.EndDate == null || a.EndDate >= today))
             .OrderByDescending(a => a.StartDate)
             .FirstOrDefaultAsync(cancellationToken);
@@ -41,7 +41,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
 
         var monthStart = new DateTime(today.Year, today.Month, 1);
         var paidThisMonth = await context.TenantPayments
-            .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)
+            .Include(p => p.TenantBill).ThenInclude(b => b!.Flat)
             .Where(p => p.PaymentDate >= monthStart && p.TenantBill!.TenantUserId == tenantUserId)
             .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
 
@@ -72,7 +72,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
 
         var notices = await context.Announcements
             .AsNoTracking()
-            .Where(a => a.BuildingId == buildingId || a.BuildingId == null)
+            .Where(a => a.BuildingId == buildingId)
             .OrderByDescending(a => a.CreatedAt)
             .Take(6)
             .ToListAsync(cancellationToken);
@@ -96,7 +96,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
     public Task<List<TenantBillRow>> GetBillsAsync(string tenantUserId, CancellationToken cancellationToken = default) =>
         context.TenantBills
             .Include(b => b.Payments)
-            .Include(b => b.Flat)!.ThenInclude(f => f.Building)
+            .Include(b => b.Flat).ThenInclude(f => f!.Building)
             .Where(b => b.TenantUserId == tenantUserId)
             .OrderByDescending(b => b.BillDate)
             .Select(b => new TenantBillRow
@@ -113,7 +113,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
 
     public Task<List<TenantPaymentRow>> GetPaymentsAsync(string tenantUserId, CancellationToken cancellationToken = default) =>
         context.TenantPayments
-            .Include(p => p.TenantBill)!.ThenInclude(b => b.Flat)!.ThenInclude(f => f.Building)
+            .Include(p => p.TenantBill).ThenInclude(b => b!.Flat).ThenInclude(f => f!.Building)
             .Where(p => p.TenantBill!.TenantUserId == tenantUserId)
             .OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id)
             .Select(p => new TenantPaymentRow
@@ -132,7 +132,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
     public Task<List<Announcement>> GetNoticesAsync(Guid? buildingId, CancellationToken cancellationToken = default) =>
         context.Announcements
             .AsNoTracking()
-            .Where(a => a.BuildingId == buildingId || a.BuildingId == null)
+            .Where(a => !buildingId.HasValue || a.BuildingId == buildingId.Value)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
 

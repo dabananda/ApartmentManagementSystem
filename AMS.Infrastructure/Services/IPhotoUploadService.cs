@@ -4,5 +4,5 @@ namespace AMS.Infrastructure.Services;
 
 public interface IPhotoUploadService
 {
-    Task<string> UploadAsync(IFormFile file);
+    Task<string?> UploadAsync(IFormFile file);
 }

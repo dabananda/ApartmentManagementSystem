@@ -149,8 +149,8 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
     public async Task<(TenantPayment? payment, string ownerId)> GetReceiptDataAsync(Guid paymentId, CancellationToken cancellationToken = default)
     {
         var p = await context.TenantPayments
-            .Include(x => x.TenantBill)!.ThenInclude(b => b.Flat)!.ThenInclude(f => f.Building)
-            .Include(x => x.TenantBill)!.ThenInclude(b => b.TenantUser)
+            .Include(x => x.TenantBill).ThenInclude(b => b!.Flat).ThenInclude(f => f!.Building)
+            .Include(x => x.TenantBill).ThenInclude(b => b!.TenantUser)
             .FirstOrDefaultAsync(x => x.Id == paymentId, cancellationToken);
 
         if (p == null) return (null, string.Empty);

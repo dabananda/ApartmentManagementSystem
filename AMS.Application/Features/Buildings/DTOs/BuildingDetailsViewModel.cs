@@ -14,9 +14,9 @@ public class BuildingDetailsViewModel
         return new BuildingDetailsViewModel
         {
             Id = building.Id,
-            Name = building.Name,
-            Address = building.Address,
-            Code = building.Code
+            Name = building.Name ?? string.Empty,
+            Address = building.Address ?? string.Empty,
+            Code = building.Code ?? string.Empty
         };
     }
 }

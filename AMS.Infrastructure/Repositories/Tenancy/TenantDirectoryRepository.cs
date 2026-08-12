@@ -28,11 +28,11 @@ public sealed class TenantDirectoryRepository(ApplicationDbContext context) : IT
 
     public async Task<IReadOnlyList<BuildingTenantRow>> GetBuildingTenantsAsync(Guid buildingId, CancellationToken cancellationToken = default)
     {
-        var assignmentRows = await context.TenantAssignments.AsNoTracking().Include(assignment => assignment.Flat)!.ThenInclude(flat => flat.Owner).Include(assignment => assignment.TenantUser)
+        var assignmentRows = await context.TenantAssignments.AsNoTracking().Include(assignment => assignment.Flat).ThenInclude(flat => flat!.Owner).Include(assignment => assignment.TenantUser)
             .Where(assignment => assignment.EndDate == null && assignment.Flat!.BuildingId == buildingId)
             .Select(assignment => new BuildingTenantRow { FlatId = assignment.FlatId, FlatNumber = assignment.Flat!.FlatNumber, TenantUserId = assignment.TenantUserId, TenantName = assignment.TenantUser!.Fullname ?? assignment.TenantUser.UserName!, Email = assignment.TenantUser!.Email!, PhoneNumber = assignment.TenantUser!.PhoneNumber, OwnerName = assignment.Flat!.Owner != null ? (assignment.Flat.Owner.Fullname ?? assignment.Flat.Owner.UserName!) : "", IsActive = true, Source = "Assignment" }).ToListAsync(cancellationToken);
         var assignedFlatIds = assignmentRows.Select(row => row.FlatId).ToHashSet();
-        var legacyRows = await context.Tenants.AsNoTracking().Include(tenant => tenant.Flat)!.ThenInclude(flat => flat.Owner)
+        var legacyRows = await context.Tenants.AsNoTracking().Include(tenant => tenant.Flat).ThenInclude(flat => flat!.Owner)
             .Where(tenant => tenant.IsActive && tenant.Flat!.BuildingId == buildingId && !assignedFlatIds.Contains(tenant.FlatId))
             .Select(tenant => new BuildingTenantRow { FlatId = tenant.FlatId, FlatNumber = tenant.Flat!.FlatNumber, TenantUserId = tenant.UserId ?? "", TenantName = tenant.Fullname, Email = tenant.Email ?? "", PhoneNumber = tenant.PhoneNumber ?? "", OwnerName = tenant.Flat!.Owner != null ? (tenant.Flat.Owner.Fullname ?? tenant.Flat.Owner.UserName!) : "", IsActive = tenant.IsActive, Source = "Legacy" }).ToListAsync(cancellationToken);
         return assignmentRows.Concat(legacyRows).OrderBy(row => row.FlatNumber).ThenBy(row => row.TenantName).ToList();

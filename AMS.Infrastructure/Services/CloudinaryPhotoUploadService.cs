@@ -19,7 +19,7 @@ public class CloudinaryPhotoUploadService : IPhotoUploadService
         _cloudinary = new Cloudinary(acc);
     }
 
-    public async Task<string> UploadAsync(IFormFile file)
+    public async Task<string?> UploadAsync(IFormFile file)
     {
         if (file == null || file.Length == 0)
         {

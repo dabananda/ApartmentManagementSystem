@@ -10,7 +10,7 @@ public sealed class PaymentRepository(ApplicationDbContext context) : IPaymentRe
 {
     public Task<TenantBill?> GetTenantBillForCheckoutAsync(Guid billId, string tenantUserId, CancellationToken cancellationToken = default) =>
         context.TenantBills
-            .Include(b => b.Flat)!.ThenInclude(f => f.Building)
+            .Include(b => b.Flat).ThenInclude(f => f!.Building)
             .FirstOrDefaultAsync(b => b.Id == billId && b.TenantUserId == tenantUserId, cancellationToken);
 
     public async Task<decimal> GetPaidAmountForTenantBillAsync(Guid billId, CancellationToken cancellationToken = default) =>
@@ -20,7 +20,7 @@ public sealed class PaymentRepository(ApplicationDbContext context) : IPaymentRe
 
     public Task<ExpenseAllocation?> GetExpenseAllocationForCheckoutAsync(Guid commonBillId, string ownerId, CancellationToken cancellationToken = default) =>
         context.ExpenseAllocations
-            .Include(a => a.CommonBill)!.ThenInclude(cb => cb.Building)
+            .Include(a => a.CommonBill).ThenInclude(cb => cb!.Building)
             .Where(a => a.CommonBillId == commonBillId && a.OwnerId == ownerId)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -76,7 +76,7 @@ public sealed class PaymentRepository(ApplicationDbContext context) : IPaymentRe
         if (exists) { await tx.RollbackAsync(cancellationToken); return (false, null); }
 
         var alloc = await context.ExpenseAllocations
-            .Include(a => a.CommonBill)!.ThenInclude(cb => cb.Building)
+            .Include(a => a.CommonBill).ThenInclude(cb => cb!.Building)
             .FirstOrDefaultAsync(a => a.CommonBillId == commonBillId && a.OwnerId == ownerId, cancellationToken);
         if (alloc == null) { await tx.RollbackAsync(cancellationToken); return (false, null); }
 
