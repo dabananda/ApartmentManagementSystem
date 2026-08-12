@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="ApartmentManagementSystem.Application/ApartmentManagementSystem.Application.csproj" />
-  <Project Path="ApartmentManagementSystem.Domain/ApartmentManagementSystem.Domain.csproj" />
-  <Project Path="ApartmentManagementSystem.Infrastructure/ApartmentManagementSystem.Infrastructure.csproj" />
-  <Project Path="ApartmentManagementSystem\ApartmentManagementSystem.csproj" />
-</Solution>

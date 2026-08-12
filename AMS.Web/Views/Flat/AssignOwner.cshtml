@@ -1,0 +1,46 @@
+@using AMS.Application.Features.President.DTOs
+@model AssignOwnerViewModel
+
+@{
+    ViewData["Title"] = "Assign Owner";
+}
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card">
+            <div class="card-header text-center">
+                <h3 class="card-title">Assign Owner to Flat @ViewData["FlatNumber"] (@ViewData["BuildingName"])</h3>
+            </div>
+            <div class="card-body">
+                <form asp-action="AssignOwner">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <input type="hidden" asp-for="FlatId" />
+
+                    <div class="form-group mb-3">
+                        <label asp-for="OwnerId" class="control-label">Select Owner</label>
+                        <select asp-for="OwnerId" class="form-control" asp-items="@Model.Owners">
+                            <option value="" disabled>-- No owner (vacant) --</option>
+                        </select>
+                        <span asp-validation-for="OwnerId" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <a asp-action="Index" asp-route-buildingId="@ViewData["BuildingId"]" class="btn btn-outline-secondary w-100">Back</a> <!-- FIX -->
+                        </div>
+                        <div class="col">
+                            <input type="submit" value="Save" class="btn btn-primary w-100" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
