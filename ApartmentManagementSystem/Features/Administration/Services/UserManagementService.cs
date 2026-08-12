@@ -13,7 +13,8 @@ namespace ApartmentManagementSystem.Features.Administration.Services;
 public sealed class UserManagementService(
     UserManager<ApplicationUser> userManager,
     IUserManagementRepository repository,
-    IEmailSender email) : IUserManagementService
+    IEmailSender email,
+    ILogger<UserManagementService> logger) : IUserManagementService
 {
     // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -295,7 +296,10 @@ public sealed class UserManagementService(
                     "Your account has been approved",
                     $"<p>Hi {user.Fullname},</p><p>Your role is now <strong>{roleText}</strong>. You can log in now.</p>");
             }
-            catch { /* email failure must not block the approval */ }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to send approval email to {Email}", user.Email);
+            }
         }
 
         var displayRole = targetIsPresident && !callerIsSuperAdmin ? $"{Roles.President} + {role}" : role;

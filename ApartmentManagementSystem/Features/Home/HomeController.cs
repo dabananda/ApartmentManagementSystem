@@ -58,7 +58,25 @@ namespace ApartmentManagementSystem.Features.Home
         [AllowAnonymous]
         public IActionResult Privacy() => View();
 
+        [Route("/Home/Error/{statusCode}")]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error() => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        public IActionResult Error(int? statusCode = null)
+        {
+            var exceptionHandlerPathFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+            
+            if (exceptionHandlerPathFeature?.Error != null)
+            {
+                _logger.LogError(exceptionHandlerPathFeature.Error, "Unhandled exception occurred at {Path}", exceptionHandlerPathFeature.Path);
+                statusCode ??= 500;
+            }
+
+            if (statusCode.HasValue)
+            {
+                if (statusCode.Value == 404) return View("Error404");
+                if (statusCode.Value == 403) return View("Error403");
+            }
+
+            return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
     }
 }
