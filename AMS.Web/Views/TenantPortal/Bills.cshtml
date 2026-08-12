@@ -1,0 +1,47 @@
+@using AMS.Application.Features.TenantPortal.DTOs
+@model List<TenantBillRow>
+@{
+    ViewData["Title"] = "My Bills";
+}
+<h2>My Bills</h2>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Title</th>
+            <th>Building / Flat</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Paid</th>
+            <th class="text-end">Due</th>
+            <th class="text-end">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var b in Model)
+        {
+            <tr>
+                <td>@b.BillDate.ToString("yyyy-MM-dd")</td>
+                <td>@b.Title</td>
+                <td>@b.BuildingName / @b.FlatNumber</td>
+                <td class="text-end">@b.Amount.ToString("C")</td>
+                <td class="text-end">@b.Paid.ToString("C")</td>
+                <td class="text-end @(b.Due > 0 ? "text-danger" : "text-success")">@b.Due.ToString("C")</td>
+                <td class="text-end">
+                    @if (b.Due > 0)
+                    {
+                        <form asp-controller="Payments" asp-action="TenantCheckout" method="post" class="d-inline">
+                            <input type="hidden" name="billId" value="@b.BillId" />
+                            <button type="submit" class="btn btn-sm btn-primary">Pay online</button>
+                        </form>
+                    }
+                    else
+                    {
+
+                        <span class="badge bg-success">Paid</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="AMS.Application/AMS.Application.csproj" />
+  <Project Path="AMS.Domain/AMS.Domain.csproj" />
+  <Project Path="AMS.Infrastructure/AMS.Infrastructure.csproj" />
+  <Project Path="AMS.Web\AMS.Web.csproj" />
+</Solution>

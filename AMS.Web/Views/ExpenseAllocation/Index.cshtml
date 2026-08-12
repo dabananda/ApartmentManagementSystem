@@ -1,0 +1,63 @@
+@model IEnumerable<AMS.Domain.Entities.ExpenseAllocation>
+
+@{
+    ViewData["Title"] = "Expense Allocations";
+}
+
+<h1>Expense Allocations for: @ViewData["CommonBillName"]</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Owner)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AmountDue)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IsPaid)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PaymentDate)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Owner.Fullname)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.AmountDue)
+                </td>
+                <td>
+                    @if (item.IsPaid)
+                    {
+                        <span class="badge bg-success">Paid</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Unpaid</span>
+                    }
+                </td>
+                <td>
+                    @if (item.IsPaid)
+                    {
+                        @Html.DisplayFor(modelItem => item.PaymentDate)
+                    }
+                    else
+                    {
+                        <span>N/A</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<div>
+    <a asp-controller="CommonBill" asp-action="Index" asp-route-buildingId="@ViewData["BuildingId"]">Back to Bills</a>
+</div>

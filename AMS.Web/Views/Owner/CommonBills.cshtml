@@ -1,0 +1,187 @@
+@using AMS.Application.Features.Owner.DTOs
+@model OwnerBillsPage
+@{
+    ViewData["Title"] = "My Common Bills";
+}
+
+<h2 class="mb-1">My Common Bills — @Model.OwnerName</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Total Common Bill</div>
+                        <div class="h4 mb-0">@Model.TotalAllocated.ToString("C")</div>
+                    </div>
+                    <i class="bi bi-receipt h2 text-secondary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Paid</div>
+                        <div class="h4 mb-0 text-success">@Model.TotalPaid.ToString("C")</div>
+                    </div>
+                    <i class="bi bi-check-circle h2 text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Due</div>
+                        <div class="h4 mb-0 @(Model.TotalDue > 0 ? "text-danger" : "text-success")">@Model.TotalDue.ToString("C")</div>
+                    </div>
+                    <i class="bi bi-cash-coin h2 @(Model.TotalDue > 0 ? "text-danger" : "text-success")"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="mb-2">Bills</h4>
+
+<table id="billsTable" class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Bill</th>
+            <th class="text-end">Allocated</th>
+            <th class="text-end">Paid</th>
+            <th class="text-end">Due</th>
+            <th class="text-end">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var b in Model.Bills)
+        {
+            <tr>
+                <td>@b.BillDate.ToString("yyyy-MM-dd")</td>
+                <td>@b.Title</td>
+                <td class="text-end">@b.Allocated.ToString("C")</td>
+                <td class="text-end">@b.Paid.ToString("C")</td>
+                <td class="text-end">
+                    <span class="fw-semibold @(b.Due > 0 ? "text-danger" : "text-success")">@b.Due.ToString("C")</span>
+                </td>
+                <td class="text-end">
+                    @if (b.Due > 0)
+                    {
+                        <form asp-controller="Payments"
+                              asp-action="OwnerCheckout"
+                              method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="commonBillId" value="@b.CommonBillId" />
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-credit-card"></i> Pay with Card
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Paid</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="mt-4">
+    <h4 class="mb-2">My Payment History</h4>
+    @if (Model.History.Count == 0)
+    {
+        <div class="text-muted">No payments recorded yet.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table id="historyTable" class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Bill</th>
+                        <th>Bill Date</th>
+                        <th class="text-end">Amount</th>
+                        <th>Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model.History)
+                    {
+                        <tr>
+                            <td>@h.PaymentDate.ToString("yyyy-MM-dd")</td>
+                            <td>@h.BillTitle</td>
+                            <td>@h.BillDate.ToString("yyyy-MM-dd")</td>
+                            <td class="text-end">@h.Amount.ToString("C")</td>
+                            <td>@(string.IsNullOrWhiteSpace(h.Reference) ? "-" : h.Reference)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" />
+}
+
+@section VendorScripts {
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#billsTable').DataTable({
+                pageLength: 10,
+                order: [[0, 'desc']],
+                responsive: true,
+                autoWidth: false,
+                columnDefs: [
+                    { targets: [2,3,4,5], className: 'text-end' }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search bills..."
+                }
+            });
+
+            $('#historyTable').DataTable({
+                pageLength: 10,
+                order: [[0, 'desc']],
+                responsive: true,
+                autoWidth: false,
+                columnDefs: [
+                    { targets: [3], className: 'text-end' }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search payments..."
+                }
+            });
+        });
+    </script>
+}

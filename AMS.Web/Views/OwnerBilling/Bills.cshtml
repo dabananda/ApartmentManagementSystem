@@ -1,0 +1,39 @@
+@model IEnumerable<AMS.Domain.Entities.TenantBill>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Bills"; var flatId = ViewData["FlatId"] as Guid? ?? Guid.Empty; var flatNumber = ViewData["FlatNumber"] as string;
+}
+<h1>Bills — Flat @flatNumber</h1>
+@if (TempData["Ok"] is string ok)
+{
+    <div class="alert alert-success">@ok</div>
+}
+
+<div class="mb-3 d-flex gap-2">
+    <a class="btn btn-primary" asp-action="CreateBill" asp-route-flatId="@flatId">Create Bill for @DateTime.UtcNow.ToString("yyyy-MM")</a>
+    <a class="btn btn-outline-secondary" asp-action="Profile" asp-route-flatId="@flatId">Edit Billing Profile</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No bills yet.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Paid</th>
+                    <th class="text-end">Paid</th>
+                    <th>Status</th>
+                    <th class="text-end">Apply Payment</th>
+                </tr>
+            </thead>
+            
+        </table>
+    </div>
+}
+

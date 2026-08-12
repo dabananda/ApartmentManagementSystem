@@ -1,0 +1,149 @@
+@model IEnumerable<AMS.Domain.Entities.Flat>
+
+@{
+    ViewData["Title"] = "All Flats";
+}
+
+<div class="d-flex justify-content-between align-content-center mb-4">
+    <h2 class="mb-0"><strong>All Flats</strong></h2>
+    <a asp-action="Create" asp-route-buildingId="@ViewData["BuildingId"]" class="btn btn-primary align-self-center">Add New Flat</a>
+</div>
+
+<table class="table" id="allFlatsTable">
+    <thead>
+        <tr>
+            <th>Building</th>
+            <th>Flat No.</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th>Tenant</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@(item.Building?.Name ?? "N/A")</td>
+                <td>@Html.DisplayFor(modelItem => item.FlatNumber)</td>
+                <td>
+                    @if (item.Owner != null)
+                    {
+                        @Html.DisplayFor(modelItem => item.Owner.Fullname)
+                    }
+                    else
+                    {
+                        <span class="text-muted">Not Assigned</span>
+                    }
+                </td>
+                <td>
+                    @if (item.IsOccupied)
+                    {
+                        <span class="badge bg-success">Occupied</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Vacant</span>
+                    }
+                </td>
+                <td>
+                    @{
+                        var activeTenantsMap = ViewData["ActiveTenantsMap"] as Dictionary<Guid, List<string>>;
+
+                        if (activeTenantsMap != null && activeTenantsMap.ContainsKey(item.Id))
+                        {
+                            foreach (var tenantName in activeTenantsMap[item.Id])
+                            {
+                                <span class="badge bg-info me-1">@tenantName</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">No Active Tenants</span>
+                        }
+                    }
+                </td>
+                <td>
+                    <a asp-action="AssignOwner" asp-route-flatId="@item.Id"
+                       class="btn btn-sm @(item.Owner == null ? "btn-success" : "btn-warning")">
+                        @(item.Owner == null ? "Assign Owner" : "Change Owner")
+                    </a>
+
+                    <a asp-controller="Tenant" asp-action="ViewTenants" asp-route-flatId="@item.Id" class="btn btn-sm btn-info">View Tenants</a>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@item.Id', '@item.FlatNumber', '@(item.Building?.Name)')">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="flatInfoText"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#allFlatsTable').DataTable({
+                "responsive": true,
+                "lengthChange": true,
+                "autoWidth": false,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "paging": true,
+                "pageLength": 25,
+                "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                "columnDefs": [
+                    {
+                        "targets": [5],
+                        "orderable": false,
+                        "searchable": false
+                    }
+                ],
+                "order": [[0, "asc"], [1, "asc"]],
+                "language": {
+                    "search": "Search:",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    }
+                }
+            });
+        });
+
+        function confirmDelete(flatId, flatNumber, buildingName) {
+            document.getElementById('flatInfoText').textContent = 'Flat ' + flatNumber + ' in ' + buildingName;
+            var deleteForm = document.getElementById('deleteForm');
+            deleteForm.action = '@Url.Action("Delete", "Flat")' + '/' + flatId;
+            var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+        }
+    </script>
+}

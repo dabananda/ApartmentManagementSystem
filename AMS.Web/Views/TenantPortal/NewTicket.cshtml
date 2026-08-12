@@ -1,0 +1,24 @@
+@model AMS.Domain.Entities.MaintenanceTicket
+@{
+    ViewData["Title"] = "Open Maintenance Ticket";
+}
+<h1 class="mb-3">Open a Maintenance Ticket</h1>
+
+<form asp-action="NewTicket" method="post" class="card card-body">
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" rows="5" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+    <a asp-action="Tickets" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
