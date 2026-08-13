@@ -9,12 +9,39 @@
     }
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-2 border-end px-3">
-        <partial name="_ManageNav" />
-    </div>
-    <div class="col-md-6 px-4">
-        @RenderBody()
+<style>
+    .manage-card {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(94, 92, 230, 0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .manage-sidebar {
+        background: #f8f9fa;
+        padding: 2.5rem 1.5rem;
+        border-right: 1px solid rgba(0,0,0,0.05);
+        min-height: 100%;
+    }
+    .manage-title {
+        font-weight: 700;
+        margin-bottom: 2rem;
+        color: #1d1d1f;
+        font-size: 1.75rem;
+    }
+</style>
+
+<div class="container-fluid py-2">
+    <div class="manage-card row g-0 mx-auto" style="max-width: 1200px;">
+        <div class="col-lg-3 col-md-4 manage-sidebar">
+            <h6 class="fw-bold mb-4 px-3 text-uppercase tracking-wider" style="color: #a1a1aa; font-size: 0.85rem; letter-spacing: 1px;">Account Settings</h6>
+            <partial name="_ManageNav" />
+        </div>
+        <div class="col-lg-9 col-md-8 p-4 d-flex justify-content-center">
+            <div class="w-100" style="max-width: 800px;">
+                @RenderBody()
+            </div>
+        </div>
     </div>
 </div>
 

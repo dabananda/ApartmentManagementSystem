@@ -1,43 +1,54 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Profile";
+    ViewData["Title"] = "Profile Information";
     ViewData["ActivePage"] = ManageNavPages.Index;
     ViewData["HideSidebar"] = true;
 }
 
-<h3>@ViewData["Title"]</h3>
+<!-- <h3 class="manage-title">@ViewData["Title"]</h3> -->
 <partial name="_StatusMessage" for="StatusMessage" />
+
 <div class="row">
-    <div class="col-md-6">
-        <form id="profile-form" method="post" enctype="multipart/form-data">
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-            <div class="form-group mb-3 text-center">
-                <label asp-for="Input.ProfilePicture" class="form-label"></label>
-                <br />
+    <div class="col-lg-8">
+        <form id="profile-form" method="post" enctype="multipart/form-data" class="needs-validation">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-4 shadow-sm border-0" role="alert"></div>
+            
+            <div class="text-center mb-3">
+                <div class="position-relative d-inline-block">
+                    @if (string.IsNullOrEmpty(Model.CurrentProfilePictureUrl))
+                    {
+                        <img id="profilePicturePreview" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1759038526/MatchUp/user_nzddef.png" alt="Profile Picture" class="rounded-circle shadow-sm" style="width: 160px; height: 160px; object-fit: cover; border: 4px solid white;" />
+                    }
+                    else
+                    {
+                        <img id="profilePicturePreview" src="@Model.CurrentProfilePictureUrl" alt="Profile Picture" class="rounded-circle shadow-sm" style="width: 160px; height: 160px; object-fit: cover; border: 4px solid white;" />
+                    }
+                    
+                    <label for="Input_ProfilePicture" class="position-absolute bottom-0 end-0 rounded-circle shadow p-2" style="background: linear-gradient(135deg, #5E5CE6 0%, #BF5AF2 100%); color: white; cursor: pointer; transition: transform 0.2s; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; right: 4px; bottom: 4px;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        <i class="bi bi-camera-fill fs-5"></i>
+                    </label>
+                </div>
+                <input asp-for="Input.ProfilePicture" type="file" class="d-none" accept="image/*" />
+                <span asp-validation-for="Input.ProfilePicture" class="text-danger d-block mt-2 small"></span>
+            </div>
 
-                @if (string.IsNullOrEmpty(Model.CurrentProfilePictureUrl))
-                {
-                    <img id="profilePicturePreview" src="https://res.cloudinary.com/djz3p8sux/image/upload/v1759038526/MatchUp/user_nzddef.png" alt="Profile Picture" class="rounded-circle mb-2" style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #eee;" />
-                }
-                else
-                {
-                    <img id="profilePicturePreview" src="@Model.CurrentProfilePictureUrl" alt="Profile Picture" class="rounded-circle mb-2" style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #eee;" />
-                }
-
-                <input asp-for="Input.ProfilePicture" type="file" class="form-control mb-3" accept="image/*" />
-                <span asp-validation-for="Input.ProfilePicture" class="text-danger"></span>
+            <div class="form-floating mb-4">
+                <input asp-for="Username" class="form-control rounded-4 bg-light border-0" placeholder="Username" disabled />
+                <label asp-for="Username" class="text-muted"><i class="bi bi-person text-primary me-2"></i>Username</label>
             </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Username" class="form-control" placeholder="Please choose your username." disabled />
-                <label asp-for="Username" class="form-label"></label>
+            
+            <div class="form-floating mb-4">
+                <input asp-for="Input.PhoneNumber" class="form-control rounded-4 border-0 shadow-sm" placeholder="Phone number" style="background-color: #f8f9fa; transition: background-color 0.3s;" onfocus="this.style.backgroundColor='#fff'" onblur="this.style.backgroundColor='#f8f9fa'"/>
+                <label asp-for="Input.PhoneNumber" class="text-muted"><i class="bi bi-telephone text-primary me-2"></i>Phone Number</label>
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger small mt-1 ps-2 d-block"></span>
             </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number."/>
-                <label asp-for="Input.PhoneNumber" class="form-label"></label>
-                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            
+            <div class="pt-3">
+                <button id="update-profile-button" type="submit" class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm w-100" style="background: linear-gradient(135deg, #5E5CE6 0%, #BF5AF2 100%); border: none; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(94, 92, 230, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.05)'">
+                    Save Changes
+                </button>
             </div>
-            <button id="update-profile-button" type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
         </form>
     </div>
 </div>
