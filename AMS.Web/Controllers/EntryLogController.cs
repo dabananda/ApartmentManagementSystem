@@ -27,7 +27,7 @@ public class EntryLogController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
 
-        var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+        var isSuperAdmin = await _userManager.IsInRoleAsync(user, Roles.SuperAdmin);
         var entryLogs = await _mediator.Send(new GetEntryLogsForBuildingQuery(isSuperAdmin ? null : user.BuildingId));
         return View(entryLogs);
     }
@@ -37,20 +37,9 @@ public class EntryLogController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
 
-        var currentTime = DateTime.Now;
-        var timeWithoutSeconds = new DateTime(
-            currentTime.Year,
-            currentTime.Month,
-            currentTime.Day,
-            currentTime.Hour,
-            currentTime.Minute,
-            0,
-            0
-        );
-
         var model = new EntryLog
         {
-            EntryTime = timeWithoutSeconds,
+            EntryTime = TrimToMinute(DateTime.Now),
             NumberOfPerson = 1
         };
 
@@ -65,84 +54,7 @@ public class EntryLogController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
 
-        ModelState.Remove("Building");
-        ModelState.Remove("Flat");
-
-        if (model.EntryTime != default(DateTime) && model.EntryTime != DateTime.MinValue)
-        {
-            model.EntryTime = new DateTime(
-                model.EntryTime.Year,
-                model.EntryTime.Month,
-                model.EntryTime.Day,
-                model.EntryTime.Hour,
-                model.EntryTime.Minute,
-                0,
-                0
-            );
-        }
-        else
-        {
-            var currentTime = DateTime.Now;
-            model.EntryTime = new DateTime(
-                currentTime.Year,
-                currentTime.Month,
-                currentTime.Day,
-                currentTime.Hour,
-                currentTime.Minute,
-                0,
-                0
-            );
-        }
-
-        if (model.ExitTime.HasValue)
-        {
-            model.ExitTime = new DateTime(
-                model.ExitTime.Value.Year,
-                model.ExitTime.Value.Month,
-                model.ExitTime.Value.Day,
-                model.ExitTime.Value.Hour,
-                model.ExitTime.Value.Minute,
-                0,
-                0
-            );
-        }
-
-        ModelState.Remove("EntryTime");
-        if (model.ExitTime.HasValue)
-        {
-            ModelState.Remove("ExitTime");
-        }
-
-        if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-        {
-            if (user.BuildingId != model.BuildingId)
-            {
-                ModelState.AddModelError("BuildingId", "You can only create entries for your assigned building.");
-            }
-        }
-
-        if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
-        {
-            var flatExists = await _mediator.Send(new CheckFlatBelongsToBuildingQuery(model.FlatId, model.BuildingId));
-
-            if (!flatExists)
-            {
-                ModelState.AddModelError("FlatId", "Selected flat does not belong to the selected building.");
-            }
-        }
-
-        var now = DateTime.Now;
-        var currentTimeWithoutSeconds = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, 0);
-
-        if (model.EntryTime > currentTimeWithoutSeconds)
-        {
-            ModelState.AddModelError("EntryTime", "Entry time cannot be in the future.");
-        }
-
-        if (model.ExitTime.HasValue && model.ExitTime <= model.EntryTime)
-        {
-            ModelState.AddModelError("ExitTime", "Exit time must be after entry time.");
-        }
+        await NormalizeAndValidateAsync(user, model);
 
         if (ModelState.IsValid)
         {
@@ -163,13 +75,8 @@ public class EntryLogController : Controller
         if (user == null) return Unauthorized();
 
         var entry = await _mediator.Send(new GetEntryLogByIdQuery(id.Value, IncludeReferences: true));
-
         if (entry == null) return NotFound();
-
-        if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-        {
-            if (user.BuildingId != entry.BuildingId) return Forbid();
-        }
+        if (!await IsWithinUserBuildingScopeAsync(user, entry.BuildingId)) return Forbid();
 
         return View(entry);
     }
@@ -182,11 +89,7 @@ public class EntryLogController : Controller
 
         var entry = await _mediator.Send(new GetEntryLogByIdQuery(id.Value));
         if (entry == null) return NotFound();
-
-        if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-        {
-            if (user.BuildingId != entry.BuildingId) return Forbid();
-        }
+        if (!await IsWithinUserBuildingScopeAsync(user, entry.BuildingId)) return Forbid();
 
         await PopulateDropdowns(user, entry.BuildingId, entry.FlatId);
         return View(entry);
@@ -200,50 +103,13 @@ public class EntryLogController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
 
-        ModelState.Remove("Building");
-        ModelState.Remove("Flat");
-
-        if (model.EntryTime != default(DateTime) && model.EntryTime != DateTime.MinValue)
-        {
-            model.EntryTime = new DateTime(model.EntryTime.Year, model.EntryTime.Month, model.EntryTime.Day, model.EntryTime.Hour, model.EntryTime.Minute, 0, 0);
-        }
-
-        if (model.ExitTime.HasValue)
-        {
-            model.ExitTime = new DateTime(model.ExitTime.Value.Year, model.ExitTime.Value.Month, model.ExitTime.Value.Day, model.ExitTime.Value.Hour, model.ExitTime.Value.Minute, 0, 0);
-        }
-
-        ModelState.Remove("EntryTime");
-        if (model.ExitTime.HasValue) ModelState.Remove("ExitTime");
-
-        if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-        {
-            if (user.BuildingId != model.BuildingId)
-            {
-                ModelState.AddModelError("BuildingId", "You can only modify entries for your assigned building.");
-            }
-        }
-
-        if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
-        {
-            var flatExists = await _mediator.Send(new CheckFlatBelongsToBuildingQuery(model.FlatId, model.BuildingId));
-            if (!flatExists) ModelState.AddModelError("FlatId", "Selected flat does not belong to the selected building.");
-        }
-
-        var now = DateTime.Now;
-        var currentTimeWithoutSeconds = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, 0);
-        if (model.EntryTime > currentTimeWithoutSeconds) ModelState.AddModelError("EntryTime", "Entry time cannot be in the future.");
-        if (model.ExitTime.HasValue && model.ExitTime <= model.EntryTime) ModelState.AddModelError("ExitTime", "Exit time must be after entry time.");
+        await NormalizeAndValidateAsync(user, model, editErrorMessage: true);
 
         if (ModelState.IsValid)
         {
             var existing = await _mediator.Send(new GetEntryLogByIdQuery(id));
             if (existing == null) return NotFound();
-
-            if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-            {
-                if (user.BuildingId != existing.BuildingId) return Forbid();
-            }
+            if (!await IsWithinUserBuildingScopeAsync(user, existing.BuildingId)) return Forbid();
 
             await _mediator.Send(new UpdateEntryLogCommand(existing, model));
 
@@ -262,13 +128,8 @@ public class EntryLogController : Controller
         if (user == null) return Unauthorized();
 
         var entry = await _mediator.Send(new GetEntryLogByIdQuery(id.Value, IncludeReferences: true));
-
         if (entry == null) return NotFound();
-
-        if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-        {
-            if (user.BuildingId != entry.BuildingId) return Forbid();
-        }
+        if (!await IsWithinUserBuildingScopeAsync(user, entry.BuildingId)) return Forbid();
 
         return View(entry);
     }
@@ -282,11 +143,7 @@ public class EntryLogController : Controller
 
         var entry = await _mediator.Send(new GetEntryLogByIdQuery(id));
         if (entry == null) return NotFound();
-
-        if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-        {
-            if (user.BuildingId != entry.BuildingId) return Forbid();
-        }
+        if (!await IsWithinUserBuildingScopeAsync(user, entry.BuildingId)) return Forbid();
 
         await _mediator.Send(new DeleteEntryLogCommand(entry));
 
@@ -299,14 +156,7 @@ public class EntryLogController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
-
-        if (!await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-        {
-            if (user.BuildingId != buildingId)
-            {
-                return Forbid();
-            }
-        }
+        if (!await IsWithinUserBuildingScopeAsync(user, buildingId)) return Forbid();
 
         var queryData = await _mediator.Send(new GetEntryLogFormDataQuery(buildingId));
         var flats = queryData.Flats
@@ -315,9 +165,76 @@ public class EntryLogController : Controller
         return Json(flats);
     }
 
+    /// <summary>
+    /// Applies the shared create/edit validation rules: normalizes entry/exit times to
+    /// whole minutes, enforces building scoping for non-super-admins, verifies the
+    /// selected flat belongs to the selected building, and checks entry/exit ordering.
+    /// </summary>
+    private async Task NormalizeAndValidateAsync(ApplicationUser user, EntryLog model, bool editErrorMessage = false)
+    {
+        ModelState.Remove("Building");
+        ModelState.Remove("Flat");
+
+        model.EntryTime = model.EntryTime != default && model.EntryTime != DateTime.MinValue
+            ? TrimToMinute(model.EntryTime)
+            : TrimToMinute(DateTime.Now);
+
+        if (model.ExitTime.HasValue)
+        {
+            model.ExitTime = TrimToMinute(model.ExitTime.Value);
+        }
+
+        ModelState.Remove("EntryTime");
+        if (model.ExitTime.HasValue)
+        {
+            ModelState.Remove("ExitTime");
+        }
+
+        if (!await _userManager.IsInRoleAsync(user, Roles.SuperAdmin) && user.BuildingId != model.BuildingId)
+        {
+            var message = editErrorMessage
+                ? "You can only modify entries for your assigned building."
+                : "You can only create entries for your assigned building.";
+            ModelState.AddModelError("BuildingId", message);
+        }
+
+        if (model.BuildingId != Guid.Empty && model.FlatId != Guid.Empty)
+        {
+            var flatExists = await _mediator.Send(new CheckFlatBelongsToBuildingQuery(model.FlatId, model.BuildingId));
+            if (!flatExists)
+            {
+                ModelState.AddModelError("FlatId", "Selected flat does not belong to the selected building.");
+            }
+        }
+
+        if (model.EntryTime > TrimToMinute(DateTime.Now))
+        {
+            ModelState.AddModelError("EntryTime", "Entry time cannot be in the future.");
+        }
+
+        if (model.ExitTime.HasValue && model.ExitTime <= model.EntryTime)
+        {
+            ModelState.AddModelError("ExitTime", "Exit time must be after entry time.");
+        }
+    }
+
+    /// <summary>
+    /// SuperAdmins may act on any building; every other role is restricted to their own
+    /// assigned building. Centralizing this here keeps the scoping rule in one place
+    /// instead of being re-implemented at each action.
+    /// </summary>
+    private async Task<bool> IsWithinUserBuildingScopeAsync(ApplicationUser user, Guid? targetBuildingId)
+    {
+        if (await _userManager.IsInRoleAsync(user, Roles.SuperAdmin)) return true;
+        return user.BuildingId == targetBuildingId;
+    }
+
+    private static DateTime TrimToMinute(DateTime value) =>
+        new(value.Year, value.Month, value.Day, value.Hour, value.Minute, 0, 0);
+
     private async Task PopulateDropdowns(ApplicationUser user, Guid? selectedBuildingId = null, Guid? selectedFlatId = null)
     {
-        var isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+        var isSuperAdmin = await _userManager.IsInRoleAsync(user, Roles.SuperAdmin);
         var queryData = await _mediator.Send(new GetEntryLogFormDataQuery(isSuperAdmin ? null : user.BuildingId));
         ViewBag.BuildingId = new SelectList(queryData.Buildings, "Id", "Name", selectedBuildingId);
 

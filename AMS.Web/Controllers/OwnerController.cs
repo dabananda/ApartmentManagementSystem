@@ -24,7 +24,7 @@ public class OwnerController : Controller
     private async Task<(ApplicationUser me, bool isSuperAdmin)> GetCallerInfoAsync()
     {
         var me = await _userManager.GetUserAsync(User);
-        var isSuperAdmin = User.IsInRole("SuperAdmin");
+        var isSuperAdmin = User.IsInRole(Roles.SuperAdmin);
         return (me!, isSuperAdmin);
     }
 
@@ -42,7 +42,7 @@ public class OwnerController : Controller
         var (me, _) = await GetCallerInfoAsync();
         if (me == null) return Forbid();
 
-        var targetOwnerId = User.IsInRole("Owner") ? me.Id : (ownerId ?? me.Id);
+        var targetOwnerId = User.IsInRole(Roles.Owner) ? me.Id : (ownerId ?? me.Id);
 
         var rows = await _mediator.Send(new GetOwnedFlatsQuery(targetOwnerId));
         ViewBag.TargetOwnerId = targetOwnerId;
@@ -55,9 +55,9 @@ public class OwnerController : Controller
         var (me, _) = await GetCallerInfoAsync();
         if (me == null) return Forbid();
 
-        var targetOwnerId = User.IsInRole("Owner") ? me.Id : (ownerId ?? me.Id);
+        var targetOwnerId = User.IsInRole(Roles.Owner) ? me.Id : (ownerId ?? me.Id);
 
-        var restrictToBuildingId = (User.IsInRole("President") && me.BuildingId != null) ? me.BuildingId : null;
+        var restrictToBuildingId = (User.IsInRole(Roles.President) && me.BuildingId != null) ? me.BuildingId : null;
 
         var page = await _mediator.Send(new GetOwnerCommonBillsPageQuery(targetOwnerId, restrictToBuildingId));
 

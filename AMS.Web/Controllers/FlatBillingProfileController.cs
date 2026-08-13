@@ -23,7 +23,7 @@ public class FlatBillingProfileController : Controller
     {
         var me = await _users.GetUserAsync(User);
 
-        var rows = await _mediator.Send(new GetFlatProfileRowsQuery(User.IsInRole("Owner") ? me!.Id : null));
+        var rows = await _mediator.Send(new GetFlatProfileRowsQuery(User.IsInRole(Roles.Owner) ? me!.Id : null));
 
         return View(rows);
     }
@@ -33,7 +33,7 @@ public class FlatBillingProfileController : Controller
         var me = await _users.GetUserAsync(User);
         var flat = await _mediator.Send(new GetAssignmentFlatQuery(flatId));
         if (flat == null) return NotFound();
-        if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
+        if (User.IsInRole(Roles.Owner) && flat.OwnerId != me!.Id) return Forbid();
 
         var p = await _mediator.Send(new GetFlatBillingProfileQuery(flatId))
             ?? new FlatBillingProfile { FlatId = flatId };
@@ -52,7 +52,7 @@ public class FlatBillingProfileController : Controller
         var flat = await _mediator.Send(new GetAssignmentFlatQuery(vm.FlatId));
         if (flat == null) return NotFound("Flat not found.");
 
-        if (User.IsInRole("Owner") && flat.OwnerId != me!.Id) return Forbid();
+        if (User.IsInRole(Roles.Owner) && flat.OwnerId != me!.Id) return Forbid();
 
         await _mediator.Send(new SaveFlatBillingProfileCommand(vm));
 
