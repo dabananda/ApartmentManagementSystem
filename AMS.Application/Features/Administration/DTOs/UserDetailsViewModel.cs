@@ -25,7 +25,7 @@ public class UserDetailsViewModel
     public int AccessFailedCount { get; set; }
 
     [Display(Name = "User Roles")]
-    public List<string> Roles { get; set; } = [];
+    public IEnumerable<string> Roles { get; set; } = [];
 
     [Display(Name = "Building Name")]
     public string? BuildingName { get; set; }
@@ -52,7 +52,7 @@ public class UserDetailsViewModel
     public string AccountStatus { get; set; } = default!;
 
     public string PrimaryRole => Roles.FirstOrDefault() ?? Domain.Constants.Roles.User;
-    public bool HasMultipleRoles => Roles.Count > 1;
+    public bool HasMultipleRoles => Roles.Count() > 1;
     public bool IsOwner => Roles.Contains(Domain.Constants.Roles.Owner);
     public bool IsStaff => Roles.Contains(Domain.Constants.Roles.Staff);
     public bool IsPresident => Roles.Contains(Domain.Constants.Roles.President);
@@ -66,3 +66,5 @@ public class UserDetailsViewModel
         _ => "secondary"
     };
 }
+
+

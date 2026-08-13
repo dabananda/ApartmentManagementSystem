@@ -10,6 +10,7 @@ public sealed class PaymentRepository(ApplicationDbContext context) : IPaymentRe
 {
     public Task<TenantBill?> GetTenantBillForCheckoutAsync(Guid billId, string tenantUserId, CancellationToken cancellationToken = default) =>
         context.TenantBills
+            .AsNoTracking()
             .Include(b => b.Flat).ThenInclude(f => f!.Building)
             .FirstOrDefaultAsync(b => b.Id == billId && b.TenantUserId == tenantUserId, cancellationToken);
 
@@ -20,6 +21,7 @@ public sealed class PaymentRepository(ApplicationDbContext context) : IPaymentRe
 
     public Task<ExpenseAllocation?> GetExpenseAllocationForCheckoutAsync(Guid commonBillId, string ownerId, CancellationToken cancellationToken = default) =>
         context.ExpenseAllocations
+            .AsNoTracking()
             .Include(a => a.CommonBill).ThenInclude(cb => cb!.Building)
             .Where(a => a.CommonBillId == commonBillId && a.OwnerId == ownerId)
             .FirstOrDefaultAsync(cancellationToken);

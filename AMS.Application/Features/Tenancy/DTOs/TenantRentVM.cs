@@ -8,7 +8,7 @@ public class TenantBillsPage
     public string TenantName { get; set; } = "";
     public string Email { get; set; } = "";
     public Guid BuildingId { get; set; }
-    public List<AMS.Application.Features.TenantPortal.DTOs.TenantBillRow> Bills { get; set; } = new();
+    public IEnumerable<AMS.Application.Features.TenantPortal.DTOs.TenantBillRow> Bills { get; set; } = [];
     public decimal Total => Bills.Sum(b => b.Amount);
     public decimal TotalPaid => Bills.Sum(b => b.Paid);
     public decimal TotalDue => Bills.Sum(b => b.Due);
@@ -32,3 +32,5 @@ public class TenantPaymentRecord
     public decimal Amount { get; set; }
     public string? Reference { get; set; }
 }
+
+

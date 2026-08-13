@@ -4,11 +4,13 @@ using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.TenantBilling.Queries;
 
-public record GetTenantPaymentHistoryQuery(string TenantUserId) : IRequest<List<TenantPaymentRecord>>;
+public record GetTenantPaymentHistoryQuery(string TenantUserId) : IRequest<IEnumerable<TenantPaymentRecord>>;
 
 public class GetTenantPaymentHistoryQueryHandler(ITenantRentRepository repository)
-    : IRequestHandler<GetTenantPaymentHistoryQuery, List<TenantPaymentRecord>>
+    : IRequestHandler<GetTenantPaymentHistoryQuery, IEnumerable<TenantPaymentRecord>>
 {
-    public Task<List<TenantPaymentRecord>> Handle(GetTenantPaymentHistoryQuery request, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<TenantPaymentRecord>> Handle(GetTenantPaymentHistoryQuery request, CancellationToken cancellationToken = default)
         => repository.GetTenantPaymentHistoryAsync(request.TenantUserId, cancellationToken);
 }
+
+

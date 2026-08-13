@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AMS.Application.Features.Administration.Queries;
 
-public record GetBuildingSelectItemsQuery(Guid? RestrictToBuildingId = null) : IRequest<List<SelectListItem>>;
+public record GetBuildingSelectItemsQuery(Guid? RestrictToBuildingId = null) : IRequest<IEnumerable<SelectListItem>>;
 
 public class GetBuildingSelectItemsQueryHandler(IUserManagementRepository repository)
-    : IRequestHandler<GetBuildingSelectItemsQuery, List<SelectListItem>>
+    : IRequestHandler<GetBuildingSelectItemsQuery, IEnumerable<SelectListItem>>
 {
-    public Task<List<SelectListItem>> Handle(GetBuildingSelectItemsQuery request, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<SelectListItem>> Handle(GetBuildingSelectItemsQuery request, CancellationToken cancellationToken = default)
     {
         return repository.GetBuildingSelectItemsAsync(request.RestrictToBuildingId, cancellationToken);
     }
 }
+
+

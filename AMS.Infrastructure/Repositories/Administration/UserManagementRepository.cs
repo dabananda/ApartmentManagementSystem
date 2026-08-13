@@ -8,7 +8,7 @@ namespace AMS.Infrastructure.Repositories.Administration;
 
 public sealed class UserManagementRepository(ApplicationDbContext context) : IUserManagementRepository
 {
-    public async Task<List<SelectListItem>> GetBuildingSelectItemsAsync(Guid? restrictToBuildingId = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<SelectListItem>> GetBuildingSelectItemsAsync(Guid? restrictToBuildingId = null, CancellationToken cancellationToken = default)
     {
         var q = context.Buildings.AsNoTracking().OrderBy(b => b.Name);
         if (restrictToBuildingId.HasValue)
@@ -46,7 +46,7 @@ public sealed class UserManagementRepository(ApplicationDbContext context) : IUs
                     where r.Name == roleName
                     select u;
 
-        return query;
+        return query.AsNoTracking();
     }
 
     public async Task<Dictionary<string, IList<string>>> GetRolesForUsersAsync(IEnumerable<string> userIds, CancellationToken cancellationToken = default)
@@ -66,3 +66,4 @@ public sealed class UserManagementRepository(ApplicationDbContext context) : IUs
             );
     }
 }
+

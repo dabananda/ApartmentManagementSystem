@@ -8,7 +8,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddSingleton<IMediator, Mediator.Mediator>();
+        // Scoped, not Singleton: handlers (and the repositories/DbContext they depend on)
+        // are registered Scoped. A Singleton Mediator would capture the root IServiceProvider
+        // and resolve scoped services from it, either throwing under scope validation or,
+        // worse, silently sharing a single DbContext instance across all requests.
+        services.AddScoped<IMediator, Mediator.Mediator>();
 
         var assembly = Assembly.GetExecutingAssembly();
 
@@ -32,17 +36,10 @@ public static class DependencyInjection
             }
         }
 
-        var serviceTypes = assembly.GetTypes()
-                    .Where(t => t.Name.EndsWith("Service") && !t.IsAbstract && !t.IsInterface);
-
-        foreach (var serviceType in serviceTypes)
-        {
-            var interfaceType = serviceType.GetInterfaces().FirstOrDefault(i => i.Name == $"I{serviceType.Name}");
-            if (interfaceType != null)
-            {
-                services.AddScoped(interfaceType, serviceType);
-            }
-        }
+        // Note: no *Service reflection scan here. This assembly defines only service
+        // *interfaces* (e.g. IStripePaymentService); implementations live in
+        // AMS.Infrastructure and are registered explicitly in AMS.Infrastructure's
+        // DependencyInjection, which is the single source of truth for those bindings.
 
         return services;
     }

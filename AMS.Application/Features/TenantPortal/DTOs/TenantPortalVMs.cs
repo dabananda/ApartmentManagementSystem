@@ -13,9 +13,9 @@ public class TenantDashboardVM
     public decimal TotalDue => TotalBilled - TotalPaid;
     public decimal PaidThisMonth { get; set; }
 
-    public List<TenantBillRow> RecentBills { get; set; } = new();
-    public List<TenantPaymentRow> RecentPayments { get; set; } = new();
-    public List<Announcement> RecentNotices { get; set; } = new();
+    public IEnumerable<TenantBillRow> RecentBills { get; set; } = [];
+    public IEnumerable<TenantPaymentRow> RecentPayments { get; set; } = [];
+    public IEnumerable<Announcement> RecentNotices { get; set; } = [];
 }
 
 public class TenantBillRow
@@ -43,3 +43,5 @@ public class TenantPaymentRow
     public string? BuildingName { get; set; }
     public string? FlatNumber { get; set; }
 }
+
+

@@ -5,7 +5,7 @@ namespace AMS.Application.Interfaces.Administration;
 
 public interface IUserManagementRepository
 {
-    Task<List<SelectListItem>> GetBuildingSelectItemsAsync(Guid? restrictToBuildingId = null, CancellationToken cancellationToken = default);
+    Task<IEnumerable<SelectListItem>> GetBuildingSelectItemsAsync(Guid? restrictToBuildingId = null, CancellationToken cancellationToken = default);
 
     Task<SelectListItem?> GetBuildingSelectItemAsync(Guid buildingId, CancellationToken cancellationToken = default);
 
@@ -15,3 +15,4 @@ public interface IUserManagementRepository
 
     Task<Dictionary<string, IList<string>>> GetRolesForUsersAsync(IEnumerable<string> userIds, CancellationToken cancellationToken = default);
 }
+

@@ -9,17 +9,17 @@ namespace AMS.Infrastructure.Repositories.Flats;
 public sealed class FlatRepository(ApplicationDbContext context) : IFlatRepository
 {
     public async Task<IReadOnlyList<Flat>> GetAllWithReferencesAsync(CancellationToken cancellationToken = default) =>
-        await context.Flats.Include(flat => flat.Owner).Include(flat => flat.Building).ToListAsync(cancellationToken);
+        await context.Flats.AsNoTracking().Include(flat => flat.Owner).Include(flat => flat.Building).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<TenantAssignment>> GetActiveAssignmentsAsync(CancellationToken cancellationToken = default) =>
-        await context.TenantAssignments.Include(assignment => assignment.TenantUser)
+        await context.TenantAssignments.AsNoTracking().Include(assignment => assignment.TenantUser)
             .Where(assignment => assignment.EndDate == null).ToListAsync(cancellationToken);
 
     public Task<Building?> GetBuildingAsync(Guid id, CancellationToken cancellationToken = default) =>
         context.Buildings.FindAsync([id], cancellationToken).AsTask();
 
     public async Task<IReadOnlyList<Flat>> GetForBuildingAsync(Guid buildingId, CancellationToken cancellationToken = default) =>
-        await context.Flats.Include(flat => flat.Owner).Include(flat => flat.Tenants)
+        await context.Flats.AsNoTracking().Include(flat => flat.Owner).Include(flat => flat.Tenants)
             .Where(flat => flat.BuildingId == buildingId).ToListAsync(cancellationToken);
 
     public Task<Flat?> GetAsync(Guid id, bool includeReferences = false, bool asNoTracking = false, CancellationToken cancellationToken = default)

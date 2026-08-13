@@ -86,7 +86,7 @@ public class OwnerBillingController : Controller
             return RedirectToAction(nameof(View), new { ownerId = vm.OwnerId });
         }
 
-        if (created.Count > 0)
+        if (created.Any())
         {
             await _paymentEmailService.SendOwnerPaymentEmailAsync(vm.OwnerId, created,
                 id => this.BuildAbsoluteUrl(_urlHelperFactory, _actionContextAccessor, nameof(Receipt), "OwnerBilling", new { id }));
@@ -190,3 +190,4 @@ public class OwnerBillingController : Controller
         return RedirectToAction(nameof(View), new { ownerId = payment.OwnerId });
     }
 }
+

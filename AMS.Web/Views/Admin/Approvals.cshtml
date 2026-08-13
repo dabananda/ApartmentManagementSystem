@@ -83,7 +83,7 @@ else
                     Approve selected as Staff
                 </button>
             </div>
-            <small class="text-muted">Showing @Model.PendingUsers.Count of @Model.Total result(s)</small>
+            <small class="text-muted">Showing @Model.PendingUsers.Count() of @Model.Total result(s)</small>
         </div>
 
         <table class="table table-striped align-middle">
@@ -233,3 +233,4 @@ else
         })();
     </script>
 }
+

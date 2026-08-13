@@ -52,17 +52,35 @@ public static class DependencyInjection
             return new StripeClient(key);
         });
 
+        // Convention-based registration: every "XyzRepository" class is expected to
+        // implement a matching "IXyzRepository" interface. This scan is the single
+        // source of truth for repository bindings, so a naming mismatch fails fast
+        // at startup instead of silently leaving a repository unregistered and only
+        // surfacing as a confusing DI error deep in a controller/handler later.
         var assembly = System.Reflection.Assembly.GetExecutingAssembly();
         var repositoryTypes = assembly.GetTypes()
-            .Where(t => t.Name.EndsWith("Repository") && !t.IsAbstract && !t.IsInterface);
+            .Where(t => t.Name.EndsWith("Repository") && !t.IsAbstract && !t.IsInterface)
+            .ToList();
 
+        var unmatched = new List<string>();
         foreach (var repoType in repositoryTypes)
         {
             var interfaceType = repoType.GetInterfaces().FirstOrDefault(i => i.Name == $"I{repoType.Name}");
-            if (interfaceType != null)
+            if (interfaceType == null)
             {
-                services.AddScoped(interfaceType, repoType);
+                unmatched.Add(repoType.FullName ?? repoType.Name);
+                continue;
             }
+
+            services.AddScoped(interfaceType, repoType);
+        }
+
+        if (unmatched.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "The following repository classes do not implement a matching " +
+                $"'I<ClassName>' interface and were not registered: {string.Join(", ", unmatched)}. " +
+                "Either add/rename the interface or exclude the class from the 'Repository' naming convention.");
         }
 
         return services;

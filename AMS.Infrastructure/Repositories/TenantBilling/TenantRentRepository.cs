@@ -11,7 +11,7 @@ namespace AMS.Infrastructure.Repositories.TenantBilling;
 
 public sealed class TenantRentRepository(ApplicationDbContext context, UserManager<ApplicationUser> users) : ITenantRentRepository
 {
-    public async Task<List<TenantRentListRow>> GetTenantRentListAsync(string? restrictToOwnerId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TenantRentListRow>> GetTenantRentListAsync(string? restrictToOwnerId, CancellationToken cancellationToken = default)
     {
         var q = context.TenantAssignments.AsNoTracking()
             .Include(a => a.Flat)
@@ -50,19 +50,21 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
         var firstOfMonth = new DateTime(today.Year, today.Month, 1);
 
         var activeAssignments = await context.TenantAssignments
+            .AsNoTracking()
             .Include(a => a.Flat)
             .Where(a => a.TenantUserId == tenantUserId && (a.EndDate == null || a.EndDate >= today))
             .ToListAsync(cancellationToken);
 
-        if (activeAssignments.Count == 0) return 0;
+        if (activeAssignments.Any() == false) return 0;
 
         var flatIds = activeAssignments.Select(a => a.FlatId).Distinct().ToList();
 
         var profiles = await context.FlatBillingProfiles
+            .AsNoTracking()
             .Where(p => flatIds.Contains(p.FlatId) && p.IsActive)
             .ToListAsync(cancellationToken);
 
-        if (profiles.Count == 0) return 0;
+        if (profiles.Any() == false) return 0;
 
         var existingBills = await context.TenantBills
             .Where(b => b.TenantUserId == tenantUserId && b.BillDate == firstOfMonth)
@@ -104,13 +106,14 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
     public async Task<TenantBillsPage?> GetTenantBillsPageAsync(string tenantUserId, CancellationToken cancellationToken = default)
     {
         var bills = await context.TenantBills
+            .AsNoTracking()
             .Include(b => b.Payments)
             .Include(b => b.Flat)
             .Where(b => b.TenantUserId == tenantUserId)
             .OrderByDescending(b => b.BillDate)
             .ToListAsync(cancellationToken);
 
-        if (bills.Count == 0) return null;
+        if (bills.Any() == false) return null;
 
         var tenant = await users.FindByIdAsync(tenantUserId);
 
@@ -131,8 +134,8 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
         };
     }
 
-    public Task<List<TenantPaymentRecord>> GetTenantPaymentHistoryAsync(string tenantUserId, CancellationToken cancellationToken = default) =>
-        context.TenantPayments
+    public async Task<IEnumerable<TenantPaymentRecord>> GetTenantPaymentHistoryAsync(string tenantUserId, CancellationToken cancellationToken = default) => await context.TenantPayments
+            .AsNoTracking()
             .Include(p => p.TenantBill)
             .Where(p => p.TenantBill!.TenantUserId == tenantUserId)
             .OrderByDescending(p => p.PaymentDate)
@@ -149,6 +152,7 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
     public async Task<(TenantPayment? payment, string ownerId)> GetReceiptDataAsync(Guid paymentId, CancellationToken cancellationToken = default)
     {
         var p = await context.TenantPayments
+            .AsNoTracking()
             .Include(x => x.TenantBill).ThenInclude(b => b!.Flat).ThenInclude(f => f!.Building)
             .Include(x => x.TenantBill).ThenInclude(b => b!.TenantUser)
             .FirstOrDefaultAsync(x => x.Id == paymentId, cancellationToken);
@@ -160,7 +164,7 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
     public Task<bool> IdempotencyKeyExistsAsync(string key, CancellationToken cancellationToken = default) =>
         context.TenantPayments.AsNoTracking().AnyAsync(p => p.IdempotencyKey == key, cancellationToken);
 
-    public async Task<(List<TenantPayment> payments, string? tenantUserId)> RecordPayAsync(RecordTenantPaymentVM vm, string? restrictToOwnerId, CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<TenantPayment> payments, string? tenantUserId)> RecordPayAsync(RecordTenantPaymentVM vm, string? restrictToOwnerId, CancellationToken cancellationToken = default)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -193,7 +197,7 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
         return ([entity], bill.TenantUserId);
     }
 
-    public async Task<(List<TenantPayment> payments, string? tenantUserId)> RecordFullPayAsync(Guid billId, string? restrictToOwnerId, CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<TenantPayment> payments, string? tenantUserId)> RecordFullPayAsync(Guid billId, string? restrictToOwnerId, CancellationToken cancellationToken = default)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -221,7 +225,7 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
         return ([entity], bill.TenantUserId);
     }
 
-    public async Task<(List<TenantPayment> payments, string? tenantUserId)> RecordPayAllAsync(string tenantUserId, string? restrictToOwnerId, CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<TenantPayment> payments, string? tenantUserId)> RecordPayAllAsync(string tenantUserId, string? restrictToOwnerId, CancellationToken cancellationToken = default)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -230,7 +234,7 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
             q = q.Where(b => b.Flat!.OwnerId == restrictToOwnerId);
 
         var bills = await q.OrderBy(b => b.BillDate).ToListAsync(cancellationToken);
-        if (bills.Count == 0) { await tx.RollbackAsync(cancellationToken); return ([], tenantUserId); }
+        if (bills.Any() == false) { await tx.RollbackAsync(cancellationToken); return ([], tenantUserId); }
 
         var created = new List<TenantPayment>();
         foreach (var b in bills)
@@ -251,7 +255,7 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
             created.Add(e);
         }
 
-        if (created.Count == 0) { await tx.RollbackAsync(cancellationToken); return ([], tenantUserId); }
+        if (created.Any() == false) { await tx.RollbackAsync(cancellationToken); return ([], tenantUserId); }
 
         await context.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
@@ -259,3 +263,7 @@ public sealed class TenantRentRepository(ApplicationDbContext context, UserManag
         return (created, tenantUserId);
     }
 }
+
+
+
+

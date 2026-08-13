@@ -69,7 +69,7 @@
                 <a class="btn btn-sm btn-outline-primary" asp-controller="TenantAssignment" asp-action="Assign">Assign Tenant</a>
             </div>
             <div class="card-body">
-                @if (Model.Tenants.Count == 0)
+                @if (Model.Tenants.Any() == false)
                 {
                     <div class="text-muted">No active tenants.</div>
                 }
@@ -112,7 +112,7 @@
         <div class="card shadow-sm">
             <div class="card-header"><strong>Recent Rent Payments</strong></div>
             <div class="card-body">
-                @if (Model.RecentRent.Count == 0)
+                @if (Model.RecentRent.Any() == false)
                 {
                     <div class="text-muted">No recent rent payments.</div>
                 }
@@ -157,7 +157,7 @@
         <div class="card shadow-sm mt-4">
             <div class="card-header"><strong>Recent Common Bill Payments</strong></div>
             <div class="card-body">
-                @if (Model.RecentCommon.Count == 0)
+                @if (Model.RecentCommon.Any() == false)
                 {
                     <div class="text-muted">No recent common bill payments.</div>
                 }
@@ -193,3 +193,4 @@
         </div>
     </div>
 </div>
+

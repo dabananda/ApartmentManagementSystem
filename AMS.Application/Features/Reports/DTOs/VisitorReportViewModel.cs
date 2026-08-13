@@ -7,5 +7,7 @@ public class VisitorReportViewModel
 
     public int TotalEntries { get; set; }
     public Dictionary<string, int> ByCategory { get; set; } = new();
-    public List<(DateTime Day, int Count)> DailyCounts { get; set; } = new();
+    public IEnumerable<(DateTime Day, int Count)> DailyCounts { get; set; } = [];
 }
+
+

@@ -33,7 +33,7 @@ public class ExpensePaymentController : Controller
         return ctx?.BuildingId == buildingId;
     }
 
-    private async Task<List<SelectListItem>> GetOutstandingBillSelectItemsAsync(Guid buildingId) =>
+    private async Task<IEnumerable<SelectListItem>> GetOutstandingBillSelectItemsAsync(Guid buildingId) =>
         (await _mediator.Send(new GetOutstandingBillsQuery(buildingId)))
             .Select(b => new SelectListItem
             {
@@ -99,3 +99,4 @@ public class ExpensePaymentController : Controller
         return View(payment);
     }
 }
+

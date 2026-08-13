@@ -1,6 +1,7 @@
 using AMS.Application.Features.Payments.Commands;
 using AMS.Application.Features.Payments.Queries;
 using AMS.Application.Mediator;
+using AMS.Domain.Constants;
 using AMS.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -57,7 +58,7 @@ public class PaymentsController : Controller
         var me = await GetCallerAsync();
         if (me == null) return Forbid();
 
-        var isAdmin = User.IsInRole("President") || User.IsInRole("SuperAdmin");
+        var isAdmin = User.IsInRole(Roles.President) || User.IsInRole(Roles.SuperAdmin);
         var ownerId = isAdmin ? Request.Form["ownerId"].FirstOrDefault() ?? me.Id : me.Id;
 
         var successUrl = Url.Action(nameof(Success), "Payments", null, Request.Scheme) + "?session_id={CHECKOUT_SESSION_ID}";

@@ -6,7 +6,7 @@
 }
 
 <partial name="_StatusMessage" for="StatusMessage" />
-@if (Model.CurrentLogins?.Count > 0)
+@if (Model.CurrentLogins?.Any() == true)
 {
     <h3>Registered Logins</h3>
     <table class="table">
@@ -36,7 +36,7 @@
         </tbody>
     </table>
 }
-@if (Model.OtherLogins?.Count > 0)
+@if (Model.OtherLogins?.Any() == true)
 {
     <h4>Add another service to log in.</h4>
     <hr />
@@ -51,3 +51,5 @@
         </div>
     </form>
 }
+
+
