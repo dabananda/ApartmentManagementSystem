@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model RegisterModel
 @{
     Layout = null;
@@ -8,6 +8,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/djz3p8sux/image/upload/v1786640389/ams/ams_rdxdoy.png" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
@@ -326,7 +327,7 @@
             <div class="welcome-content">
                 <h1>Join Our<br>Community!</h1>
                 <p>Create your account and become part of our apartment management system. Easy registration in just a few steps.</p>
-                <a href="/Identity/Account/Login" class="login-link-btn">Already have an account?</a>
+                <a href="/Identity/Account/Login" class="login-link-btn text-light">Already have an account?</a>
             </div>
             <div class="wave-decoration"></div>
         </div>
@@ -387,9 +388,7 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-    @section Scripts {
-        <partial name="_ValidationScriptsPartial" />
-    }
+    <partial name="_ValidationScriptsPartial" />
 </body>
 </html>
 

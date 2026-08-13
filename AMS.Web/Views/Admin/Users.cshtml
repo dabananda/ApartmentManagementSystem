@@ -117,7 +117,7 @@ else
                         formmethod="post"
                         formaction="@Url.Action("BulkChangeRole", "Admin")"
                         name="role" value="Staff"
-                        class="btn btn-secondary btn-sm">
+                        class="btn btn-dark btn-sm">
                     Set selected as Staff
                 </button>
 
@@ -205,98 +205,78 @@ else
                                         Edit
                                     </a>
 
-                                    <div class="btn-group" role="group">
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                                data-bs-toggle="dropdown"
-                                                aria-expanded="false"
-                                                title="Change Role"
-                                                @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
-                                            Role
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li>
-                                                <button type="submit"
-                                                        formmethod="post"
-                                                        formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Owner" })"
-                                                        class="dropdown-item">
-                                                    <i class="fas fa-crown text-success me-2"></i>Make Owner
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button type="submit"
-                                                        formmethod="post"
-                                                        formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Tenant" })"
-                                                        class="dropdown-item">
-                                                    <i class="fas fa-home text-primary me-2"></i>Make Tenant
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button type="submit"
-                                                        formmethod="post"
-                                                        formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Staff" })"
-                                                        class="dropdown-item">
-                                                    <i class="fas fa-user-tie text-secondary me-2"></i>Make Staff
-                                                </button>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <button type="submit"
-                                                        formmethod="post"
-                                                        formaction="@Url.Action("ResetUser", "Admin", new { id = u.Id })"
-                                                        class="dropdown-item text-warning">
-                                                    <i class="fas fa-undo me-2"></i>Reset to Pending
-                                                </button>
-                                            </li>
-                                        </ul>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#roleModal-@u.Id" title="Change Role" @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                        Role
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#restrictModal-@u.Id" title="More Actions">
+                                        Restrict
+                                    </button>
+
+                                    <!-- Role Modal -->
+                                    <div class="modal fade text-start" id="roleModal-@u.Id" tabindex="-1" aria-labelledby="roleModalLabel-@u.Id" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                                            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                                                <div class="modal-header border-bottom-0 pb-0">
+                                                    <h6 class="modal-title fw-bold" id="roleModalLabel-@u.Id">Change Role</h6>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p class="text-muted small mb-3">Select a new role for <strong>@u.Fullname</strong></p>
+                                                    <div class="d-grid gap-2">
+                                                        <button type="submit" formmethod="post" formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Owner" })" class="btn btn-light text-start border shadow-sm">
+                                                            <i class="fas fa-crown text-success me-2"></i>Make Owner
+                                                        </button>
+                                                        <button type="submit" formmethod="post" formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Tenant" })" class="btn btn-light text-start border shadow-sm">
+                                                            <i class="fas fa-home text-primary me-2"></i>Make Tenant
+                                                        </button>
+                                                        <button type="submit" formmethod="post" formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Staff" })" class="btn btn-light text-start border shadow-sm">
+                                                            <i class="fas fa-user-tie text-secondary me-2"></i>Make Staff
+                                                        </button>
+                                                        <hr class="my-1">
+                                                        <button type="submit" formmethod="post" formaction="@Url.Action("ResetUser", "Admin", new { id = u.Id })" class="btn btn-light text-start border shadow-sm text-warning">
+                                                            <i class="fas fa-undo me-2"></i>Reset to Pending
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div class="btn-group" role="group">
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger dropdown-toggle"
-                                                data-bs-toggle="dropdown"
-                                                aria-expanded="false"
-                                                title="More Actions">
-                                            Restrict
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            @if (!u.IsLockedOut)
-                                            {
-                                                <li>
-                                                    <button type="submit"
-                                                            formmethod="post"
-                                                            formaction="@Url.Action("BlockUser", "Admin", new { id = u.Id })"
-                                                            class="dropdown-item text-warning"
-                                                            @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
-                                                        <i class="fas fa-ban me-2"></i>Block User
-                                                    </button>
-                                                </li>
-                                            }
-                                            else
-                                            {
-                                                <li>
-                                                    <button type="submit"
-                                                            formmethod="post"
-                                                            formaction="@Url.Action("UnblockUser", "Admin", new { id = u.Id })"
-                                                            class="dropdown-item text-success">
-                                                        <i class="fas fa-unlock me-2"></i>Unblock User
-                                                    </button>
-                                                </li>
-                                            }
-
-                                            @if (User.IsInRole("SuperAdmin") || User.IsInRole("Owner"))
-                                            {
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <button type="submit"
-                                                            formmethod="post"
-                                                            formaction="@Url.Action("DeleteUser", "Admin", new { id = u.Id })"
-                                                            class="dropdown-item text-danger">
-                                                        <i class="fas fa-trash me-2"></i>Delete User
-                                                    </button>
-                                                </li>
-                                            }
-                                        </ul>
+                                    <!-- Restrict Modal -->
+                                    <div class="modal fade text-start" id="restrictModal-@u.Id" tabindex="-1" aria-labelledby="restrictModalLabel-@u.Id" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                                            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                                                <div class="modal-header border-bottom-0 pb-0">
+                                                    <h6 class="modal-title fw-bold" id="restrictModalLabel-@u.Id">Manage Access</h6>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p class="text-muted small mb-3">Manage restrictions for <strong>@u.Fullname</strong></p>
+                                                    <div class="d-grid gap-2">
+                                                        @if (!u.IsLockedOut)
+                                                        {
+                                                            <button type="submit" formmethod="post" formaction="@Url.Action("BlockUser", "Admin", new { id = u.Id })" class="btn btn-light text-start border shadow-sm text-warning" @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                                                <i class="fas fa-ban me-2"></i>Block User
+                                                            </button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button type="submit" formmethod="post" formaction="@Url.Action("UnblockUser", "Admin", new { id = u.Id })" class="btn btn-light text-start border shadow-sm text-success">
+                                                                <i class="fas fa-unlock me-2"></i>Unblock User
+                                                            </button>
+                                                        }
+                                                        @if (User.IsInRole("SuperAdmin") || User.IsInRole("Owner"))
+                                                        {
+                                                            <hr class="my-1">
+                                                            <button type="submit" formmethod="post" formaction="@Url.Action("DeleteUser", "Admin", new { id = u.Id })" class="btn btn-light text-start border shadow-sm text-danger">
+                                                                <i class="fas fa-trash me-2"></i>Delete User
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </td>

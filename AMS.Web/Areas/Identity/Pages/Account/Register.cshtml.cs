@@ -85,7 +85,7 @@ public class RegisterModel : PageModel
         var building = await _db.Buildings.FirstOrDefaultAsync(b => b.Code == Input.BuildingCode.Trim());
         if (building == null)
         {
-            ModelState.AddModelError(nameof(Input.BuildingCode), "Invalid building code.");
+            ModelState.AddModelError("Input.BuildingCode", "Invalid building code.");
             return Page();
         }
 

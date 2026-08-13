@@ -4,49 +4,130 @@
     ViewData["Title"] = "Assign President";
 }
 
-<div class="row">
-    <div class="col-md-6 offset-md-3">
+<style>
+    .modern-card {
+        background: #ffffff;
+        border-radius: 24px;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 20px 40px rgba(94, 92, 230, 0.1);
+        overflow: hidden;
+        animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card-header-premium {
+        background: linear-gradient(135deg, #5E5CE6 0%, #BF5AF2 100%);
+        color: white;
+        padding: 30px 20px;
+        text-align: center;
+        border-bottom: none;
+    }
+    .card-header-premium h3 {
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.5rem;
+        letter-spacing: -0.02em;
+    }
+    .card-body-premium {
+        padding: 40px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #1D1D1F;
+        margin-bottom: 8px;
+    }
+    .form-select-modern {
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid #d2d2d7;
+        transition: all 0.3s;
+        background-color: #f5f5f7;
+    }
+    .form-select-modern:focus {
+        background-color: #ffffff;
+        border-color: #5E5CE6;
+        box-shadow: 0 0 0 4px rgba(94, 92, 230, 0.1);
+    }
+    .btn-premium {
+        background: #5E5CE6;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 30px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 14px rgba(94, 92, 230, 0.3);
+    }
+    .btn-premium:hover {
+        background: #4e4bdc;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(94, 92, 230, 0.4);
+        color: white;
+    }
+    .btn-outline-modern {
+        border: 1px solid #d2d2d7;
+        color: #1D1D1F;
+        padding: 12px 24px;
+        border-radius: 30px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: transparent;
+    }
+    .btn-outline-modern:hover {
+        background: #f5f5f7;
+        color: #1D1D1F;
+    }
+    @@keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="row py-4">
+    <div class="col-lg-8 col-xl-6 offset-lg-2 offset-xl-3">
         @if (TempData["Success"] != null)
         {
-            <div class="alert alert-success">@TempData["Success"]</div>
+            <div class="alert alert-success rounded-4 shadow-sm mb-4 border-0">
+                <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            </div>
         }
         @if (TempData["Error"] != null)
         {
-            <div class="alert alert-danger">@TempData["Error"]</div>
-        }
-        <div class="card">
-            <div class="card-header text-center">
-                <h3 class="card-title">Assign President</h3>
+            <div class="alert alert-danger rounded-4 shadow-sm mb-4 border-0">
+                <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
             </div>
-            <div class="card-body">
-                <form method="post" asp-controller="Admin" asp-action="AssignPresident" class="row g-3">
+        }
+
+        <div class="modern-card">
+            @* <div class="card-header-premium">
+                <div class="mb-2" style="font-size: 2.5rem; opacity: 0.9;">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h3 class="card-title">Assign President</h3>
+                <p class="text-white-50 mb-0 mt-2 small">Select a building and assign an owner as its president.</p>
+            </div> *@
+            <div class="card-body-premium">
+                <form method="post" asp-controller="Admin" asp-action="AssignPresident">
                     @Html.AntiForgeryToken()
 
-                    <div class="col-md-6">
-                        <label asp-for="BuildingId" class="form-label"></label>
-                        <select asp-for="BuildingId" class="form-select" asp-items="Model.Buildings" id="BuildingId">
+                    <div class="mb-4">
+                        <label asp-for="BuildingId" class="form-label">Building</label>
+                        <select asp-for="BuildingId" class="form-select form-select-modern" asp-items="Model.Buildings" id="BuildingId">
                             <option value="">-- Select a building --</option>
                         </select>
-                        <span asp-validation-for="BuildingId" class="text-danger"></span>
+                        <span asp-validation-for="BuildingId" class="text-danger small mt-1 d-block"></span>
                     </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="OwnerUserId" class="form-label"></label>
-                        <select asp-for="OwnerUserId" class="form-select" asp-items="Model.Owners" id="OwnerUserId">
+                    <div class="mb-5">
+                        <label asp-for="OwnerUserId" class="form-label">Owner</label>
+                        <select asp-for="OwnerUserId" class="form-select form-select-modern" asp-items="Model.Owners" id="OwnerUserId">
                             <option value="">-- Select an owner --</option>
                         </select>
-                        <span asp-validation-for="OwnerUserId" class="text-danger"></span>
+                        <span asp-validation-for="OwnerUserId" class="text-danger small mt-1 d-block"></span>
+                        <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i>Only approved owners are listed.</div>
                     </div>
 
-                    <div class="col-12">
-                        <div class="row">
-                            <div class="col">
-                                <a asp-action="Users" asp-controller="Admin" class="btn btn-secondary w-100">Back to Admin Panel</a>
-                            </div>
-                            <div class="col text-end">
-                                <button class="btn btn-primary w-100" type="submit">Assign President</button>
-                            </div>
-                        </div>
+                    <div class="d-flex gap-3 pt-2">
+                        <a asp-action="Users" asp-controller="Admin" class="btn btn-outline-modern w-50 text-center text-decoration-none">Cancel</a>
+                        <button class="btn btn-premium w-50" type="submit">Assign President</button>
                     </div>
                 </form>
             </div>
