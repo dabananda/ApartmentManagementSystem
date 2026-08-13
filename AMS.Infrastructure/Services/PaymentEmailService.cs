@@ -19,7 +19,7 @@ public sealed class PaymentEmailService(
         if (user == null || string.IsNullOrWhiteSpace(user.Email)) return;
 
         var list = payments.ToList();
-        if (list.Count == 0) return;
+        if (list.Any() == false) return;
 
         var billIds = list.Select(x => x.TenantBillId).ToList();
         var bills = await db.TenantBills
@@ -58,7 +58,7 @@ public sealed class PaymentEmailService(
         if (user == null || string.IsNullOrWhiteSpace(user.Email)) return;
 
         var list = payments.ToList();
-        if (list.Count == 0) return;
+        if (list.Any() == false) return;
 
         var commonBillIds = list.Select(x => x.CommonBillId).Distinct().ToList();
         var bills = await db.CommonBills
@@ -103,3 +103,4 @@ public sealed class PaymentEmailService(
         await email.SendEmailAsync(user.Email!, "Common bill payment receipt", html);
     }
 }
+

@@ -38,11 +38,11 @@ public class OwnerBillsPage
     public string OwnerId { get; set; } = default!;
     public string OwnerName { get; set; } = "";
     public Guid BuildingId { get; set; }
-    public List<OwnerBillItem> Bills { get; set; } = new();
+    public IEnumerable<OwnerBillItem> Bills { get; set; } = [];
     public decimal TotalAllocated => Bills.Sum(b => b.Allocated);
     public decimal TotalPaid => Bills.Sum(b => b.Paid);
     public decimal TotalDue => Bills.Sum(b => b.Due);
-    public List<OwnerPaymentRecord> History { get; set; } = new();
+    public IEnumerable<OwnerPaymentRecord> History { get; set; } = [];
 }
 
 public class RecordOwnerPaymentVM
@@ -56,3 +56,5 @@ public class RecordOwnerPaymentVM
 
     [StringLength(80)] public string? IdempotencyKey { get; set; }
 }
+
+

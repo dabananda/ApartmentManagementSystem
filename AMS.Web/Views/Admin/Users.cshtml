@@ -144,7 +144,7 @@ else
                     </button>
                 }
             </div>
-            <small class="text-muted">Showing @Model.Users.Count of @Model.Total result(s)</small>
+            <small class="text-muted">Showing @Model.Users.Count() of @Model.Total result(s)</small>
         </div>
 
         <div class="table-responsive">
@@ -165,7 +165,7 @@ else
                 <tbody>
                     @foreach (var u in Model.Users)
                     {
-                        var rolesText = (u.Roles != null && u.Roles.Count > 0) ? string.Join(", ", u.Roles) : "-";
+                        var rolesText = (u.Roles != null && u.Roles.Any()) ? string.Join(", ", u.Roles) : "-";
                         <tr>
                             <td><input type="checkbox" name="ids" value="@u.Id" class="chkRow" /></td>
                             <td>@u.Fullname</td>
@@ -364,3 +364,4 @@ else
         })();
     </script>
 }
+

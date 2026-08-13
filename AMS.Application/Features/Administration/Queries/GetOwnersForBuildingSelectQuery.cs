@@ -6,12 +6,12 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AMS.Application.Features.Administration.Queries;
 
-public record GetOwnersForBuildingSelectQuery(Guid BuildingId) : IRequest<List<SelectListItem>>;
+public record GetOwnersForBuildingSelectQuery(Guid BuildingId) : IRequest<IEnumerable<SelectListItem>>;
 
 public class GetOwnersForBuildingSelectQueryHandler(UserManager<ApplicationUser> userManager)
-    : IRequestHandler<GetOwnersForBuildingSelectQuery, List<SelectListItem>>
+    : IRequestHandler<GetOwnersForBuildingSelectQuery, IEnumerable<SelectListItem>>
 {
-    public async Task<List<SelectListItem>> Handle(GetOwnersForBuildingSelectQuery request, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<SelectListItem>> Handle(GetOwnersForBuildingSelectQuery request, CancellationToken cancellationToken = default)
     {
         var ownerUsers = await userManager.GetUsersInRoleAsync(Roles.Owner);
         return ownerUsers
@@ -25,3 +25,5 @@ public class GetOwnersForBuildingSelectQueryHandler(UserManager<ApplicationUser>
             .ToList();
     }
 }
+
+

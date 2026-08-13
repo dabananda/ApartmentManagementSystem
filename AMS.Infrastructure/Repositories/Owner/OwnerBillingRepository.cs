@@ -62,7 +62,7 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
             q = q.Where(a => a.CommonBill!.BuildingId == restrictToBuildingId);
 
         var allocations = await q.AsNoTracking().ToListAsync(cancellationToken);
-        if (allocations.Count == 0) return null;
+        if (allocations.Any() == false) return null;
 
         var buildingId = allocations.First().CommonBill!.BuildingId;
         var owner = await users.FindByIdAsync(ownerId);
@@ -117,6 +117,7 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
         if (result == null) return (null, null);
 
         var payment = await context.ExpenseAllocationPayments
+            .AsNoTracking()
             .Include(p => p.ExpenseAllocation)!.ThenInclude(a => a!.CommonBill)!.ThenInclude(b => b!.Building)
             .Include(p => p.ExpenseAllocation)!.ThenInclude(a => a!.Owner)
             .AsSplitQuery()
@@ -128,7 +129,7 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
     public Task<bool> IdempotencyKeyExistsAsync(string key, CancellationToken cancellationToken = default) =>
         context.ExpenseAllocationPayments.AsNoTracking().AnyAsync(p => p.IdempotencyKey == key, cancellationToken);
 
-    public async Task<List<ExpenseAllocation>> GetAllocationsForPayAsync(string ownerId, Guid commonBillId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ExpenseAllocation>> GetAllocationsForPayAsync(string ownerId, Guid commonBillId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
     {
         var q = context.ExpenseAllocations.Include(a => a.CommonBill)
             .Where(a => a.CommonBillId == commonBillId && a.OwnerId == ownerId);
@@ -143,12 +144,12 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
             .SumAsync(p => (decimal?)p.Amount, cancellationToken)
             .ContinueWith(t => t.Result ?? 0m);
 
-    public async Task<List<ExpenseAllocationPayment>> RecordPayAsync(string ownerId, Guid commonBillId, RecordOwnerPaymentVM vm, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ExpenseAllocationPayment>> RecordPayAsync(string ownerId, Guid commonBillId, RecordOwnerPaymentVM vm, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
         var allocs = await GetAllocationsForPayAsync(ownerId, commonBillId, restrictToBuildingId, cancellationToken);
-        if (allocs.Count == 0)
+        if (allocs.Any() == false)
         {
             await tx.RollbackAsync(cancellationToken);
             return [];
@@ -202,7 +203,7 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
         return created;
     }
 
-    public async Task<List<ExpenseAllocationPayment>> RecordPayAllAsync(string ownerId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ExpenseAllocationPayment>> RecordPayAllAsync(string ownerId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -211,7 +212,7 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
             q = q.Where(a => a.CommonBill!.BuildingId == restrictToBuildingId);
 
         var allocs = await q.ToListAsync(cancellationToken);
-        if (allocs.Count == 0) { await tx.RollbackAsync(cancellationToken); return []; }
+        if (allocs.Any() == false) { await tx.RollbackAsync(cancellationToken); return []; }
 
         var created = new List<ExpenseAllocationPayment>();
         var today = DateTime.Today;
@@ -238,19 +239,19 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
             a.PaymentDate = today;
         }
 
-        if (created.Count == 0) { await tx.RollbackAsync(cancellationToken); return []; }
+        if (created.Any() == false) { await tx.RollbackAsync(cancellationToken); return []; }
 
         await context.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
         return created;
     }
 
-    public async Task<List<ExpenseAllocationPayment>> RecordFullPayAsync(string ownerId, Guid commonBillId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ExpenseAllocationPayment>> RecordFullPayAsync(string ownerId, Guid commonBillId, Guid? restrictToBuildingId, CancellationToken cancellationToken = default)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
         var allocs = await GetAllocationsForPayAsync(ownerId, commonBillId, restrictToBuildingId, cancellationToken);
-        if (allocs.Count == 0) { await tx.RollbackAsync(cancellationToken); return []; }
+        if (allocs.Any() == false) { await tx.RollbackAsync(cancellationToken); return []; }
 
         var totalDueNow = 0m;
         foreach (var a in allocs)
@@ -290,3 +291,5 @@ public sealed class OwnerBillingRepository(ApplicationDbContext context, UserMan
         return created;
     }
 }
+
+

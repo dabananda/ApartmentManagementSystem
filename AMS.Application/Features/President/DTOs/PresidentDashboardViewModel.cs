@@ -15,7 +15,7 @@ public class PresidentDashboardViewModel
     public int TodayEntries { get; set; }
     public int Last7dEntries { get; set; }
 
-    public List<TransactionRowViewModel> RecentTransactions { get; set; } = new();
+    public IEnumerable<TransactionRowViewModel> RecentTransactions { get; set; } = [];
 
     public CashflowChartVM Cashflow { get; set; } = new();
     public AgingBucketsVM Aging { get; set; } = new();
@@ -34,9 +34,9 @@ public class TransactionRowViewModel
 
 public class CashflowChartVM
 {
-    public List<string> Labels { get; set; } = new();
-    public List<decimal> In { get; set; } = new();
-    public List<decimal> Out { get; set; } = new();
+    public IEnumerable<string> Labels { get; set; } = [];
+    public IEnumerable<decimal> In { get; set; } = [];
+    public IEnumerable<decimal> Out { get; set; } = [];
 }
 
 public class AgingBucketsVM
@@ -52,6 +52,8 @@ public class AgingBucketsVM
 
 public class TopOwnersVM
 {
-    public List<string> Labels { get; set; } = new();
-    public List<decimal> Values { get; set; } = new();
+    public IEnumerable<string> Labels { get; set; } = [];
+    public IEnumerable<decimal> Values { get; set; } = [];
 }
+
+

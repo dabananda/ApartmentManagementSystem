@@ -14,6 +14,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
         var me = await users.FindByIdAsync(tenantUserId);
         var today = DateTime.Today;
         var assignment = await context.TenantAssignments
+            .AsNoTracking()
             .Include(a => a.Flat).ThenInclude(f => f!.Building)
             .Where(a => a.TenantUserId == tenantUserId && (a.EndDate == null || a.EndDate >= today))
             .OrderByDescending(a => a.StartDate)
@@ -31,6 +32,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
         var buildingId = assignment.Flat.BuildingId;
 
         var bills = await context.TenantBills
+            .AsNoTracking()
             .Include(b => b.Payments)
             .Where(b => b.TenantUserId == tenantUserId)
             .OrderByDescending(b => b.BillDate)
@@ -41,7 +43,6 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
 
         var monthStart = new DateTime(today.Year, today.Month, 1);
         var paidThisMonth = await context.TenantPayments
-            .Include(p => p.TenantBill).ThenInclude(b => b!.Flat)
             .Where(p => p.PaymentDate >= monthStart && p.TenantBill!.TenantUserId == tenantUserId)
             .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
 
@@ -55,6 +56,7 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
         }).ToList();
 
         var recentPayments = await context.TenantPayments
+            .AsNoTracking()
             .Include(p => p.TenantBill)
             .Where(p => p.TenantBill!.TenantUserId == tenantUserId)
             .OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id)
@@ -93,8 +95,8 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
         };
     }
 
-    public Task<List<TenantBillRow>> GetBillsAsync(string tenantUserId, CancellationToken cancellationToken = default) =>
-        context.TenantBills
+    public async Task<IEnumerable<TenantBillRow>> GetBillsAsync(string tenantUserId, CancellationToken cancellationToken = default) => await context.TenantBills
+            .AsNoTracking()
             .Include(b => b.Payments)
             .Include(b => b.Flat).ThenInclude(f => f!.Building)
             .Where(b => b.TenantUserId == tenantUserId)
@@ -111,8 +113,8 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
             })
             .ToListAsync(cancellationToken);
 
-    public Task<List<TenantPaymentRow>> GetPaymentsAsync(string tenantUserId, CancellationToken cancellationToken = default) =>
-        context.TenantPayments
+    public async Task<IEnumerable<TenantPaymentRow>> GetPaymentsAsync(string tenantUserId, CancellationToken cancellationToken = default) => await context.TenantPayments
+            .AsNoTracking()
             .Include(p => p.TenantBill).ThenInclude(b => b!.Flat).ThenInclude(f => f!.Building)
             .Where(p => p.TenantBill!.TenantUserId == tenantUserId)
             .OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id)
@@ -129,15 +131,13 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
             })
             .ToListAsync(cancellationToken);
 
-    public Task<List<Announcement>> GetNoticesAsync(Guid? buildingId, CancellationToken cancellationToken = default) =>
-        context.Announcements
+    public async Task<IEnumerable<Announcement>> GetNoticesAsync(Guid? buildingId, CancellationToken cancellationToken = default) => await context.Announcements
             .AsNoTracking()
             .Where(a => !buildingId.HasValue || a.BuildingId == buildingId.Value)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
 
-    public Task<List<MaintenanceTicket>> GetTicketsAsync(Guid buildingId, Guid flatId, string tenantUserId, CancellationToken cancellationToken = default) =>
-        context.MaintenanceTickets
+    public async Task<IEnumerable<MaintenanceTicket>> GetTicketsAsync(Guid buildingId, Guid flatId, string tenantUserId, CancellationToken cancellationToken = default) => await context.MaintenanceTickets
             .AsNoTracking()
             .Where(t => t.BuildingId == buildingId && (t.CreatedByUserId == tenantUserId || (t.CreatedByUserId == null && t.FlatId == flatId)))
             .OrderBy(t => t.Status).ThenByDescending(t => t.CreatedAt)
@@ -149,14 +149,15 @@ public sealed class TenantPortalRepository(ApplicationDbContext context, UserMan
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<List<EntryLog>> GetVisitorsAsync(Guid buildingId, Guid flatId, DateTime? from, DateTime? to, CancellationToken cancellationToken = default)
-    {
+    public async Task<IEnumerable<EntryLog>> GetVisitorsAsync(Guid buildingId, Guid flatId, DateTime? from, DateTime? to, CancellationToken cancellationToken = default) {
         var q = context.EntryLogs.AsNoTracking()
             .Where(el => el.FlatId == flatId && el.BuildingId == buildingId);
 
         if (from.HasValue) q = q.Where(el => el.EntryTime >= from.Value);
         if (to.HasValue) q = q.Where(el => el.EntryTime <= to.Value);
 
-        return q.OrderByDescending(el => el.EntryTime).ToListAsync(cancellationToken);
+        return await q.OrderByDescending(el => el.EntryTime).ToListAsync(cancellationToken);
     }
 }
+
+

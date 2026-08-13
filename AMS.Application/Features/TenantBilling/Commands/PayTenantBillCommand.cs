@@ -6,12 +6,12 @@ using AMS.Domain.Entities;
 namespace AMS.Application.Features.TenantBilling.Commands;
 
 public record PayTenantBillCommand(RecordTenantPaymentVM Vm, string? RestrictToOwnerId)
-    : IRequest<(bool success, string message, List<TenantPayment> payments, string? tenantUserId)>;
+    : IRequest<(bool success, string message, IEnumerable<TenantPayment> payments, string? tenantUserId)>;
 
 public class PayTenantBillCommandHandler(ITenantRentRepository repository)
-    : IRequestHandler<PayTenantBillCommand, (bool success, string message, List<TenantPayment> payments, string? tenantUserId)>
+    : IRequestHandler<PayTenantBillCommand, (bool success, string message, IEnumerable<TenantPayment> payments, string? tenantUserId)>
 {
-    public async Task<(bool success, string message, List<TenantPayment> payments, string? tenantUserId)> Handle(PayTenantBillCommand request, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message, IEnumerable<TenantPayment> payments, string? tenantUserId)> Handle(PayTenantBillCommand request, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(request.Vm.IdempotencyKey))
         {
@@ -20,7 +20,7 @@ public class PayTenantBillCommandHandler(ITenantRentRepository repository)
         }
 
         var (created, tenantUserId) = await repository.RecordPayAsync(request.Vm, request.RestrictToOwnerId, cancellationToken);
-        if (created.Count == 0) return (false, "Nothing to pay or no due on this bill.", [], tenantUserId);
+        if (created.Any() == false) return (false, "Nothing to pay or no due on this bill.", [], tenantUserId);
 
         var take = created.Sum(p => p.Amount);
         var message = take < request.Vm.Amount
@@ -30,3 +30,5 @@ public class PayTenantBillCommandHandler(ITenantRentRepository repository)
         return (true, message, created, tenantUserId);
     }
 }
+
+

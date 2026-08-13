@@ -17,5 +17,7 @@ public class UserRowViewModel
 
     public DateTime CreatedAt { get; set; }
 
-    public List<string> Roles { get; set; } = new();
+    public IEnumerable<string> Roles { get; set; } = [];
 }
+
+

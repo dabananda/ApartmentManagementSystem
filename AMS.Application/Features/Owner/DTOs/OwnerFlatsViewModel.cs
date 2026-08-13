@@ -6,7 +6,7 @@ public class OwnerFlatsViewModel
     public string FlatNumber { get; set; } = "";
     public string BuildingName { get; set; } = "";
     public bool IsOccupied { get; set; }
-    public List<TenantRow> Tenants { get; set; } = new();
+    public IEnumerable<TenantRow> Tenants { get; set; } = [];
 
     public class TenantRow
     {
@@ -16,3 +16,5 @@ public class OwnerFlatsViewModel
         public bool IsActive { get; set; }
     }
 }
+
+

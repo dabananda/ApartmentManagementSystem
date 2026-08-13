@@ -4,11 +4,13 @@ using AMS.Domain.Entities;
 
 namespace AMS.Application.Features.TenantPortal.Queries;
 
-public record GetTenantPortalNoticesQuery(Guid? BuildingId) : IRequest<List<Announcement>>;
+public record GetTenantPortalNoticesQuery(Guid? BuildingId) : IRequest<IEnumerable<Announcement>>;
 
 public class GetTenantPortalNoticesQueryHandler(ITenantPortalRepository repository)
-    : IRequestHandler<GetTenantPortalNoticesQuery, List<Announcement>>
+    : IRequestHandler<GetTenantPortalNoticesQuery, IEnumerable<Announcement>>
 {
-    public Task<List<Announcement>> Handle(GetTenantPortalNoticesQuery request, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<Announcement>> Handle(GetTenantPortalNoticesQuery request, CancellationToken cancellationToken = default)
         => repository.GetNoticesAsync(request.BuildingId, cancellationToken);
 }
+
+

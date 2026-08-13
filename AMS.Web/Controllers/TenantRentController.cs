@@ -86,7 +86,7 @@ public class TenantRentController : Controller
                 : RedirectToAction(nameof(List));
         }
 
-        if (created.Count > 0 && !string.IsNullOrEmpty(tenantUserId))
+        if (created.Any() && !string.IsNullOrEmpty(tenantUserId))
             await SafeSendEmailAsync(tenantUserId, created);
 
         TempData["Success"] = message;
@@ -111,7 +111,7 @@ public class TenantRentController : Controller
                 : RedirectToAction(nameof(List));
         }
 
-        if (created.Count > 0 && !string.IsNullOrEmpty(tenantUserId))
+        if (created.Any() && !string.IsNullOrEmpty(tenantUserId))
             await SafeSendEmailAsync(tenantUserId, created);
 
         TempData["Success"] = message;
@@ -134,7 +134,7 @@ public class TenantRentController : Controller
             return RedirectToAction(nameof(View), new { tenantUserId });
         }
 
-        if (created.Count > 0)
+        if (created.Any())
             await SafeSendEmailAsync(tenantUserId, created);
 
         TempData["Success"] = message;
@@ -205,3 +205,4 @@ public class TenantRentController : Controller
         }
     }
 }
+

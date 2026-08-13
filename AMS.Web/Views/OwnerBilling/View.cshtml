@@ -7,7 +7,7 @@
 }
 
 
-<h2 class="mb-1">Owner Billing — @Model.OwnerName</h2>
+<h2 class="mb-1">Owner Billing ï¿½ @Model.OwnerName</h2>
 
 @if (TempData["Success"] != null)
 {
@@ -137,7 +137,7 @@
 
 <div class="mt-4">
     <h4 class="mb-2">Payment History</h4>
-    @if (Model.History.Count == 0)
+    @if (Model.History.Any() == false)
     {
         <div class="text-muted">No payments recorded yet.</div>
     }
@@ -191,7 +191,7 @@
                   if(parseFloat(a.value)>
                 m){ alert('Amount exceeds due.'); return false; }">
                 <div class="modal-header">
-                    <h5 class="modal-title">Record Payment — @Model.OwnerName</h5>
+                    <h5 class="modal-title">Record Payment ï¿½ @Model.OwnerName</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -242,3 +242,4 @@
         });
     </script>
 }
+

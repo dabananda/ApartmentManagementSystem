@@ -4,7 +4,7 @@
     ViewData["Title"] = "My Common Bills";
 }
 
-<h2 class="mb-1">My Common Bills — @Model.OwnerName</h2>
+<h2 class="mb-1">My Common Bills ï¿½ @Model.OwnerName</h2>
 
 @if (TempData["Success"] != null)
 {
@@ -106,7 +106,7 @@
 
 <div class="mt-4">
     <h4 class="mb-2">My Payment History</h4>
-    @if (Model.History.Count == 0)
+    @if (Model.History.Any() == false)
     {
         <div class="text-muted">No payments recorded yet.</div>
     }
@@ -185,3 +185,4 @@
         });
     </script>
 }
+

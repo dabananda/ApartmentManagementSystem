@@ -38,7 +38,7 @@ public class TenantMonthlyBillGenerator : BackgroundService
                     .Select(a => new { a.FlatId, a.TenantUserId })
                     .ToListAsync(stoppingToken);
 
-                if (q.Count == 0) continue;
+                if (q.Any() == false) continue;
 
                 var profiles = await db.FlatBillingProfiles.Where(p => p.IsActive).ToListAsync(stoppingToken);
                 var pByFlat = profiles.ToDictionary(x => x.FlatId, x => x);
@@ -73,3 +73,4 @@ public class TenantMonthlyBillGenerator : BackgroundService
         }
     }
 }
+

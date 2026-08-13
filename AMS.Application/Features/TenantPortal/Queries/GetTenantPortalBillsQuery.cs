@@ -4,11 +4,13 @@ using AMS.Application.Mediator;
 
 namespace AMS.Application.Features.TenantPortal.Queries;
 
-public record GetTenantPortalBillsQuery(string TenantUserId) : IRequest<List<TenantBillRow>>;
+public record GetTenantPortalBillsQuery(string TenantUserId) : IRequest<IEnumerable<TenantBillRow>>;
 
 public class GetTenantPortalBillsQueryHandler(ITenantPortalRepository repository)
-    : IRequestHandler<GetTenantPortalBillsQuery, List<TenantBillRow>>
+    : IRequestHandler<GetTenantPortalBillsQuery, IEnumerable<TenantBillRow>>
 {
-    public Task<List<TenantBillRow>> Handle(GetTenantPortalBillsQuery request, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<TenantBillRow>> Handle(GetTenantPortalBillsQuery request, CancellationToken cancellationToken = default)
         => repository.GetBillsAsync(request.TenantUserId, cancellationToken);
 }
+
+

@@ -14,10 +14,10 @@ public class OwnerDashboardVM
     public decimal CommonTotalPaid { get; set; }
     public decimal CommonTotalDue => CommonTotalBilled - CommonTotalPaid;
 
-    public List<OwnerTenantRow> Tenants { get; set; } = new();
+    public IEnumerable<OwnerTenantRow> Tenants { get; set; } = [];
 
-    public List<OwnerRecentRentPaymentRow> RecentRent { get; set; } = new();
-    public List<OwnerRecentCommonPaymentRow> RecentCommon { get; set; } = new();
+    public IEnumerable<OwnerRecentRentPaymentRow> RecentRent { get; set; } = [];
+    public IEnumerable<OwnerRecentCommonPaymentRow> RecentCommon { get; set; } = [];
 }
 
 public class OwnerTenantRow
@@ -58,5 +58,7 @@ public class OwnerDashboardRentVM
     public decimal MonthPaid { get; set; }
     public int OpenBillCount { get; set; }
 
-    public List<OwnerRecentRentPaymentRow> Recent { get; set; } = new();
+    public IEnumerable<OwnerRecentRentPaymentRow> Recent { get; set; } = [];
 }
+
+

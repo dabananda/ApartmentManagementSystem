@@ -5,7 +5,7 @@ namespace AMS.Application.Features.Administration.DTOs;
 public class SuperAdminDashboardViewModel
 {
     public int TotalBuildings { get; set; }
-    public List<BuildingSummaryViewModel> BuildingsSummary { get; set; } = [];
+    public IEnumerable<BuildingSummaryViewModel> BuildingsSummary { get; set; } = [];
 
     public int TotalUsers { get; set; }
     public int TotalSuperAdmins { get; set; }
@@ -27,8 +27,8 @@ public class SuperAdminDashboardViewModel
     public decimal TotalPendingCollection { get; set; }
     public decimal OverallBalance { get; set; }
 
-    public List<CommonBill> RecentBills { get; set; } = [];
-    public List<ExpensePayment> RecentPayments { get; set; } = [];
+    public IEnumerable<CommonBill> RecentBills { get; set; } = [];
+    public IEnumerable<ExpensePayment> RecentPayments { get; set; } = [];
 }
 
 public class BuildingSummaryViewModel
@@ -43,3 +43,4 @@ public class BuildingSummaryViewModel
     public decimal TotalPayments { get; set; }
     public decimal Balance { get; set; }
 }
+

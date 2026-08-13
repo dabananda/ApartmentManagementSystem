@@ -1,12 +1,12 @@
 @model TenantBillsPage
 @using AMS.Application.Features.Tenancy.DTOs
 @{
-    ViewData["Title"] = "Tenant Rent — " + Model.TenantName;
+    ViewData["Title"] = "Tenant Rent ï¿½ " + Model.TenantName;
     var canPay = User.IsInRole("Owner") || User.IsInRole("President") || User.IsInRole("SuperAdmin");
     var history = ViewData["History"] as List<TenantPaymentRecord> ?? new List<TenantPaymentRecord>();
 }
 
-<h2 class="mb-1">Tenant Rent — @Model.TenantName</h2>
+<h2 class="mb-1">Tenant Rent ï¿½ @Model.TenantName</h2>
 <div class="text-muted mb-3">@Model.Email</div>
 
 @if (TempData["Success"] != null)
@@ -127,7 +127,7 @@
 
 <div class="mt-4">
     <h4 class="mb-2">Payment History</h4>
-    @if (history.Count == 0)
+    @if (history.Any() == false)
     {
         <div class="text-muted">No payments recorded yet.</div>
     }
@@ -183,7 +183,7 @@
                 m){ alert('Amount exceeds due.'); return false; }">
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
-                    <h5 class="modal-title">Record Payment — @Model.TenantName</h5>
+                    <h5 class="modal-title">Record Payment ï¿½ @Model.TenantName</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -229,3 +229,4 @@
         });
     </script>
 }
+

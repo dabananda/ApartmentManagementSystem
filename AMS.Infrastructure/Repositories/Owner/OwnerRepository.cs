@@ -148,16 +148,16 @@ public sealed class OwnerRepository(ApplicationDbContext context, UserManager<Ap
             q = q.Where(a => a.CommonBill!.BuildingId == restrictToBuildingId);
 
         var allocations = await q.AsNoTracking().ToListAsync(cancellationToken);
-        if (allocations.Count == 0)
+        if (allocations.Any() == false)
         {
             var owner = await users.FindByIdAsync(ownerId);
             return new OwnerBillsPage
             {
                 OwnerId = ownerId,
                 OwnerName = owner?.Fullname ?? owner?.UserName ?? "(owner)",
-                Bills = new(),
+                Bills = [],
                 BuildingId = Guid.Empty,
-                History = new()
+                History = []
             };
         }
 
@@ -204,3 +204,4 @@ public sealed class OwnerRepository(ApplicationDbContext context, UserManager<Ap
         };
     }
 }
+

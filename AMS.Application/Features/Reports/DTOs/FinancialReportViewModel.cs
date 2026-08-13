@@ -21,5 +21,7 @@ public class FinancialReportViewModel
     public decimal TotalPayments { get; set; }
     public decimal NetBalance => TotalCollected - TotalPayments;
 
-    public List<FinancialReportRow> Rows { get; set; } = new();
+    public IEnumerable<FinancialReportRow> Rows { get; set; } = [];
 }
+
+

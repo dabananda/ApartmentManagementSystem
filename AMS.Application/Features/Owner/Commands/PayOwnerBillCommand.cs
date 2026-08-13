@@ -6,12 +6,12 @@ using AMS.Domain.Entities;
 namespace AMS.Application.Features.Owner.Commands;
 
 public record PayOwnerBillCommand(string OwnerId, Guid CommonBillId, RecordOwnerPaymentVM Vm, Guid? RestrictToBuildingId)
-    : IRequest<(bool success, string message, List<ExpenseAllocationPayment> payments)>;
+    : IRequest<(bool success, string message, IEnumerable<ExpenseAllocationPayment> payments)>;
 
 public class PayOwnerBillCommandHandler(IOwnerBillingRepository repository)
-    : IRequestHandler<PayOwnerBillCommand, (bool success, string message, List<ExpenseAllocationPayment> payments)>
+    : IRequestHandler<PayOwnerBillCommand, (bool success, string message, IEnumerable<ExpenseAllocationPayment> payments)>
 {
-    public async Task<(bool success, string message, List<ExpenseAllocationPayment> payments)> Handle(PayOwnerBillCommand request, CancellationToken cancellationToken = default)
+    public async Task<(bool success, string message, IEnumerable<ExpenseAllocationPayment> payments)> Handle(PayOwnerBillCommand request, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(request.Vm.IdempotencyKey))
         {
@@ -20,7 +20,7 @@ public class PayOwnerBillCommandHandler(IOwnerBillingRepository repository)
         }
 
         var allocs = await repository.GetAllocationsForPayAsync(request.OwnerId, request.CommonBillId, request.RestrictToBuildingId, cancellationToken);
-        if (allocs.Count == 0) return (false, "No allocation found for this owner & bill.", []);
+        if (allocs.Any() == false) return (false, "No allocation found for this owner & bill.", []);
 
         var totalDueNow = 0m;
         foreach (var a in allocs)
@@ -32,9 +32,11 @@ public class PayOwnerBillCommandHandler(IOwnerBillingRepository repository)
         if (totalDueNow <= 0) return (false, "No due for this owner on the selected bill.", []);
 
         var created = await repository.RecordPayAsync(request.OwnerId, request.CommonBillId, request.Vm, request.RestrictToBuildingId, cancellationToken);
-        if (created.Count == 0) return (false, "Failed to record payment.", []);
+        if (created.Any() == false) return (false, "Failed to record payment.", []);
 
         var msg = request.Vm.Amount > totalDueNow ? $"Payment recorded (clamped to {totalDueNow:C})." : "Payment recorded.";
         return (true, msg, created);
     }
 }
+
+
