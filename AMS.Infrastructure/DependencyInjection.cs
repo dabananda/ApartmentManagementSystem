@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Stripe;
 using AMS.Application.Configuration;
+using AMS.Application.Interfaces.Payments;
 
 namespace AMS.Infrastructure;
 
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddTransient<IEmailSender, EmailSender>();
         services.AddScoped<IPaymentEmailService, PaymentEmailService>();
         services.AddScoped<IPhotoUploadService, CloudinaryPhotoUploadService>();
+        services.AddScoped<IStripePaymentService, StripePaymentService>();
 
         services.AddHostedService<TenantMonthlyBillGenerator>();
 
@@ -52,11 +54,6 @@ public static class DependencyInjection
             return new StripeClient(key);
         });
 
-        // Convention-based registration: every "XyzRepository" class is expected to
-        // implement a matching "IXyzRepository" interface. This scan is the single
-        // source of truth for repository bindings, so a naming mismatch fails fast
-        // at startup instead of silently leaving a repository unregistered and only
-        // surfacing as a confusing DI error deep in a controller/handler later.
         var assembly = System.Reflection.Assembly.GetExecutingAssembly();
         var repositoryTypes = assembly.GetTypes()
             .Where(t => t.Name.EndsWith("Repository") && !t.IsAbstract && !t.IsInterface)
