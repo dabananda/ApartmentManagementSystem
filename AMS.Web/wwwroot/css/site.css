@@ -1,0 +1,48 @@
+/* site.css - Custom Overrides (Minimalist) */
+
+/* Modern card style - refined for Apple/Adobe aesthetic */
+.modern-card {
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.modern-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+/* Modern buttons - refined */
+.modern-btn {
+    transition: all 0.15s ease;
+}
+
+.modern-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Dropdown button subtle style */
+.btn-light {
+    background-color: #F5F5F7;
+    border: 1px solid #E5E5EA;
+    color: #1D1D1F;
+}
+
+.btn-light:hover {
+    background-color: #EBEBEF;
+    border-color: #D1D1D6;
+}
+
+/* Mobile responsive utilities */
+@media(width < 768px) {
+    #logout-section-1, #dashboard-home {
+        display: none;
+    }
+}
+
+@media(width >= 768px) {
+    #logout-section-2 {
+        display: none;
+    }
+}

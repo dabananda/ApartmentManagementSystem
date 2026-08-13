@@ -1,0 +1,20 @@
+@using AMS.Application.Features.Tenancy.DTOs
+@model List<MyTenantRow>
+@{
+    ViewData["Title"] = "My Tenants";
+}
+<h2>My Tenants</h2>
+<table class="table table-striped">
+    <thead><tr><th>Tenant</th><th>Email</th><th>Flat</th><th>From</th></tr></thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.TenantName</td>
+                <td>@r.Email</td>
+                <td>@r.FlatNumber</td>
+                <td>@r.From.ToString("yyyy-MM-dd")</td>
+            </tr>
+        }
+    </tbody>
+</table>

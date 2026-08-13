@@ -1,0 +1,127 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    var user = UserManager.GetUserAsync(User).Result;
+    var initials = user?.Fullname?.Split(' ').Take(2).Select(n => n.FirstOrDefault()).ToArray();
+    var avatarText = initials?.Length >= 2 ? $"{initials[0]}{initials[1]}" : (user?.Fullname?.FirstOrDefault().ToString() ?? "U");
+    var profilePictureUrl = user?.ProfilePictureUrl;
+}
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <!-- User Profile Dropdown -->
+    <div class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle px-3 py-2 rounded-3 d-flex align-items-center"
+           href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="user-avatar me-2 d-none d-md-flex">
+                <div class="avatar-circle-small me-2">
+
+                    @if (!string.IsNullOrEmpty(profilePictureUrl))
+                    {
+                        <img src="@profilePictureUrl" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        @avatarText
+                    }
+
+                </div>
+            </div>
+            <span class="d-none d-lg-inline">@user?.Fullname</span>
+            <i class="bi bi-person-circle d-lg-none fs-5"></i>
+        </a>
+
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" style="min-width: 200px;">
+            <li>
+                <a class="dropdown-item d-flex align-items-center py-2" href="/dashboard">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li>
+                <a class="dropdown-item d-flex align-items-center py-2" asp-area="Identity" asp-page="/Account/Manage/Index">
+                    <i class="bi bi-person me-2"></i>
+                    <span>Profile</span>
+                </a>
+            </li>
+
+            <li><hr class="dropdown-divider my-1"></li>
+
+            <li>
+                <form id="logoutForm" asp-area="Identity" asp-page="/Account/Logout"
+                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" class="m-0">
+                    <button type="submit" class="dropdown-item d-flex align-items-center py-2 text-danger">
+                        <i class="bi bi-box-arrow-right me-2"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+}
+else
+{
+    <div class="nav-item">
+        <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center"
+           asp-area="Identity" asp-page="/Account/Login">
+            <i class="bi bi-box-arrow-in-right me-1 d-none d-md-inline"></i>
+            <span class="d-none d-md-inline">Login</span>
+            <i class="bi bi-box-arrow-in-right d-md-none"></i>
+        </a>
+    </div>
+}
+
+<style>
+    .avatar-circle-small {
+        width: 32px;
+        height: 32px;
+        background: var(--bs-primary);
+        border: 2px solid rgba(0,0,0,0.05);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .dropdown-menu {
+        border-radius: 12px;
+        padding: 0.5rem 0;
+        border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .dropdown-item {
+        border-radius: 8px;
+        margin: 0.125rem 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(2px);
+        }
+
+        .dropdown-item.text-danger:hover {
+            background-color: #fff5f5;
+            color: #dc3545 !important;
+        }
+
+    .dropdown-toggle::after {
+        margin-left: 0.5rem;
+    }
+
+    @@media (max-width: 767.98px) {
+        .dropdown-menu {
+            min-width: 250px !important;
+            right: 0 !important;
+            left: auto !important;
+        }
+    }
+</style>

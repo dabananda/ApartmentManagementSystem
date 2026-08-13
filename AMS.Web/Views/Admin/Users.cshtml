@@ -1,0 +1,367 @@
+@using AMS.Application.Features.Administration.DTOs
+@model ManageUsersPageViewModel
+@{
+    ViewData["Title"] = "Manage Users";
+    var totalPages = (int)Math.Ceiling((double)Model.Total / Math.Max(1, Model.Filter.PageSize));
+    var current = Math.Max(1, Model.Filter.Page);
+}
+
+<div class="d-flex justify-content-between">
+    <h2 class="mb-4">Manage Users</h2>
+    <div>
+        <a class="btn btn-primary mb-3" asp-controller="Admin" asp-action="CreateUser">
+            <i class="fa-solid fa-user-plus me-1"></i>
+            Create User
+        </a>
+    </div>
+</div>
+
+<form method="get" asp-controller="Admin" asp-action="Users" class="row justify-content-between mb-3">
+    <div class="col-md-3">
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon1">
+                <i class="bi bi-search"></i>
+            </span>
+            <input class="form-control" name="Query" placeholder="Search by name, email or phone" value="@Model.Filter.Query">
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <select class="form-select" name="BuildingId">
+            <option value="">All Buildings</option>
+            @foreach (var b in Model.Buildings)
+            {
+                var selected = (Model.Filter.BuildingId.HasValue && Model.Filter.BuildingId.Value.ToString() == b.Value);
+                if (selected)
+                {
+                    <option value="@b.Value" selected="selected">@b.Text</option>
+                }
+                else
+                {
+                    <option value="@b.Value">@b.Text</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <select class="form-select" name="Role">
+            @{
+                var roles = new[] { "All", "President", "Owner", "Tenant", "Staff" };
+            }
+            @foreach (var r in roles)
+            {
+                if (string.Equals(Model.Filter.Role, r, StringComparison.OrdinalIgnoreCase))
+                {
+                    <option value="@r" selected="selected">@r</option>
+                }
+                else
+                {
+                    <option value="@r">@r</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <select class="form-select" name="PageSize">
+            @{
+                var sizes = new[] { 10, 20, 50, 100 };
+            }
+            @foreach (var ps in sizes)
+            {
+                if (Model.Filter.PageSize == ps)
+                {
+                    <option value="@ps" selected="selected">@ps / page</option>
+                }
+                else
+                {
+                    <option value="@ps">@ps / page</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <button class="btn btn-primary" type="submit">Filter</button>
+        <a class="btn btn-outline-secondary" asp-controller="Admin" asp-action="Users">Clear</a>
+    </div>
+</form>
+
+@if (!Model.Users.Any())
+{
+    <div class="alert alert-info">No approved users found.</div>
+}
+else
+{
+    <form id="bulkForm" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkChangeRole", "Admin")"
+                        name="role" value="Owner"
+                        class="btn btn-success btn-sm">
+                    Set selected as Owner
+                </button>
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkChangeRole", "Admin")"
+                        name="role" value="Tenant"
+                        class="btn btn-primary btn-sm">
+                    Set selected as Tenant
+                </button>
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkChangeRole", "Admin")"
+                        name="role" value="Staff"
+                        class="btn btn-secondary btn-sm">
+                    Set selected as Staff
+                </button>
+
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkBlock", "Admin")"
+                        class="btn btn-warning btn-sm">
+                    Block selected
+                </button>
+                <button type="submit"
+                        formmethod="post"
+                        formaction="@Url.Action("BulkUnblock", "Admin")"
+                        class="btn btn-outline-warning btn-sm">
+                    Unblock selected
+                </button>
+
+                @if (User.IsInRole("SuperAdmin"))
+                {
+                    <button type="submit"
+                            formmethod="post"
+                            formaction="@Url.Action("BulkDelete", "Admin")"
+                            class="btn btn-outline-danger btn-sm">
+                        Delete selected
+                    </button>
+                }
+            </div>
+            <small class="text-muted">Showing @Model.Users.Count() of @Model.Total result(s)</small>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:28px;"><input type="checkbox" id="chkAll" /></th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Building</th>
+                        <th>Roles</th>
+                        <th>Status</th>
+                        <th>Registered</th>
+                        <th style="width:120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.Users)
+                    {
+                        var rolesText = (u.Roles != null && u.Roles.Any()) ? string.Join(", ", u.Roles) : "-";
+                        <tr>
+                            <td><input type="checkbox" name="ids" value="@u.Id" class="chkRow" /></td>
+                            <td>@u.Fullname</td>
+                            <td>@u.Email</td>
+                            <td>@u.PhoneNumber</td>
+                            <td>@u.BuildingName</td>
+                            <td>@rolesText</td>
+                            <td>
+                                <div class="d-flex flex-column gap-1">
+                                    @if (u.EmailConfirmed)
+                                    {
+                                        <span class="badge bg-success">Email Verified</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Email Pending</span>
+                                    }
+
+                                    @if (u.IsLockedOut)
+                                    {
+                                        <span class="badge bg-warning text-dark">Locked</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                            <td>
+                                <div class="btn-group gap-1" role="group">
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       asp-controller="Admin"
+                                       asp-action="EditUser"
+                                       asp-route-id="@u.Id"
+                                       title="Edit User">
+                                        Edit
+                                    </a>
+
+                                    <div class="btn-group" role="group">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false"
+                                                title="Change Role"
+                                                @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                            Role
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <button type="submit"
+                                                        formmethod="post"
+                                                        formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Owner" })"
+                                                        class="dropdown-item">
+                                                    <i class="fas fa-crown text-success me-2"></i>Make Owner
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="submit"
+                                                        formmethod="post"
+                                                        formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Tenant" })"
+                                                        class="dropdown-item">
+                                                    <i class="fas fa-home text-primary me-2"></i>Make Tenant
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="submit"
+                                                        formmethod="post"
+                                                        formaction="@Url.Action("ChangeRole", "Admin", new { id = u.Id, role = "Staff" })"
+                                                        class="dropdown-item">
+                                                    <i class="fas fa-user-tie text-secondary me-2"></i>Make Staff
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button type="submit"
+                                                        formmethod="post"
+                                                        formaction="@Url.Action("ResetUser", "Admin", new { id = u.Id })"
+                                                        class="dropdown-item text-warning">
+                                                    <i class="fas fa-undo me-2"></i>Reset to Pending
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="btn-group" role="group">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger dropdown-toggle"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false"
+                                                title="More Actions">
+                                            Restrict
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            @if (!u.IsLockedOut)
+                                            {
+                                                <li>
+                                                    <button type="submit"
+                                                            formmethod="post"
+                                                            formaction="@Url.Action("BlockUser", "Admin", new { id = u.Id })"
+                                                            class="dropdown-item text-warning"
+                                                            @((u.IsPresident && !User.IsInRole("SuperAdmin")) ? "disabled" : null)>
+                                                        <i class="fas fa-ban me-2"></i>Block User
+                                                    </button>
+                                                </li>
+                                            }
+                                            else
+                                            {
+                                                <li>
+                                                    <button type="submit"
+                                                            formmethod="post"
+                                                            formaction="@Url.Action("UnblockUser", "Admin", new { id = u.Id })"
+                                                            class="dropdown-item text-success">
+                                                        <i class="fas fa-unlock me-2"></i>Unblock User
+                                                    </button>
+                                                </li>
+                                            }
+
+                                            @if (User.IsInRole("SuperAdmin") || User.IsInRole("Owner"))
+                                            {
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button type="submit"
+                                                            formmethod="post"
+                                                            formaction="@Url.Action("DeleteUser", "Admin", new { id = u.Id })"
+                                                            class="dropdown-item text-danger">
+                                                        <i class="fas fa-trash me-2"></i>Delete User
+                                                    </button>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    @if (totalPages > 1)
+    {
+        <nav aria-label="Users pagination">
+            <ul class="pagination">
+                @for (int p = 1; p <= totalPages; p++)
+                {
+                    <li class="page-item @(p == current ? "active" : "")">
+                        <a class="page-link"
+                           asp-controller="Admin"
+                           asp-action="Users"
+                           asp-route-Page="@p"
+                           asp-route-PageSize="@Model.Filter.PageSize"
+                           asp-route-Query="@Model.Filter.Query"
+                           asp-route-BuildingId="@Model.Filter.BuildingId"
+                           asp-route-Role="@Model.Filter.Role"
+                           asp-route-LockedOnly="@Model.Filter.LockedOnly">
+                            @p
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var chkAll = document.getElementById('chkAll');
+            if (chkAll) {
+                chkAll.addEventListener('change', function (e) {
+                    var on = e.target.checked;
+                    var rows = document.querySelectorAll('.chkRow');
+                    for (var i = 0; i < rows.length; i++) rows[i].checked = on;
+                });
+            }
+
+            if (!window.SwalHelpers) return;
+
+            var bulkReq = {
+                requireSelection: { formId: 'bulkForm', checkboxSelector: '.chkRow', emptyMessage: 'Select at least one user.' }
+            };
+
+            SwalHelpers.bindConfirm("button[formaction*='BulkDelete']",
+                { title: 'Delete selected users?', text: 'This action cannot be undone.', icon: 'warning', confirmText: 'Delete', ...bulkReq });
+
+            SwalHelpers.bindConfirm("button[formaction*='DeleteUser']",
+                { title: 'Delete this user?', text: 'This action cannot be undone.', icon: 'warning', confirmText: 'Delete' });
+
+            SwalHelpers.bindConfirm("button[formaction*='BulkBlock']",
+                { title: 'Block selected users?', text: 'They will be unable to sign in.', icon: 'warning', confirmText: 'Block', ...bulkReq });
+
+            SwalHelpers.bindConfirm("button[formaction*='BlockUser']",
+                { title: 'Block this user?', text: 'They will be unable to sign in.', icon: 'warning', confirmText: 'Block' });
+        })();
+    </script>
+}
+

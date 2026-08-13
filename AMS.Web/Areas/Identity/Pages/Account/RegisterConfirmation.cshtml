@@ -1,0 +1,113 @@
+@page
+@model RegisterConfirmationModel
+@{
+    ViewData["Title"] = "Confirm Your Email";
+    Layout = null;
+}
+
+<style>
+    .confirmation-container {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        height: 96vh;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .confirmation-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 3rem;
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+        animation: slideUp 0.6s ease-out;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .email-icon {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .email-icon svg {
+        width: 50px;
+        height: 50px;
+        fill: white;
+    }
+
+    .confirmation-card h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1rem;
+    }
+
+    .confirmation-card p {
+        font-size: 1.1rem;
+        color: #4a5568;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-box {
+        background: #f7fafc;
+        border-left: 4px solid #667eea;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-top: 2rem;
+        text-align: left;
+    }
+
+        .info-box p {
+            margin: 0;
+            font-size: 0.95rem;
+            color: #2d3748;
+        }
+</style>
+
+<div class="confirmation-container h-100">
+    <div class="confirmation-card">
+        <div class="email-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+            </svg>
+        </div>
+
+        <h1>Check Your Email</h1>
+        <p>We've sent a confirmation email to your inbox. Please check your email and click the activation link to confirm your account.</p>
+
+        <div class="info-box">
+            <p><strong>Didn't receive the email?</strong> Check your spam folder or wait a few minutes and try again.</p>
+        </div>
+    </div>
+</div>

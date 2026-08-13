@@ -1,0 +1,339 @@
+/* AMS Modern Theme (Apple & Adobe Inspired Minimalist) */
+/* Replaces previous Bootstrap 5 customizations */
+
+:root,
+[data-bs-theme="light"] {
+    /* Brand Accent - Refined Blue (Apple-like) */
+    --bs-primary: #0066CC;
+    --bs-primary-rgb: 0, 102, 204;
+    
+    /* Secondary Action - Adobe-like subtle gray */
+    --bs-secondary: #86868B;
+    --bs-secondary-rgb: 134, 134, 139;
+    
+    /* Semantic Colors - Softened for professional look */
+    --bs-success: #34C759;
+    --bs-success-rgb: 52, 199, 89;
+    --bs-danger: #FF3B30;
+    --bs-danger-rgb: 255, 59, 48;
+    --bs-warning: #FF9500;
+    --bs-warning-rgb: 255, 149, 0;
+    --bs-info: #5AC8FA;
+    --bs-info-rgb: 90, 200, 250;
+    
+    --bs-dark: #1D1D1F;
+    --bs-dark-rgb: 29, 29, 31;
+    --bs-light: #F5F5F7;
+    --bs-light-rgb: 245, 245, 247;
+    
+    /* Body & Text - Apple Typography Colors */
+    --bs-body-color: #1D1D1F; /* Charcoal primary text */
+    --bs-body-bg: #F5F5F7; /* Soft gray background */
+    
+    /* Links */
+    --bs-link-color: #0066CC;
+    --bs-link-hover-color: #004499;
+    
+    /* Focus Ring - Subtle */
+    --bs-focus-ring-color: rgba(0, 102, 204, 0.25);
+    
+    /* Subtle Backgrounds */
+    --bs-primary-bg-subtle: rgba(0, 102, 204, 0.08);
+    --bs-primary-border-subtle: rgba(0, 102, 204, 0.2);
+    --bs-secondary-bg-subtle: rgba(134, 134, 139, 0.08);
+    --bs-secondary-border-subtle: rgba(134, 134, 139, 0.2);
+    --bs-success-bg-subtle: rgba(52, 199, 89, 0.08);
+    --bs-success-border-subtle: rgba(52, 199, 89, 0.2);
+    --bs-danger-bg-subtle: rgba(255, 59, 48, 0.08);
+    --bs-danger-border-subtle: rgba(255, 59, 48, 0.2);
+    
+    /* Surfaces */
+    --ams-surface: #FFFFFF;
+    --ams-surface-soft: #FBFBFD;
+    --ams-border-color: #E5E5EA;
+}
+
+/* ===== Typography ===== */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-size: 0.95rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #1D1D1F;
+}
+
+/* ===== Navbar (Clean, White, Subtle Border) ===== */
+.navbar-ams {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--ams-border-color);
+    box-shadow: none !important;
+}
+
+.navbar-ams .navbar-brand {
+    color: #1D1D1F !important;
+    font-weight: 600;
+}
+
+.navbar-ams .nav-link,
+.navbar-ams .navbar-toggler,
+.navbar-ams .btn-link {
+    color: #515154 !important;
+}
+
+.navbar-ams .nav-link:hover,
+.navbar-ams .btn-link:hover {
+    color: #1D1D1F !important;
+}
+
+.brand-icon {
+    background: #0066CC !important;
+}
+
+/* ===== Buttons (Refined, Adobe-like precision) ===== */
+.btn {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: 0.5rem 1rem;
+    border-radius: 6px !important;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-bg: #0055AA;
+    --bs-btn-hover-border-color: #0055AA;
+    --bs-btn-active-bg: #004499;
+    --bs-btn-active-border-color: #004499;
+    --bs-btn-color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary {
+    --bs-btn-bg: #F5F5F7;
+    --bs-btn-border-color: #E5E5EA;
+    --bs-btn-hover-bg: #EBEBEF;
+    --bs-btn-hover-border-color: #D1D1D6;
+    --bs-btn-color: #1D1D1F;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.btn-danger {
+    --bs-btn-bg: var(--bs-danger);
+    --bs-btn-border-color: var(--bs-danger);
+    --bs-btn-hover-bg: #E0352B;
+    --bs-btn-hover-border-color: #E0352B;
+    --bs-btn-color: #fff;
+}
+
+.btn-dark {
+    --bs-btn-bg: var(--bs-dark);
+    --bs-btn-border-color: var(--bs-dark);
+    --bs-btn-hover-bg: #333336;
+    --bs-btn-hover-border-color: #333336;
+    --bs-btn-color: #fff;
+}
+
+/* Ghost Buttons */
+.btn-ghost {
+    color: var(--bs-primary);
+    background: transparent;
+    border-color: transparent;
+}
+.btn-ghost:hover {
+    background: rgba(0, 102, 204, 0.06);
+    color: #0055AA;
+}
+
+/* ===== Forms (Spacious, Crisp Borders) ===== */
+.form-label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: #515154;
+    margin-bottom: 0.35rem;
+}
+
+.form-control, .form-select {
+    border-radius: 6px !important;
+    border: 1px solid #C7C7CC;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
+    color: #1D1D1F;
+    background-color: #FFFFFF;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+    outline: none;
+}
+
+.input-group-text {
+    background: #F5F5F7;
+    color: #515154;
+    border: 1px solid #C7C7CC;
+    border-radius: 6px !important;
+}
+
+/* Fix Bootstrap Input Group Radius */
+.input-group .form-control:first-child,
+.input-group .form-select:first-child {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+.input-group .form-control:not(:first-child):not(:last-child) {
+    border-radius: 0 !important;
+}
+.input-group .form-control:last-child,
+.input-group .form-select:last-child {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+/* Validation */
+.is-invalid ~ .invalid-feedback,
+.was-validated .form-control:invalid ~ .invalid-feedback {
+    color: var(--bs-danger);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+/* ===== Cards (Minimalist, Subtle Shadow) ===== */
+.card, .modern-card {
+    background: var(--ams-surface);
+    border: 1px solid var(--ams-border-color);
+    border-radius: 12px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02) !important;
+    transition: none; /* Removed heavy hover transitions */
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--ams-border-color);
+    padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* ===== Alerts & Badges ===== */
+.alert {
+    border-radius: 8px !important;
+    border: 1px solid transparent;
+}
+.alert-info {
+    background-color: #F0F9FF;
+    color: #0066CC;
+    border-color: rgba(0, 102, 204, 0.15);
+}
+
+.badge {
+    border-radius: 4px !important;
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+.bg-success { background-color: var(--bs-success) !important; color: white !important; }
+.bg-danger { background-color: var(--bs-danger) !important; color: white !important; }
+.bg-warning { background-color: var(--bs-warning) !important; color: #1D1D1F !important; }
+.bg-info { background-color: var(--bs-info) !important; color: #1D1D1F !important; }
+.bg-secondary { background-color: #8E8E93 !important; color: white !important; }
+
+/* ===== Modals ===== */
+.modal-content {
+    border-radius: 16px !important;
+    border: 1px solid var(--ams-border-color);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+.modal-header {
+    border-bottom: 1px solid var(--ams-border-color);
+    padding: 1.25rem 1.5rem;
+}
+.modal-footer {
+    border-top: 1px solid var(--ams-border-color);
+    padding: 1.25rem 1.5rem;
+    background-color: #FBFBFD;
+    border-bottom-left-radius: 16px !important;
+    border-bottom-right-radius: 16px !important;
+}
+
+/* ===== Sidebar ===== */
+.sidebar-modern {
+    background: #FBFBFD;
+    border-right: 1px solid var(--ams-border-color);
+}
+
+/* ===== Tables (Refined, Spacious) ===== */
+.table {
+    color: #1D1D1F;
+    margin-bottom: 0;
+}
+.table th {
+    font-weight: 600;
+    color: #86868B;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--ams-border-color) !important;
+    padding: 1rem;
+    background-color: #FBFBFD;
+}
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--ams-border-color);
+}
+.table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.015);
+}
+
+/* DataTables Overrides */
+div.dataTables_wrapper div.dataTables_filter input {
+    border-radius: 6px;
+    border: 1px solid #C7C7CC;
+    padding: 0.3rem 0.6rem;
+    margin-left: 0.5rem;
+}
+div.dataTables_wrapper div.dataTables_filter input:focus {
+    border-color: var(--bs-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+}
+div.dataTables_wrapper div.dataTables_length select {
+    border-radius: 6px;
+    border: 1px solid #C7C7CC;
+    padding: 0.3rem 1.5rem 0.3rem 0.6rem;
+}
+.page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+.page-link {
+    color: #1D1D1F;
+    border-radius: 4px !important;
+    margin: 0 2px;
+    border: 1px solid transparent;
+}
+.page-link:hover {
+    background-color: #F5F5F7;
+    border-color: var(--ams-border-color);
+    color: #1D1D1F;
+}
+
+/* ===== Utilities ===== */
+.border-subtle {
+    border-color: var(--ams-border-color) !important;
+}
+.text-muted {
+    color: #86868B !important;
+}

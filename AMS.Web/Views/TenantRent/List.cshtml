@@ -1,0 +1,23 @@
+@using AMS.Application.Features.Tenancy.DTOs
+@model List<TenantRentListRow>
+
+@{
+    ViewData["Title"] = "Tenants (Rent)";
+}
+
+<h2>Tenants</h2>
+<table class="table table-striped">
+    <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var t in Model)
+        {
+            <tr>
+                <td>@t.Name</td>
+                <td>@t.Email</td>
+                <td class="text-end">
+                    <a asp-action="View" asp-route-tenantUserId="@t.TenantUserId" class="btn btn-sm btn-primary">View</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

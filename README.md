@@ -1,252 +1,160 @@
+<div align="center">
+
 # Apartment Management System
 
-A role-based ASP.NET Core MVC application to operate an apartment building: buildings & flats, owners & tenants, shared expenses, monthly rent billing, payments (manual & Stripe), entry/visitor logs, and maintenance tickets. Designed for multi-role workflows with per‑building data boundaries.
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+[![Architecture: Clean](https://img.shields.io/badge/Architecture-Clean-orange?style=flat-square)]()
+[![Pattern: CQRS](https://img.shields.io/badge/Pattern-CQRS-blue?style=flat-square)]()
+
+Apartment Management System is an enterprise-grade, role-based web application designed for operating and managing apartment buildings efficiently.
+
+</div>
+
+<hr />
+
+## 📖 Overview
+
+Built with **.NET 8**, **Entity Framework Core**, and **SQL Server**, this application is engineered using **Clean Architecture**, **Domain-Driven Design (DDD)**, and the **CQRS (Command Query Responsibility Segregation)** pattern.
+
+It supports comprehensive workflows for building and flat administration, user approval, ownership and tenancy, common-expense allocation, tenant rent billing, payments (including Stripe integration), visitor logs, notices, maintenance tickets, and operational reports.
+
+## 📑 Table of Contents
+
+- [Capabilities](#-capabilities)
+- [Roles](#-roles)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [Documentation](#-documentation)
+- [Technology Stack](#-technology-stack)
+- [Contributing](#-contributing)
+- [License & Usage](#-license--usage)
+- [Author](#-author)
 
 ---
 
-## Live Link: https://vacisos.bsite.net/
+## 🚀 Capabilities
 
----
+- **Property Management**: Create buildings and flats, assign owners, and maintain per-building records.
+- **User Management**: Create, approve, block, reset, edit, and role-manage user accounts. Assign a president to a building and scope operations.
+- **Tenancy & Billing**: Create tenant accounts, assign tenants to flats, configure monthly flat billing profiles, generate and collect bills.
+- **Payments**: Record manual tenant and owner payments, issue receipts, send receipt emails (SMTP), and accept **Stripe Checkout** payments seamlessly with automated reconciliation from Stripe webhooks.
+- **Tenant Portal**: Empower tenants with a portal for bills, payments, announcements, visitors, and maintenance tickets.
+- **Day-to-day Operations**: Record entry/visitor logs and manage maintenance tickets.
+- **Reporting**: Produce comprehensive financial, occupancy, visitor, and maintenance reports, including CSV exports.
 
-## Table of Contents
+## 👥 Roles
 
-- [Features](#features)
-- [Roles & Permissions](#roles--permissions)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-  - [Prerequisites](#prerequisites)
-  - [Clone & Restore](#1-clone--restore)
-  - [Configure Secrets](#2-configure-secrets)
-  - [Database](#3-database)
-  - [Run the App](#4-run-the-app)
-  - [Stripe: Local Webhook Setup](#stripe-local-webhook-setup)
-- [Seeded Data](#seeded-data)
-- [Payments](#payments)
-  - [Manual Payments](#manual-payments)
-  - [Stripe Checkout + Webhook](#stripe-checkout--webhook)
-- [Tenant Assignment Rules](#tenant-assignment-rules)
-- [Background Jobs](#background-jobs)
-- [Troubleshooting](#troubleshooting)
-- [Development Tips](#development-tips)
-- [Contributing](#contributing)
+| Role | Primary Responsibilities |
+| :--- | :--- |
+| `SuperAdmin` | Global administration, buildings, presidents, and users. |
+| `President` | Building operations, approvals, flats, expenses, reports, and maintenance. |
+| `Owner` | Owned flats, tenant creation/assignment, billing profiles, tenant-rent collection, and common-bill payments. |
+| `Tenant` | Personal billing, payments, notices, visitors, and maintenance tickets. |
+| `Staff` | Entry-log operations. |
+| `User` | A seeded role available for pending/general accounts. |
 
----
+*Authorization is robustly enforced via claims. A president needs a building assignment before building-specific workflows are available.*
 
-## Features
-
-- **Authentication & Roles (ASP.NET Identity)**: `SuperAdmin`, `President`, `Owner`, `Tenant`, `Staff`, `User` (pending).
-- **Buildings & Flats**: CRUD with unique building codes (e.g., `BID1001`). Per-building stats.
-- **Owners & Tenants**: Assign tenants to flats; owner-to-tenant billing profiles.
-- **Common Bills & Allocations**: Create shared bills and allocate to owners; track payments & due.
-- **Tenant Billing**:
-  - Per‑flat billing profile (title + monthly amount).
-  - **Monthly bill generation** on the 1st via background service.
-  - Paid/Due totals visible in dashboards and portal.
-- **Payments**:
-  - **Manual** owner/tenant payments with email receipts.
-  - **Stripe Checkout** for card payments + **webhook** reconciliation.
-- **Tenant Portal**: Bills, payments, notices, tickets.
-- **Entry/Visitor Logs** & **Maintenance Tickets**.
-- **Email (SMTP)** with HTML receipts.
-
----
-
-## Roles & Permissions
-
-- **SuperAdmin**: Full control; can manage buildings and create any role.
-- **President**: Building lead. May also hold the **Owner** role. Can create **Owner** and **Tenant** users for their building.
-- **Owner**: Can create **Tenant** users for their building; manages flats and tenant rent.
-- **Tenant**: Views bills, makes payments, creates tickets.
-- **Staff/User**: Limited operational roles as configured.
-
-> President may have both `President` and `Owner` roles. UI and server enforce: **President can create Owner & Tenant**; **Owner can create Tenant** only.
-
----
-
-## Tech Stack
-
-- **.NET 8** — ASP.NET Core MVC + Identity
-- **EF Core** — SQL Server
-- **Razor Views** — Bootstrap-based UI
-- **BackgroundService** — monthly bill generator
-- **Stripe** — Checkout & webhook for card payments
-
----
-
-## Project Structure
-
-```
-ApartmentManagementSystem/
-  Controllers/
-  Data/
-  Models/
-  Services/
-  ViewModels/
-  Views/
-  wwwroot/
-  Program.cs
-  appsettings*.json
-```
-
----
-
-## Quick Start
+## ⚙️ Quick Start
 
 ### Prerequisites
 
-- **.NET 8 SDK**
-- **SQL Server** (Developer/Express/LocalDB)
-- **Stripe CLI** (for local webhooks): https://stripe.com/docs/stripe-cli
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)
+- SQL Server, SQL Server Express, or LocalDB
+- EF Core CLI (`dotnet tool install --global dotnet-ef`)
+- *Optional:* Stripe CLI for local payment-webhook testing
 
-### 1) Clone & Restore
-
-```bash
-git clone https://github.com/dabananda/ApartmentManagementSystem.git
-cd ApartmentManagementSystem/ApartmentManagementSystem
-dotnet restore
-```
-
-### 2) Configure Secrets
-
-Use **User Secrets** for local development.
-
-```bash
-# Initialize secrets store
-dotnet user-secrets init
-
-# Database connection
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=.;Database=AMS;Trusted_Connection=True;TrustServerCertificate=True;"
-
-# Seeded SuperAdmin password
-dotnet user-secrets set "SuperAdminPassword" "ChangeThis!123"
-
-# SMTP (example values)
-dotnet user-secrets set "Smtp:Host" "smtp.example.com"
-dotnet user-secrets set "Smtp:Port" "587"
-dotnet user-secrets set "Smtp:From" "noreply@example.com"
-dotnet user-secrets set "Smtp:User" "smtp-user"
-dotnet user-secrets set "Smtp:Password" "smtp-password"
-
-# Stripe (dev) — keys & currency
-dotnet user-secrets set "Stripe:PublishableKey" "pk_test_..."
-dotnet user-secrets set "Stripe:SecretKey" "sk_test_..."
-dotnet user-secrets set "Stripe:WebhookSecret" "whsec_..."   # comes from Stripe CLI output
-dotnet user-secrets set "Stripe:Currency" "usd"
-```
-
-**Stripe config demo** (for reference only):
-
-```json
-"Stripe": {
-  "PublishableKey": "",
-  "SecretKey": "",
-  "WebhookSecret": "",
-  "Currency": ""
-}
-```
-
-> You may also use `appsettings.Development.json` instead of user secrets if preferred.
-
-### 3) Database
-
-```bash
-dotnet ef database update
-```
-
-### 4) Run the App
-
-```bash
-dotnet run
-```
-Open the printed HTTPS URL (e.g., `https://localhost:7033/`).
-
-### Stripe: Local Webhook Setup
-
-After the app is running, start the Stripe CLI listener **in a separate terminal**.  
-Replace the port if your local HTTPS port differs (see `Properties/launchSettings.json`).
+### Clone, Configure, and Run
 
 ```powershell
-stripe listen --forward-to https://localhost:7033/payments/webhook
+git clone https://github.com/dabananda/ApartmentManagementSystem.git
+cd ApartmentManagementSystem
+
+# Configure development-only secrets; replace the sample values.
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\\MSSQLLocalDB;Database=ApartmentManagementSystem;Trusted_Connection=True;TrustServerCertificate=True" --project AMS.Web
+dotnet user-secrets set "SuperAdminEmail" "admin@example.test" --project AMS.Web
+dotnet user-secrets set "SuperAdminPassword" "Use-a-strong-local-password" --project AMS.Web
+dotnet user-secrets set "Stripe:SecretKey" "sk_test_..." --project AMS.Web
+dotnet user-secrets set "Stripe:WebhookSecret" "whsec_..." --project AMS.Web
+dotnet user-secrets set "Stripe:Currency" "bdt" --project AMS.Web
+
+# Initialize Database (Targeting the Infrastructure project where DbContext lives)
+dotnet ef migrations add InitialCreate --project AMS.Infrastructure --startup-project AMS.Web
+dotnet ef database update --project AMS.Infrastructure --startup-project AMS.Web
+
+# Run the app
+dotnet run --project AMS.Web
 ```
 
-The CLI prints a signing secret like:
+The HTTPS launch profile uses `https://localhost:7033`; HTTP uses `http://localhost:5117`.
 
-```
-Ready! Your webhook signing secret is: whsec_xxx
-```
+At startup, the application creates its roles and the configured `SuperAdmin`. Sign in and begin by creating a building and assigning its president.
 
-Copy that to user secrets as `Stripe:WebhookSecret` (see above). With the listener running, Stripe events reach your local app and **payments will be recorded**.
+> [!WARNING]
+> Do not use placeholder credentials outside a disposable local environment. Use User Secrets or environment variables for sensitive settings.
 
----
+## 🛠 Configuration
 
-## Seeded Data
+| Key | Required | Purpose |
+| --- | --- | --- |
+| `ConnectionStrings:DefaultConnection` | **Yes** | SQL Server connection string. |
+| `SuperAdminEmail` | **Yes** | The email address of the seeded root user. |
+| `SuperAdminPassword` | **Yes** | The password of the seeded root user. |
+| `Stripe:SecretKey` | No | Enables Stripe payment processing. |
+| `Stripe:WebhookSecret` | No | Required for the application to accept Stripe webhook events and automatically reconcile payments. |
+| `Stripe:Currency` | No | e.g. `usd`, `eur`, `bdt`. |
+| `Cloudinary:CloudName` | No | Cloudinary environment details. Enables image uploads for profile pictures and maintenance tickets. |
+| `Cloudinary:ApiKey` | No | |
+| `Cloudinary:ApiSecret` | No | |
+| `Email:SmtpServer` | No | SMTP settings. Enables the application to send payment receipts via email. |
+| `Email:SmtpPort` | No | |
+| `Email:SmtpUsername` | No | |
+| `Email:SmtpPassword` | No | |
+| `Email:FromAddress` | No | |
+| `Email:FromName` | No | |
 
-On first run the app seeds:
+## 📚 Documentation
 
-- Roles: **SuperAdmin, President, Owner, Tenant, Staff, User**
-- **SuperAdmin** account:
-  - **Email:** `superadmin@ams.com`
-  - **Password:** value from `SuperAdminPassword`
+- [**Architecture Guide**](ARCHITECTURE.md): Deep dive into the Clean Architecture, CQRS implementation, Custom Mediator, and Domain Driven Design layers.
+- [**Usage Guide**](USAGE.md): Walkthrough of standard operating procedures from SuperAdmin setup down to Tenant usage.
+- [**Contributing Guidelines**](CONTRIBUTING.md): Instructions for developers.
 
-Log in as SuperAdmin to create buildings, assign a President, and invite Owners/Tenants.
+## 💻 Technology Stack
 
----
+**Core Architecture & Patterns:**
+- Clean Architecture (Domain, Application, Infrastructure, Web layers)
+- Domain-Driven Design (DDD)
+- CQRS (Command Query Responsibility Segregation)
+- Custom Mediator Pattern
 
-## Payments
+**Backend:**
+- .NET 8 (C# 12)
+- ASP.NET Core MVC & Identity
+- Entity Framework Core 8
+- SQL Server
 
-### Manual Payments
+**Frontend:**
+- Razor Pages / Views
+- Bootstrap 5
+- jQuery & DataTables
+- FontAwesome
 
-- Owners and tenants can record manual payments (cash/bank).  
-- After a successful save, the app attempts to send a **receipt email**. Email failures are logged and surfaced as a small warning, but **do not block** the request.
+**Integrations:**
+- Stripe (Payments & Webhooks)
+- Cloudinary (Image Hosting)
+- MailKit (SMTP Email)
 
-### Stripe Checkout + Webhook
+## 🤝 Contributing
 
-- Checkout sessions are created server-side.
-- The webhook endpoint `POST /payments/webhook` finalizes payments on `checkout.session.completed` or `payment_intent.succeeded` events.
-- Idempotency is enforced to prevent duplicates.
+Contributions are welcome! Please read the [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
-**Local testing flow:**
+## 📝 License & Usage
 
-1. Run the app.
-2. Start the Stripe listener:
-   ```powershell
-   stripe listen --forward-to https://localhost:7033/payments/webhook
-   ```
-3. Use the UI to initiate a card payment, or trigger test events:
-   ```bash
-   stripe trigger checkout.session.completed
-   stripe trigger payment_intent.succeeded
-   ```
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details. 
 
----
+## 👨‍💻 Author
 
-## Tenant Assignment Rules
-
-- A tenant can have **only one active flat assignment** at a time.
-- A flat can have **only one active tenant** at a time.
-- Enforced by both UI and **database filtered unique indexes** (active = `EndDate IS NULL`).
-
-This prevents double-assignments even under concurrent requests.
-
----
-
-## Background Jobs
-
-- `TenantMonthlyBillGenerator` runs daily and generates bills on the **1st** of each month based on **Flat Billing Profiles**.
-- In production with multiple instances, run a single instance or add a distributed lock to avoid duplicate runs.
-- Operates in UTC; display times are localized in the UI.
-
----
-
-## Troubleshooting
-
-- **Payments recorded but page showed an error**: likely SMTP connectivity. Email send is best‑effort; payment saves are not rolled back. Configure `Smtp:*` settings or disable email in dev.
-- **Stripe webhook not firing**: ensure the app is running **and** the Stripe CLI listener is active, and the `Stripe:WebhookSecret` matches the latest CLI output.
-- **DataTables warning about unknown parameter**: ensure the table columns in the view match the data or use named property bindings in DataTables configuration.
-
----
-
-## Contributing
-
-PRs are welcome! Please open an issue for discussion before large changes.
+**Dabananda Mitra**  
+[GitHub](https://github.com/dabananda) | [LinkedIn](https://www.linkedin.com/in/dabanandamitra/) | [Portfolio](https://dabanandamitra.com)

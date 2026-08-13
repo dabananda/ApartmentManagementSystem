@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Apartment Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-purple fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3 text-white" asp-controller="Home" asp-action="Index">
+                <span class="brand-gradient">AMS</span>
+            </a>
+
+            <!-- Mobile toggle -->
+            <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navigation items -->
+            <div id="navMain" class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-modern" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-modern" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-modern" href="#testimonials">Reviews</a>
+                    </li>
+                    @* <li class="nav-item">
+                        <a class="nav-link nav-link-modern" href="#about-us">About Us</a>
+                    </li> *@
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-modern" href="#contact">Contact</a>
+                    </li>
+
+                    <!-- Conditional Auth Buttons -->
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item ms-lg-3">
+                            <div class="d-flex gap-2">
+                                <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
+                                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                                    <button type="submit" class="btn btn-outline-light btn-sm px-3">
+                                        <i class="bi bi-box-arrow-right me-1"></i>
+                                        <span class="d-none d-md-inline">Logout</span>
+                                    </button>
+                                </form>
+                                <a class="btn btn-gradient-white btn-sm px-4" href="/dashboard">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    <span class="d-none d-sm-inline">Dashboard</span>
+                                </a>
+                            </div>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item ms-lg-3">
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-light btn-sm px-3" asp-area="Identity" asp-page="/Account/Login">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                                    <span class="d-none d-md-inline">Login</span>
+                                </a>
+                                <a class="btn btn-gradient-white btn-sm px-4" asp-area="Identity" asp-page="/Account/Register">
+                                    <i class="bi bi-person-plus me-1"></i>
+                                    <span class="d-none d-sm-inline">Sign Up</span>
+                                </a>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-modern">
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-6">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="footer-logo">
+                            <span class="brand-gradient fw-bold fs-4">AMS</span>
+                        </div>
+                        <div>
+                            <div class="fw-semibold text-white">Apartment Management System</div>
+                            <div class="text-white-50 small">Transform your building management</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 text-lg-end">
+                    <div class="footer-links mb-3">
+                        <a href="#" class="text-white-50 me-4 text-decoration-none hover-white">Privacy Policy</a>
+                        <a href="#" class="text-white-50 me-4 text-decoration-none hover-white">Terms of Service</a>
+                        <a href="#contact" class="text-white-50 text-decoration-none hover-white">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-white-50 my-4">
+
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="text-white-50 small">
+                        © @DateTime.UtcNow.Year <a href="https://dabananda.vercel.app/" target="_blank" class="text-white-50">Dabananda Mitra</a>. All rights reserved.
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="social-links">
+                        <a href="https://github.com/dabananda" target="_blank" class="social-link me-3">
+                            <i class="bi bi-github"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/in/dabananda/" target="_blank" class="social-link me-3">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                        <a href="mailto:dabananda.dev@gmail.com" class="social-link">
+                            <i class="bi bi-envelope"></i>
+                        </a>
+                        <a href="https://dabananda.vercel.app/" target="_blank" class="social-link ms-3">
+                            <i class="bi bi-briefcase"></i>
+                        </a>
+                        <a href="https://www.facebook.com/dabanandamitra/" target="_blank" class="social-link ms-3">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                        <a href="https://wa.me/+8801304080014" target="_blank" class="social-link ms-3">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        <a href="https://x.com/dabanandamitra" target="_blank" class="social-link ms-3">
+                            <i class="bi bi-twitter-x"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    @RenderSection("Scripts", required: false)
+
+    <style>
+        :root {
+            --purple-primary: #945af6;
+            --purple-secondary: #7c3aed;
+            --purple-dark: #6d28d9;
+            --purple-light: #c4b5fd;
+        }
+
+        .navbar-purple {
+            background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(148, 90, 246, 0.3);
+            padding: 0.75rem 0;
+            transition: all 0.3s ease;
+        }
+
+            .navbar-purple.scrolled {
+                padding: 0.5rem 0;
+                box-shadow: 0 2px 30px rgba(148, 90, 246, 0.4);
+            }
+
+        .brand-gradient {
+            background: linear-gradient(135deg, #ffffff, #f1f5f9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+        }
+
+        .nav-link-modern {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            padding: 0.75rem 1rem !important;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+            .nav-link-modern:hover {
+                color: white !important;
+                background: rgba(255,255,255,0.1);
+                transform: translateY(-1px);
+            }
+
+            .nav-link-modern::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                width: 0;
+                height: 2px;
+                background: white;
+                transition: all 0.3s ease;
+                transform: translateX(-50%);
+            }
+
+            .nav-link-modern:hover::after {
+                width: 80%;
+            }
+
+        .custom-toggler {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 0.25rem 0.5rem;
+        }
+
+            .custom-toggler:focus {
+                box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25);
+            }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.8%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='m4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        .btn-gradient-white {
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border: none;
+            color: var(--purple-primary);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-gradient-white:hover {
+                color: var(--purple-primary);
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(255,255,255,0.4);
+            }
+
+        .btn-outline-light {
+            border: 2px solid rgba(255,255,255,0.7);
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+            .btn-outline-light:hover {
+                background: rgba(255,255,255,0.1);
+                border-color: white;
+                color: white;
+                transform: translateY(-1px);
+            }
+
+        .main-content {
+            margin-top: 80px;
+        }
+
+        .footer-modern {
+            background: linear-gradient(135deg, var(--purple-dark), var(--purple-secondary));
+            padding: 3rem 0 2rem;
+            margin-top: 0;
+        }
+
+        .footer-logo {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .footer-links a {
+            transition: all 0.3s ease;
+        }
+
+        .hover-white:hover {
+            color: white !important;
+        }
+
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+            .social-link:hover {
+                background: rgba(255,255,255,0.2);
+                color: white;
+                transform: translateY(-2px);
+            }
+
+        @@media (max-width: 991.98px) {
+            .navbar-collapse {
+                background: rgba(255,255,255,0.1);
+                backdrop-filter: blur(20px);
+                border-radius: 12px;
+                padding: 1rem;
+                margin-top: 1rem;
+            }
+
+            .nav-item {
+                margin: 0.25rem 0;
+            }
+
+            .nav-link-modern {
+                text-align: center;
+            }
+
+            .main-content {
+                margin-top: 70px;
+            }
+        }
+
+        @@media (max-width: 767.98px) {
+            .footer-modern .col-lg-6 {
+                text-align: center !important;
+            }
+
+            .footer-links {
+                margin-bottom: 1rem !important;
+            }
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .navbar-purple {
+            transition: all 0.3s ease;
+        }
+    </style>
+
+    <script>
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar-purple');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const offsetTop = target.offsetTop - 80;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
