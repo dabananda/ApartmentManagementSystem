@@ -252,6 +252,13 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show rounded-4" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i> @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
 
                     <form asp-action="Contact" method="post" class="form-modern needs-validation" novalidate>
                         <div class="row g-4 mb-4">

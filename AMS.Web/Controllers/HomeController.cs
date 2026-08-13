@@ -11,11 +11,13 @@ public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _config;
 
-    public HomeController(ILogger<HomeController> logger, IEmailSender emailSender)
+    public HomeController(ILogger<HomeController> logger, IEmailSender emailSender, IConfiguration config)
     {
         _logger = logger;
         _emailSender = emailSender;
+        _config = config;
     }
 
     [AllowAnonymous]
@@ -41,17 +43,26 @@ public class HomeController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["ContactStatus"] = "error";
             return View("Index", model);
         }
 
-        await _emailSender.SendEmailAsync("dabananda.dev@gmail.com", $"[AMS] {model.Subject}",
-            $"From: {model.Email} <br/> Name: {model.Name} <br/> Message: {model.Message}");
+        try
+        {
+            var destEmail = _config["ContactDestinationEmail"] ?? "dabananda.dev@gmail.com";
+            await _emailSender.SendEmailAsync(destEmail, $"[AMS] {model.Subject}",
+                $"From: {model.Email} <br/> Name: {model.Name} <br/> Message: {model.Message}");
 
-        _logger.LogInformation("Contact message from {Name} <{Email}>: {Subject} / {Message}",
-            model.Name, model.Email, model.Subject, model.Message);
+            _logger.LogInformation("Contact message from {Name} <{Email}>: {Subject} / {Message}",
+                model.Name, model.Email, model.Subject, model.Message);
 
-        TempData["ContactStatus"] = "sent";
+            TempData["Success"] = "Your message has been sent successfully! We will get back to you shortly.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send contact email.");
+            TempData["Error"] = "Sorry, there was a problem sending your message. Please try again later.";
+        }
+        
         return RedirectToAction(nameof(Index));
     }
 
